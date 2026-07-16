@@ -1,0 +1,47 @@
+[package]
+name = "sec-tracker-backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Web framework
+axum = { version = "0.8.9", features = ["multipart"] }
+
+# Async runtime
+tokio = { version = "1.52.3", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+
+# Database (compile-time checked SQL). Wired up in later milestones;
+# declared now so future modules don't re-touch Cargo.toml.
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "chrono",
+    "uuid",
+    "macros",
+    "migrate",
+] }
+
+# HTTP middleware
+tower = { version = "0.5", features = ["timeout"] }
+tower-http = { version = "0.7.0", features = ["cors", "fs", "trace"] }
+
+# Observability
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+# Common value types
+chrono = { version = "0.4.45", features = ["serde"] }
+uuid = { version = "1.23.5", features = ["v4", "serde"] }
+
+# Error type ergonomics — derive `Error` for the unified API error mapping.
+thiserror = "2.0"
+
+# Load .env files at startup so DATABASE_URL is available to the process.
+# Build-time DATABASE_URL (for sqlx::query! macros) is provided by
+# `.cargo/config.toml` instead, which Cargo picks up automatically.
+dotenvy = "0.15"

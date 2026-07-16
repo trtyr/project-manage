@@ -1,0 +1,76 @@
+//! Project (项目) — see `docs/plantree/baseline/storage-and-state.md`.
+//!
+//! A project always belongs to a single client (`client_id`, NOT NULL).
+//! On the wire we accept and emit `Project`, but for nested contexts
+//! (e.g. inside a client's representation if we ever build one) we may
+//! add a `ProjectSummary` later. Not in MVP.
+
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+/// Allowed values for `project.status`.
+///
+/// String constants live side-by-side with a `is_valid` predicate. We
+/// keep the validation as a pure boolean and let handlers build their
+/// own error message referencing `ALL` — that way the type stays simple
+/// and the data list only appears in error strings.
+#[allow(non_snake_case)]
+pub mod ProjectStatus {
+    pub const IN_PROGRESS: &str = "in_progress";
+    pub const COMPLETED: &str = "completed";
+    pub const PAUSED: &str = "paused";
+
+    pub const ALL: &[&str] = &[IN_PROGRESS, COMPLETED, PAUSED];
+
+    /// `true` if `input` is one of the allowed status values.
+    // `PartialEq` for `str` is not yet stable in const fn, so this is
+    // a regular `fn` — still cheap to inline at the call site.
+    pub fn is_valid(input: &str) -> bool {
+        matches!(input, IN_PROGRESS | COMPLETED | PAUSED)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Project {
+    pub id: Uuid,
+    pub client_id: Uuid,
+    pub name: String,
+    pub status: String,
+    pub phase: Option<String>,
+    pub goals: Vec<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Payload for `POST /api/projects`. `client_id` is required so an
+/// orphaned project can never exist by construction.
+#[derive(Debug, Deserialize)]
+pub struct CreateProject {
+    pub client_id: Uuid,
+    pub name: String,
+    /// Defaults to `ProjectStatus::IN_PROGRESS` when omitted.
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub phase: Option<String>,
+    #[serde(default)]
+    pub goals: Vec<String>,
+}
+
+/// Payload for `PUT /api/projects/:id`. All fields optional to allow
+/// partial updates. Refer to `client::UpdateClient` for the same
+/// limitation re: clearing a non-nullable value.
+#[derive(Debug, Deserialize)]
+pub struct UpdateProject {
+    #[serde(default)]
+    pub client_id: Option<Uuid>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub phase: Option<String>,
+    #[serde(default)]
+    pub goals: Option<Vec<String>>,
+}

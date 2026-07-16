@@ -1,0 +1,7 @@
+# Cargo configuration
+# `[env]` lets `cargo build` see DATABASE_URL without manual `export`.
+# `force = false` (default) — user's shell env still wins if set.
+# Required because sqlx::query! / sqlx::query_as! macros verify SQL against
+# a live database at compile time.
+[env]
+DATABASE_URL = { value = "postgres://localhost:5432/sec_tracker", force = false }

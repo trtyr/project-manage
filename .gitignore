@@ -1,0 +1,27 @@
+# === Rust ===
+backend/target/
+**/*.rs.bk
+
+# === Node / Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# === Environment ===
+.env
+.env.*
+!.env.example
+
+# === Runtime uploads ===
+uploads/
+
+# === Editor / OS ===
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# === Caches ===
+.rumdl_cache/
+.codegraph/
+.impeccable/
