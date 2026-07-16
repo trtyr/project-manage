@@ -15,7 +15,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// A client row as stored in the `clients` table.
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct Client {
     pub id: Uuid,
     pub name: String,
@@ -30,20 +31,25 @@ pub struct Client {
 }
 
 /// Payload for `POST /api/clients`. The DB fills id/timestamps.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateClient {
     pub name: String,
     #[serde(default)]
+    #[ts(optional)]
     pub contact_person: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub contact_info: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub notes: Option<String>,
     #[serde(default)]
     pub products: Vec<String>,
     #[serde(default)]
     pub security_concerns: Vec<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub background_info: Option<String>,
 }
 
@@ -51,20 +57,28 @@ pub struct CreateClient {
 /// can patch just one column. `name = None` means "do not update name";
 /// callers who want to clear `name` would have to use a dedicated endpoint
 /// (not in MVP scope).
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct UpdateClient {
     #[serde(default)]
+    #[ts(optional)]
     pub name: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub contact_person: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub contact_info: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub notes: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub products: Option<Vec<String>>,
     #[serde(default)]
+    #[ts(optional)]
     pub security_concerns: Option<Vec<String>>,
     #[serde(default)]
+    #[ts(optional)]
     pub background_info: Option<String>,
 }

@@ -9,7 +9,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct Communication {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -21,7 +22,8 @@ pub struct Communication {
 }
 
 /// Communication with project name — for global list/search endpoints.
-#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CommunicationWithProject {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -35,24 +37,32 @@ pub struct CommunicationWithProject {
 
 /// Payload for `POST /api/projects/:id/communications`. `project_id` is
 /// taken from the URL — never present in this DTO.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateCommunication {
     pub content: String,
     pub occurred_at: DateTime<Utc>,
     #[serde(default)]
+    #[ts(optional)]
     pub participants: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub conclusion: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct UpdateCommunication {
     #[serde(default)]
+    #[ts(optional)]
     pub content: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub occurred_at: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub participants: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub conclusion: Option<String>,
 }

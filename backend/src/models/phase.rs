@@ -7,7 +7,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct Phase {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -24,39 +25,55 @@ pub struct Phase {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreatePhase {
     pub name: String,
     #[serde(default)]
+    #[ts(optional)]
     pub parent_id: Option<Uuid>,
     #[serde(default)]
+    #[ts(optional)]
     pub description: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub sort_order: Option<i32>,
     #[serde(default)]
+    #[ts(optional)]
     pub planned_start: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub planned_end: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub status: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct UpdatePhase {
     #[serde(default)]
+    #[ts(optional)]
     pub name: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub description: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub sort_order: Option<i32>,
     #[serde(default)]
+    #[ts(optional)]
     pub planned_start: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub planned_end: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub actual_start: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub actual_end: Option<DateTime<Utc>>,
     #[serde(default)]
+    #[ts(optional)]
     pub status: Option<String>,
 }

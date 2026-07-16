@@ -28,7 +28,8 @@ pub struct ProjectFile {
 
 /// Metadata returned to the frontend after upload. Does NOT include
 /// file_path (internal storage detail).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct FileMeta {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -38,6 +39,11 @@ pub struct FileMeta {
     pub url: Option<String>,
     pub original_name: String,
     pub mime_type: String,
+    // Override `i64`'s default `bigint` mapping. JSON.parse() on the
+    // frontend represents all integers as `number`, so emitting `number`
+    // here keeps the wire shape honest and lets `formatSize(bytes: number)`
+    // accept the field directly.
+    #[ts(type = "number")]
     pub file_size: i64,
     pub description: Option<String>,
     pub tags: Vec<String>,
@@ -63,16 +69,20 @@ impl From<ProjectFile> for FileMeta {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct UpdateFile {
     #[serde(default)]
+    #[ts(optional)]
     pub description: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub tags: Option<Vec<String>>,
 }
 
 /// File metadata + project name — used by the global file library view.
-#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct FileWithProject {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -82,6 +92,7 @@ pub struct FileWithProject {
     pub url: Option<String>,
     pub original_name: String,
     pub mime_type: String,
+    #[ts(type = "number")]
     pub file_size: i64,
     pub description: Option<String>,
     pub tags: Vec<String>,
@@ -90,11 +101,13 @@ pub struct FileWithProject {
 }
 
 /// Request body for creating an online link resource.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateLink {
     pub name: String,
     pub url: String,
     #[serde(default)]
+    #[ts(optional)]
     pub description: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,

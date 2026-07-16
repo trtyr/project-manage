@@ -8,7 +8,7 @@ mod handlers;
 mod models;
 mod state;
 
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -24,6 +24,7 @@ use tokio::signal;
 use tower::{ServiceBuilder, timeout::TimeoutLayer};
 use tower_http::{
     cors::{Any, CorsLayer},
+    services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
 use tracing::{info, warn};
@@ -267,6 +268,12 @@ async fn health() -> Json<HealthResponse> {
     })
 }
 
+/// Keep unmatched `/api` requests on the API's existing empty 404 path instead
+/// of letting the frontend SPA fallback serve `index.html`.
+async fn api_not_found() -> StatusCode {
+    StatusCode::NOT_FOUND
+}
+
 #[tokio::main]
 async fn main() {
     // 1. Load .env first so DATABASE_URL is visible to both the macros
@@ -304,12 +311,29 @@ async fn main() {
     let port = env_u16("PORT", 3000);
     let max_body_size_mb = env_usize("MAX_BODY_SIZE_MB", 100);
     let body_limit_bytes = max_body_size_mb.saturating_mul(1024 * 1024);
+    let static_dir = std::env::var("STATIC_DIR")
+        .ok()
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("./static"));
+
+    info!(static_dir = %static_dir.display(), "static file serving enabled");
+    if !static_dir.is_dir() {
+        warn!(
+            static_dir = %static_dir.display(),
+            "static directory does not exist or is not a directory; frontend assets will be unavailable"
+        );
+    }
 
     let cors = build_cors_layer();
 
     if std::env::var("CORS_ALLOWED_ORIGINS").is_err() {
         info!("CORS_ALLOWED_ORIGINS not set; allowing Any origin (development default)");
     }
+
+    let serve_dir = ServeDir::new(&static_dir)
+        .fallback(ServeFile::new(static_dir.join("index.html")));
 
     // 5. Router. Layer order (outermost → innermost, written innermost-first
     //    in source to preserve the convention used in earlier phases):
@@ -324,10 +348,12 @@ async fn main() {
     //    e. `DefaultBodyLimit::max`      — enforces `MAX_BODY_SIZE_MB`
     //                                       on request bodies (uploads).
     //
-    //    Route layout (unchanged from Phase 2):
+    //    Route layout:
     //    1. `/api/health`           — kept at the top for clarity.
     //    2. Flat resources          — clients/projects/communications/...
     //    3. Nested project-scoped   — `/projects/:project_id/...`.
+    //    4. Unmatched `/api` paths  — retain the API's empty 404 response.
+    //    5. Unmatched non-API paths — static files with an `index.html` SPA fallback.
     //
     //    Nested routes use `/projects/:project_id/...` paths that don't
     //    collide with `/projects/:id`, so axum dispatches them independently.
@@ -352,6 +378,10 @@ async fn main() {
         .nest("/api", members_router())
         .nest("/api", project_contacts_router())
         .nest("/api", contacts_router())
+        .route("/api", axum::routing::any(api_not_found))
+        .route("/api/", axum::routing::any(api_not_found))
+        .route("/api/{*path}", axum::routing::any(api_not_found))
+        .fallback_service(serve_dir)
         .layer(cors)
         .layer(
             ServiceBuilder::new()

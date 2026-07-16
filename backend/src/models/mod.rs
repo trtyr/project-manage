@@ -24,3 +24,9 @@ pub use project_file::{CreateLink, FileMeta, FileWithProject, ProjectFile, Updat
 pub use phase::{CreatePhase, Phase, UpdatePhase};
 pub use member::{CreateMember, Member, UpdateMember};
 pub use client_contact::{ClientContact, CreateClientContact, UpdateClientContact};
+
+// `#[ts(export)]` on every annotated struct auto-generates a
+// `#[test] fn export_bindings_<typename>()` that calls `Self::export_all()`.
+// Running `cargo test` (or any subset including those tests) writes the
+// TypeScript bindings into `frontend/src/types/generated/` per the
+// per-struct `export_to` paths.

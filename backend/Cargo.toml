@@ -45,3 +45,10 @@ thiserror = "2.0"
 # Build-time DATABASE_URL (for sqlx::query! macros) is provided by
 # `.cargo/config.toml` instead, which Cargo picks up automatically.
 dotenvy = "0.15"
+
+# Generate TypeScript types from Rust structs at test time. The
+# `chrono-impl`/`uuid-impl` features pull in the chrono/uuid crates and
+# provide the `TS` impls that map `DateTime<Utc>` and `Uuid` to `string`.
+# `no-serde-warnings` keeps `#[derive(ts_rs::TS)]` quiet on DTOs that
+# only derive `Deserialize` (no `Serialize`).
+ts-rs = { version = "10", features = ["chrono-impl", "uuid-impl", "no-serde-warnings"] }

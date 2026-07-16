@@ -31,11 +31,16 @@ pub mod ProjectStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct Project {
     pub id: Uuid,
     pub client_id: Uuid,
     pub name: String,
+    // Rust keeps `status` as a free-form `String` so the DB stays free of
+    // a CHECK constraint, but the frontend expects the narrow union. We
+    // override the generated TS type so the wire values stay restricted.
+    #[ts(type = "'in_progress' | 'completed' | 'paused'")]
     pub status: String,
     pub phase: Option<String>,
     pub goals: Vec<String>,
@@ -45,14 +50,17 @@ pub struct Project {
 
 /// Payload for `POST /api/projects`. `client_id` is required so an
 /// orphaned project can never exist by construction.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateProject {
     pub client_id: Uuid,
     pub name: String,
     /// Defaults to `ProjectStatus::IN_PROGRESS` when omitted.
     #[serde(default)]
+    #[ts(optional)]
     pub status: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub phase: Option<String>,
     #[serde(default)]
     pub goals: Vec<String>,
@@ -61,16 +69,22 @@ pub struct CreateProject {
 /// Payload for `PUT /api/projects/:id`. All fields optional to allow
 /// partial updates. Refer to `client::UpdateClient` for the same
 /// limitation re: clearing a non-nullable value.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct UpdateProject {
     #[serde(default)]
+    #[ts(optional)]
     pub client_id: Option<Uuid>,
     #[serde(default)]
+    #[ts(optional)]
     pub name: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub status: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub phase: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub goals: Option<Vec<String>>,
 }

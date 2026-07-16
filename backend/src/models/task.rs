@@ -27,33 +27,45 @@ pub mod TaskStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct Task {
     pub id: Uuid,
     pub project_id: Uuid,
     pub title: String,
+    // Override the `String` mapping to the narrow frontend union. The DB
+    // keeps `status` as free-form text so adding a value doesn't need a
+    // migration; the TS narrowing happens entirely at the type layer.
+    #[ts(type = "'current' | 'next' | 'todo'")]
     pub status: String,
     pub planned_date: Option<NaiveDate>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateTask {
     pub title: String,
     /// Defaults to `TaskStatus::TODO`.
     #[serde(default)]
+    #[ts(optional)]
     pub status: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub planned_date: Option<NaiveDate>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct UpdateTask {
     #[serde(default)]
+    #[ts(optional)]
     pub title: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub status: Option<String>,
     #[serde(default)]
+    #[ts(optional)]
     pub planned_date: Option<NaiveDate>,
 }
