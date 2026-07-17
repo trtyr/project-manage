@@ -1,0 +1,19 @@
+# Cargo configuration
+#
+# `[env]` lets `cargo build` / `cargo test` see DATABASE_URL without a
+# manual `export`. `force = false` (default) — a value already in the
+# shell environment still wins, so deployments that inject their own
+# DATABASE_URL are unaffected.
+#
+# Required because:
+# 1. `sqlx::query!` / `sqlx::query_as!` macros verify SQL against a live
+#    database at compile time.
+# 2. Integration tests (`backend/tests/smoke.rs`) call
+#    `std::env::var("DATABASE_URL")` to open a pool at runtime.
+#
+# This file lives at the repo root so the value is picked up regardless
+# of whether `cargo` is invoked from `backend/` or from the project root.
+# `backend/.cargo/config.toml` keeps the same value as a fallback for
+# older invocations that resolve the backend package directly.
+[env]
+DATABASE_URL = { value = "postgres://localhost:5432/sec_tracker", force = false }

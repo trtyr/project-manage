@@ -39,7 +39,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 # disabled to avoid pulling in native-tls; we keep `rustls-tls` so HTTPS
 # works if the health target ever moves off localhost. `tokio` is a hard
 # dep of reqwest regardless of features, so no runtime feature is needed.
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
 # Common value types
 chrono = { version = "0.4.45", features = ["serde"] }

@@ -51,6 +51,11 @@ deploy-static: build-frontend
 
 # === 数据库 ===
 
+# 运行冒烟测试（完整模块 CRUD + CRM 字段校验）
+smoke:
+    @echo "🧪 运行冒烟测试..."
+    cd backend && cargo test --test smoke -- --nocapture
+
 # 运行待应用的迁移
 db-migrate:
     @echo "📋 运行数据库迁移..."

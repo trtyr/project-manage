@@ -1,42 +1,21 @@
 //! sec-tracker — backend entrypoint.
 //!
-//! Phase 2 (API layer): all four resource routers are mounted under
-//! `/api`. Health check stays at `/api/health` per the Phase 0 contract.
-mod db;
-mod error;
-mod handlers;
-mod models;
-mod state;
+//! Phase 2 (API layer): all resource routers are mounted under `/api`
+//! inside `app::build_app`. Health check stays at `/api/health` per the
+//! Phase 0 contract. This file only owns process-level concerns — env
+//! loading, tracing, the DB pool, the migration runner, the listener,
+//! and graceful shutdown.
 
 use std::{path::PathBuf, time::Duration};
 
-use axum::{
-    error_handling::HandleErrorLayer,
-    extract::DefaultBodyLimit,
-    http::{HeaderValue, StatusCode},
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
-use serde::Serialize;
+use axum::http::HeaderValue;
 use sqlx::{migrate, PgPool};
 use tokio::signal;
-use tower::{ServiceBuilder, timeout::TimeoutLayer};
-use tower_http::{
-    cors::{Any, CorsLayer},
-    services::{ServeDir, ServeFile},
-    trace::TraceLayer,
-};
+use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info, warn};
 
-use crate::error::AppError;
-use crate::handlers::{
-    assets_router, clients_router, communications_router, contacts_router, files_router,
-    members_router, phases_router, project_assets_router, project_communications_router,
-    project_contacts_router, project_files_router, project_members_router,
-    project_phases_router, project_tasks_router, projects_router, tasks_router,
-};
-use crate::state::AppState;
+use sec_tracker_backend::app::build_app;
+use sec_tracker_backend::db;
 
 /// Per-attempt backoff (seconds) for the startup DB bootstrap.
 /// One initial attempt + these retries means up to 6 attempts total,
@@ -199,26 +178,6 @@ async fn run_migrations_with_retry(pool: &PgPool) {
         });
 }
 
-/// Translate known middleware errors into the same JSON error shape as handlers.
-async fn handle_layer_error(err: axum::BoxError) -> Response {
-    if err.is::<tower::timeout::error::Elapsed>() {
-        return AppError::Timeout(format!(
-            "request exceeded the {REQUEST_TIMEOUT_SECS}s server timeout"
-        ))
-        .into_response();
-    }
-
-    tracing::error!(error = %err, "request middleware failed");
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({
-            "error": "internal_error",
-            "message": "internal server error",
-        })),
-    )
-        .into_response()
-}
-
 /// Wait for SIGTERM (orchestrator) or Ctrl-C / SIGINT (operator).
 ///
 /// On Unix both handlers are installed via `tokio::signal::unix::Signal`.
@@ -253,27 +212,6 @@ async fn shutdown_signal() {
     }
 }
 
-#[derive(Serialize)]
-struct HealthResponse {
-    status: &'static str,
-    version: &'static str,
-}
-
-/// `GET /api/health` — kept stable from Phase 0. Do not change the path
-/// or response shape; the frontend Vite proxy may pin to it during boot.
-async fn health() -> Json<HealthResponse> {
-    Json(HealthResponse {
-        status: "ok",
-        version: env!("CARGO_PKG_VERSION"),
-    })
-}
-
-/// Keep unmatched `/api` requests on the API's existing empty 404 path instead
-/// of letting the frontend SPA fallback serve `index.html`.
-async fn api_not_found() -> StatusCode {
-    StatusCode::NOT_FOUND
-}
-
 #[tokio::main]
 async fn main() {
     // 1. Load .env first so DATABASE_URL is visible to both the macros
@@ -304,8 +242,6 @@ async fn main() {
     run_migrations_with_retry(&pool).await;
     info!("✅ database migrations applied");
 
-    let state = AppState { pool };
-
     // 4. Runtime configuration from environment — all values have safe
     //    development defaults so `cargo run` keeps working out of the box.
     let port = env_u16("PORT", 3000);
@@ -332,65 +268,16 @@ async fn main() {
         info!("CORS_ALLOWED_ORIGINS not set; allowing Any origin (development default)");
     }
 
-    let serve_dir = ServeDir::new(&static_dir)
-        .fallback(ServeFile::new(static_dir.join("index.html")));
-
-    // 5. Router. Layer order (outermost → innermost, written innermost-first
-    //    in source to preserve the convention used in earlier phases):
-    //    a. `cors`                       — innermost of the global stack;
-    //                                       handles preflight responses.
-    //    b. `HandleErrorLayer`           — catches `tower::timeout::error::Elapsed`
-    //                                       from the TimeoutLayer below it.
-    //    c. `TimeoutLayer`               — caps each request at
-    //                                       `REQUEST_TIMEOUT_SECS` (30 s).
-    //    d. `TraceLayer::new_for_http()` — structured access log for every
-    //                                       request, including timed-out ones.
-    //    e. `DefaultBodyLimit::max`      — enforces `MAX_BODY_SIZE_MB`
-    //                                       on request bodies (uploads).
-    //
-    //    Route layout:
-    //    1. `/api/health`           — kept at the top for clarity.
-    //    2. Flat resources          — clients/projects/communications/...
-    //    3. Nested project-scoped   — `/projects/:project_id/...`.
-    //    4. Unmatched `/api` paths  — retain the API's empty 404 response.
-    //    5. Unmatched non-API paths — static files with an `index.html` SPA fallback.
-    //
-    //    Nested routes use `/projects/:project_id/...` paths that don't
-    //    collide with `/projects/:id`, so axum dispatches them independently.
-    let app = Router::new()
-        .route("/api/health", get(health))
-        // All resource routers expose paths like `/clients`, `/projects/{id}`,
-        // etc. — they get the `/api` prefix via `nest` so the React client
-        // reaches them at the agreed `/api/...` endpoints.
-        .nest("/api", clients_router())
-        .nest("/api", projects_router())
-        .nest("/api", communications_router())
-        .nest("/api", tasks_router())
-        .nest("/api", project_communications_router())
-        .nest("/api", project_tasks_router())
-        .nest("/api", project_assets_router())
-        .nest("/api", assets_router())
-        .nest("/api", project_files_router())
-        .nest("/api", files_router())
-        .nest("/api", project_phases_router())
-        .nest("/api", phases_router())
-        .nest("/api", project_members_router())
-        .nest("/api", members_router())
-        .nest("/api", project_contacts_router())
-        .nest("/api", contacts_router())
-        .route("/api", axum::routing::any(api_not_found))
-        .route("/api/", axum::routing::any(api_not_found))
-        .route("/api/{*path}", axum::routing::any(api_not_found))
-        .fallback_service(serve_dir)
-        .layer(cors)
-        .layer(
-            ServiceBuilder::new()
-                .layer(HandleErrorLayer::new(handle_layer_error))
-                .layer(TimeoutLayer::new(Duration::from_secs(REQUEST_TIMEOUT_SECS))),
-        )
-        .layer(TraceLayer::new_for_http())
-        .layer(DefaultBodyLimit::max(body_limit_bytes))
-        .with_state(state.clone());
+    // 5. Router. The full route layout, layer stack, and state attachment
+    //    live in `app::build_app` so integration tests can construct the
+    //    same `Router<()>` without going through this `main`.
+    let app = build_app(
+        pool.clone(),
+        cors,
+        &static_dir.to_string_lossy(),
+        REQUEST_TIMEOUT_SECS,
+        body_limit_bytes,
+    );
 
     let bind_addr = format!("0.0.0.0:{port}");
     let listener = match tokio::net::TcpListener::bind(&bind_addr).await {
@@ -415,12 +302,12 @@ async fn main() {
         "🚀 sec-tracker 后端已启动"
     );
 
-    // 6. Graceful shutdown. The original pool is moved into `AppState` and
-    //    `axum::serve` keeps using it for live requests; we clone it here so
-    //    the shutdown future can call `close().await` without disturbing the
-    //    serving path. On SIGINT or SIGTERM we await in-flight requests,
-    //    log the event, then drain the pool cleanly.
-    let shutdown_pool = state.pool.clone();
+    // 6. Graceful shutdown. `build_app` already consumed its own clone of
+    //    the pool; we keep the original here so the shutdown future can
+    //    call `close().await` without disturbing the serving path. On
+    //    SIGINT or SIGTERM we await in-flight requests, log the event,
+    //    then drain the pool cleanly.
+    let shutdown_pool = pool;
 
     // Spawn the server so we can probe the health endpoint before declaring
     // the process "ready". The spawned task owns both the serving loop and
