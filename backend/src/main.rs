@@ -27,7 +27,7 @@ use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::error::AppError;
 use crate::handlers::{
@@ -393,9 +393,20 @@ async fn main() {
         .with_state(state.clone());
 
     let bind_addr = format!("0.0.0.0:{port}");
-    let listener = tokio::net::TcpListener::bind(&bind_addr)
-        .await
-        .unwrap_or_else(|err| panic!("无法绑定端口 {bind_addr}: {err}"));
+    let listener = match tokio::net::TcpListener::bind(&bind_addr).await {
+        Ok(listener) => listener,
+        Err(err) => {
+            error!(
+                "❌ 端口 {port} 已被占用：{err}",
+            );
+            eprintln!();
+            eprintln!("  💡 解决方法：");
+            eprintln!("      just stop          # 停止占用端口的旧进程");
+            eprintln!("      PORT=3001 cargo run # 换一个端口启动");
+            eprintln!();
+            std::process::exit(1);
+        }
+    };
 
     info!(
         addr = %bind_addr,
@@ -411,13 +422,45 @@ async fn main() {
     //    log the event, then drain the pool cleanly.
     let shutdown_pool = state.pool.clone();
 
-    axum::serve(listener, app)
+    // Spawn the server so we can probe the health endpoint before declaring
+    // the process "ready". The spawned task owns both the serving loop and
+    // the graceful-shutdown future, so its lifetime is the server's lifetime.
+    // `.into_future()` converts the `IntoFuture` returned by axum into a
+    // concrete `Future` that `tokio::spawn` can drive.
+    let server = axum::serve(listener, app)
         .with_graceful_shutdown(async move {
             shutdown_signal().await;
             info!("shutdown signal received");
             shutdown_pool.close().await;
             info!("pool closed");
         })
+        .into_future();
+    let server_handle = tokio::spawn(server);
+
+    // 7. Startup readiness self-check. Hitting `/api/health` over loopback
+    //    confirms the listener is accepting connections and the router is
+    //    actually serving — stronger evidence than "we called axum::serve".
+    //    Failures are non-fatal: any runtime issue will surface on the next
+    //    real request, and the operator still benefits from the warning.
+    match reqwest::Client::new()
+        .get(format!("http://127.0.0.1:{port}/api/health"))
+        .timeout(Duration::from_secs(2))
+        .send()
         .await
+    {
+        Ok(resp) if resp.status().is_success() => {
+            info!("✅ 就绪检查通过 — 服务已完全启动，可接受请求");
+        }
+        Ok(resp) => {
+            warn!("⚠️  就绪检查返回 {}", resp.status());
+        }
+        Err(err) => {
+            warn!("⚠️  就绪检查失败: {err}（服务可能仍在启动中）");
+        }
+    }
+
+    server_handle
+        .await
+        .expect("server task panicked")
         .expect("服务器在运行期间异常退出");
 }
