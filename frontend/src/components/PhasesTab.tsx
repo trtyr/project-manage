@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Typography,
   Button,
+  Tooltip,
   Tag,
   Space,
   Modal,
@@ -13,7 +14,13 @@ import {
   App,
   Empty,
 } from 'antd'
-import { PlusOutlined, DeleteOutlined, EditOutlined, PaperClipOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PaperClipOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { phasesApi, filesApi } from '../api'
@@ -51,6 +58,22 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   in_progress: { label: '进行中', color: 'var(--primary-hex)' },
   completed: { label: '已完成', color: '#2d8659' },
 }
+
+interface StandardPhaseTemplate {
+  name: string
+  description: string
+  sort_order: number
+}
+
+const STANDARD_PHASES: StandardPhaseTemplate[] = [
+  { name: '需求挖掘', description: '线索验证，确认客户真实需求', sort_order: 1 },
+  { name: '技术预研', description: '技术可行性评估，环境调研', sort_order: 2 },
+  { name: '方案论证', description: '方案设计，技术交流', sort_order: 3 },
+  { name: '立项审批', description: '推动客户内部立项', sort_order: 4 },
+  { name: '启动采购', description: '采购流程启动，预算确认', sort_order: 5 },
+  { name: '商务招标', description: '投标文件准备，商务谈判', sort_order: 6 },
+  { name: '签单冲刺', description: '最终技术兜底，签单闭环', sort_order: 7 },
+]
 
 interface Props {
   projectId: string
@@ -110,6 +133,22 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
       filesApi.linkPhase(fileId, phaseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
+    },
+  })
+
+  const importTemplateMut = useMutation({
+    mutationFn: async () => {
+      for (const phase of STANDARD_PHASES) {
+        await phasesApi.create(projectId, {
+          name: phase.name,
+          description: phase.description,
+          sort_order: phase.sort_order,
+        })
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['phases', projectId] })
+      message.success('七阶段模板已导入')
     },
   })
 
@@ -310,15 +349,42 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <Button
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setCreateOpen(true)
-            form.resetFields()
-          }}
-        >
-          添加阶段
-        </Button>
+        <Space>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setCreateOpen(true)
+              form.resetFields()
+            }}
+          >
+            添加阶段
+          </Button>
+          <Tooltip title="一键导入示例公司标准售前七阶段模板">
+            {(phases?.length ?? 0) > 0 ? (
+              <Popconfirm
+                title="当前已有阶段，七阶段模板将追加在末尾，确认导入？"
+                okText="确认导入"
+                cancelText="取消"
+                onConfirm={() => importTemplateMut.mutate()}
+              >
+                <Button
+                  icon={<ThunderboltOutlined />}
+                  loading={importTemplateMut.isPending}
+                >
+                  导入七阶段模板
+                </Button>
+              </Popconfirm>
+            ) : (
+              <Button
+                icon={<ThunderboltOutlined />}
+                loading={importTemplateMut.isPending}
+                onClick={() => importTemplateMut.mutate()}
+              >
+                导入七阶段模板
+              </Button>
+            )}
+          </Tooltip>
+        </Space>
       </div>
       {tree.length > 0 ? (
         tree.map((node) => renderNode(node, 0))
