@@ -31,6 +31,21 @@ pub mod ProjectStatus {
     }
 }
 
+/// Allowed values for `project.tech_approval`.
+#[allow(non_snake_case)]
+pub mod TechApprovalStatus {
+    pub const NOT_CONTACTED: &str = "未接触";
+    pub const POC_IN_PROGRESS: &str = "POC中";
+    pub const APPROVED: &str = "已认可";
+    pub const REJECTED: &str = "技术否决";
+
+    pub const ALL: &[&str] = &[NOT_CONTACTED, POC_IN_PROGRESS, APPROVED, REJECTED];
+
+    pub fn is_valid(input: &str) -> bool {
+        matches!(input, NOT_CONTACTED | POC_IN_PROGRESS | APPROVED | REJECTED)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ts_rs::TS)]
 #[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct Project {
@@ -44,6 +59,9 @@ pub struct Project {
     pub status: String,
     pub phase: Option<String>,
     pub goals: Vec<String>,
+    #[ts(type = "'未接触' | 'POC中' | '已认可' | '技术否决'")]
+    pub tech_approval: String,
+    pub competitors: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -64,6 +82,12 @@ pub struct CreateProject {
     pub phase: Option<String>,
     #[serde(default)]
     pub goals: Vec<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub tech_approval: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub competitors: Option<String>,
 }
 
 /// Payload for `PUT /api/projects/:id`. All fields optional to allow
@@ -87,4 +111,10 @@ pub struct UpdateProject {
     #[serde(default)]
     #[ts(optional)]
     pub goals: Option<Vec<String>>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub tech_approval: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub competitors: Option<String>,
 }

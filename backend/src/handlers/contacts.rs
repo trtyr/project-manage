@@ -33,7 +33,7 @@ async fn list_by_project(
 ) -> AppResult<Json<Vec<ClientContact>>> {
     ensure_project_exists(&pool, project_id).await?;
     let rows = sqlx::query_as::<_, ClientContact>(
-        "SELECT id, project_id, name, notes, created_at \
+        "SELECT id, project_id, name, role_type, notes, created_at \
          FROM client_contacts WHERE project_id = $1 ORDER BY created_at",
     )
     .bind(project_id)
@@ -53,12 +53,13 @@ async fn create_for_project(
     ensure_project_exists(&pool, project_id).await?;
 
     let row = sqlx::query_as::<_, ClientContact>(
-        "INSERT INTO client_contacts (project_id, name, notes) \
-         VALUES ($1, $2, $3) \
-         RETURNING id, project_id, name, notes, created_at",
+        "INSERT INTO client_contacts (project_id, name, role_type, notes) \
+         VALUES ($1, $2, $3, $4) \
+         RETURNING id, project_id, name, role_type, notes, created_at",
     )
     .bind(project_id)
     .bind(&input.name)
+    .bind(input.role_type.as_deref().unwrap_or_default())
     .bind(input.notes.as_ref())
     .fetch_one(&pool)
     .await?;
@@ -71,7 +72,8 @@ async fn get_one(
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<ClientContact>> {
     let row = sqlx::query_as::<_, ClientContact>(
-        "SELECT id, project_id, name, notes, created_at FROM client_contacts WHERE id = $1",
+        "SELECT id, project_id, name, role_type, notes, created_at \
+         FROM client_contacts WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -87,11 +89,13 @@ async fn update(
 ) -> AppResult<Json<ClientContact>> {
     let row = sqlx::query_as::<_, ClientContact>(
         "UPDATE client_contacts SET name = COALESCE($2, name), \
-         notes = COALESCE($3, notes) WHERE id = $1 \
-         RETURNING id, project_id, name, notes, created_at",
+         role_type = COALESCE($3, role_type), \
+         notes = COALESCE($4, notes) WHERE id = $1 \
+         RETURNING id, project_id, name, role_type, notes, created_at",
     )
     .bind(id)
     .bind(input.name.as_ref())
+    .bind(input.role_type.as_ref())
     .bind(input.notes.as_ref())
     .fetch_optional(&pool)
     .await?

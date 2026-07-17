@@ -5,4 +5,4 @@
  * partial updates. Refer to `client::UpdateClient` for the same
  * limitation re: clearing a non-nullable value.
  */
-export type UpdateProject = { client_id?: string, name?: string, status?: string, phase?: string, goals?: Array<string>, };
+export type UpdateProject = { client_id?: string, name?: string, status?: string, phase?: string, goals?: Array<string>, tech_approval?: string, competitors?: string, };

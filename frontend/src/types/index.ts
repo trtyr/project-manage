@@ -70,6 +70,10 @@ export type ISODate = string
 
 export type ProjectStatus = 'in_progress' | 'completed' | 'paused'
 
+export type TechApprovalStatus = '未接触' | 'POC中' | '已认可' | '技术否决'
+
+export type RoleType = string
+
 export type TaskStatus = 'current' | 'next' | 'todo'
 
 // `source_type` is a `String` in Rust; keep the narrow union here so call
@@ -107,15 +111,16 @@ export type CreateClient = Omit<
   security_concerns?: string[]
 }
 
-// `goals` is `Vec<String>` with `#[serde(default)]`; `status` is a wide
-// `string` from ts-rs but the API contract is the narrow `ProjectStatus`
-// union.
+// `goals` is `Vec<String>` with `#[serde(default)]`; status fields are
+// wide `string` values from ts-rs but the API contract narrows them to
+// their validated unions.
 export type CreateProject = Omit<
   GeneratedCreateProject,
-  'goals' | 'status'
+  'goals' | 'status' | 'tech_approval'
 > & {
   goals?: string[]
   status?: ProjectStatus
+  tech_approval?: TechApprovalStatus
 }
 
 // Same shape fix for tasks: optional `status` narrowed to `TaskStatus`.
@@ -132,10 +137,11 @@ export type CreateLink = Omit<GeneratedCreateLink, 'tags'> & {
 
 export type UpdateProject = Omit<
   GeneratedUpdateProject,
-  'goals' | 'status'
+  'goals' | 'status' | 'tech_approval'
 > & {
   goals?: string[]
   status?: ProjectStatus
+  tech_approval?: TechApprovalStatus
 }
 
 export type UpdateTask = Omit<GeneratedUpdateTask, 'status'> & {

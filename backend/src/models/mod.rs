@@ -17,7 +17,9 @@ pub mod client_contact;
 
 pub use client::{Client, CreateClient, UpdateClient};
 pub use communication::{Communication, CommunicationWithProject, CreateCommunication, UpdateCommunication};
-pub use project::{CreateProject, Project, ProjectStatus, UpdateProject};
+pub use project::{
+    CreateProject, Project, ProjectStatus, TechApprovalStatus, UpdateProject,
+};
 pub use task::{CreateTask, Task, TaskStatus, UpdateTask};
 pub use asset::{Asset, CreateAsset, UpdateAsset};
 pub use project_file::{CreateLink, FileMeta, FileWithProject, ProjectFile, UpdateFile};

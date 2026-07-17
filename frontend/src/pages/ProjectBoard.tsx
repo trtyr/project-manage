@@ -183,6 +183,9 @@ export default function ProjectBoard() {
     ? sortedProjects.filter(
         (p) =>
           p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          p.competitors
+            .toLowerCase()
+            .includes(debouncedSearch.toLowerCase()) ||
           (clientMap.get(p.client_id) ?? '')
             .toLowerCase()
             .includes(debouncedSearch.toLowerCase()),
@@ -211,7 +214,7 @@ export default function ProjectBoard() {
       {/* Search */}
       <Input
         size="large"
-        placeholder="搜索项目或沟通记录…"
+        placeholder="搜索项目、竞品或沟通记录…"
         prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}

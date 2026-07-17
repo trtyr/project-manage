@@ -28,7 +28,7 @@ import {
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectsApi, communicationsApi, tasksApi, clientsApi, assetsApi, filesApi } from '../api'
-import type { ProjectStatus, ProjectFile } from '../types'
+import type { ProjectStatus, TechApprovalStatus, ProjectFile } from '../types'
 import FilePreview from '../components/FilePreview'
 import PhasesTab from '../components/PhasesTab'
 import MembersTab from '../components/MembersTab'
@@ -43,6 +43,26 @@ const statusLabel: Record<ProjectStatus, string> = {
   in_progress: '进行中',
   completed: '已完成',
   paused: '已暂停',
+}
+
+const TECH_APPROVAL_OPTIONS: Array<{
+  label: string
+  value: TechApprovalStatus
+}> = [
+  { label: '未接触', value: '未接触' },
+  { label: 'POC中', value: 'POC中' },
+  { label: '已认可', value: '已认可' },
+  { label: '技术否决', value: '技术否决' },
+]
+
+const TECH_APPROVAL_TAG_COLORS: Record<
+  TechApprovalStatus,
+  string | undefined
+> = {
+  未接触: undefined,
+  POC中: 'processing',
+  已认可: 'success',
+  技术否决: 'error',
 }
 
 function TabLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
@@ -178,6 +198,31 @@ export default function ProjectDetail() {
               </Text>
             )}
           </div>
+          {(project.tech_approval || project.competitors) && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 8,
+              }}
+            >
+              {project.tech_approval && (
+                <Tag
+                  color={TECH_APPROVAL_TAG_COLORS[project.tech_approval]}
+                  style={{ marginInlineEnd: 0 }}
+                >
+                  技术认可：{project.tech_approval}
+                </Tag>
+              )}
+              {project.competitors && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  竞品：{project.competitors}
+                </Text>
+              )}
+            </div>
+          )}
           {client && (
             <div className="detail-meta">
               客户：{client.name}
@@ -193,6 +238,7 @@ export default function ProjectDetail() {
               projectForm.setFieldsValue({
                 ...project,
                 goals: project.goals.join('\n'),
+                tech_approval: project.tech_approval || undefined,
               })
               setInfoOpen(true)
             }}
@@ -314,6 +360,18 @@ export default function ProjectDetail() {
                 { label: '已完成', value: 'completed' },
                 { label: '已暂停', value: 'paused' },
               ]}
+            />
+          </Form.Item>
+          <Form.Item name="tech_approval" label="技术认可">
+            <Select
+              options={TECH_APPROVAL_OPTIONS}
+              placeholder="选择技术认可状态"
+            />
+          </Form.Item>
+          <Form.Item name="competitors" label="竞品信息">
+            <Input.TextArea
+              rows={2}
+              placeholder="还有谁在抢、他们报价如何…"
             />
           </Form.Item>
           <Form.Item name="phase" label="当前阶段">

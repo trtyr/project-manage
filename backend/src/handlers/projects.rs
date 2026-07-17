@@ -21,7 +21,9 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::error::{AppError, AppResult};
-use crate::models::{CreateProject, Project, ProjectStatus, UpdateProject};
+use crate::models::{
+    CreateProject, Project, ProjectStatus, TechApprovalStatus, UpdateProject,
+};
 use crate::state::AppState;
 
 pub fn projects_router() -> Router<AppState> {
@@ -40,6 +42,8 @@ async fn list(State(pool): State<PgPool>) -> AppResult<Json<Vec<Project>>> {
                   status,
                   phase,
                   goals AS "goals!: Vec<String>",
+                  tech_approval,
+                  competitors,
                   created_at,
                   updated_at
            FROM projects
@@ -66,17 +70,32 @@ async fn create(
             ProjectStatus::ALL
         )));
     }
+    if let Some(tech_approval) = &input.tech_approval
+        && !TechApprovalStatus::is_valid(tech_approval)
+    {
+        return Err(AppError::BadRequest(format!(
+            "invalid tech_approval '{tech_approval}', must be one of {:?}",
+            TechApprovalStatus::ALL
+        )));
+    }
+
+    let tech_approval = input.tech_approval.unwrap_or_default();
+    let competitors = input.competitors.unwrap_or_default();
 
     let row = sqlx::query_as!(
         Project,
-        r#"INSERT INTO projects (client_id, name, status, phase, goals)
-           VALUES ($1, $2, $3, $4, $5)
+        r#"INSERT INTO projects (
+               client_id, name, status, phase, goals, tech_approval, competitors
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            RETURNING id,
                      client_id,
                      name,
                      status,
                      phase,
                      goals AS "goals!: Vec<String>",
+                     tech_approval,
+                     competitors,
                      created_at,
                      updated_at"#,
         input.client_id,
@@ -84,6 +103,8 @@ async fn create(
         status,
         input.phase,
         input.goals.as_slice(),
+        tech_approval,
+        competitors,
     )
     .fetch_one(&pool)
     .await?;
@@ -104,6 +125,8 @@ async fn get_one(
                   status,
                   phase,
                   goals AS "goals!: Vec<String>",
+                  tech_approval,
+                  competitors,
                   created_at,
                   updated_at
            FROM projects WHERE id = $1"#,
@@ -135,6 +158,14 @@ async fn update(
             ProjectStatus::ALL
         )));
     }
+    if let Some(tech_approval) = &input.tech_approval
+        && !TechApprovalStatus::is_valid(tech_approval)
+    {
+        return Err(AppError::BadRequest(format!(
+            "invalid tech_approval '{tech_approval}', must be one of {:?}",
+            TechApprovalStatus::ALL
+        )));
+    }
 
     let row = sqlx::query_as!(
         Project,
@@ -143,7 +174,9 @@ async fn update(
                name      = COALESCE($3, name),
                status    = COALESCE($4, status),
                phase     = COALESCE($5, phase),
-               goals     = COALESCE($6, goals)
+               goals     = COALESCE($6, goals),
+               tech_approval = COALESCE($7, tech_approval),
+               competitors   = COALESCE($8, competitors)
            WHERE id = $1
            RETURNING id,
                      client_id,
@@ -151,6 +184,8 @@ async fn update(
                      status,
                      phase,
                      goals AS "goals!: Vec<String>",
+                     tech_approval,
+                     competitors,
                      created_at,
                      updated_at"#,
         id,
@@ -159,6 +194,8 @@ async fn update(
         input.status,
         input.phase,
         input.goals.as_deref(),
+        input.tech_approval,
+        input.competitors,
     )
     .fetch_optional(&pool)
     .await?

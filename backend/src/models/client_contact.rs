@@ -10,6 +10,7 @@ pub struct ClientContact {
     pub id: Uuid,
     pub project_id: Uuid,
     pub name: String,
+    pub role_type: String,
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,
 }
@@ -18,6 +19,9 @@ pub struct ClientContact {
 #[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateClientContact {
     pub name: String,
+    #[serde(default)]
+    #[ts(optional)]
+    pub role_type: Option<String>,
     #[serde(default)]
     #[ts(optional)]
     pub notes: Option<String>,
@@ -29,6 +33,9 @@ pub struct UpdateClientContact {
     #[serde(default)]
     #[ts(optional)]
     pub name: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub role_type: Option<String>,
     #[serde(default)]
     #[ts(optional)]
     pub notes: Option<String>,

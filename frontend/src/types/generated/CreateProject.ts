@@ -8,4 +8,4 @@ export type CreateProject = { client_id: string, name: string,
 /**
  * Defaults to `ProjectStatus::IN_PROGRESS` when omitted.
  */
-status?: string, phase?: string, goals: Array<string>, };
+status?: string, phase?: string, goals: Array<string>, tech_approval?: string, competitors?: string, };

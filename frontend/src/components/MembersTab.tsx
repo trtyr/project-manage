@@ -6,6 +6,8 @@ import {
   Modal,
   Form,
   Input,
+  Select,
+  Tag,
   Popconfirm,
   App,
   Space,
@@ -13,9 +15,47 @@ import {
 import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { membersApi, contactsApi } from '../api'
-import type { Member, ClientContact } from '../types'
+import type { Member, ClientContact, RoleType } from '../types'
 
 const { Title } = Typography
+
+const ROLE_TYPE_SUGGESTIONS: RoleType[] = ['决策者', '技术评估人', '影响者', '其他']
+
+function getRoleTypeTagColor(roleType: RoleType): string | undefined {
+  switch (roleType) {
+    case '决策者':
+      return 'warning'
+    case '技术评估人':
+      return 'processing'
+    case '影响者':
+      return 'purple'
+    default:
+      return undefined
+  }
+}
+
+interface RoleTypeSelectProps {
+  value?: RoleType
+  onChange?: (roleType: RoleType) => void
+}
+
+function RoleTypeSelect({ value, onChange }: RoleTypeSelectProps) {
+  return (
+    <Select
+      mode="tags"
+      value={value ? [value] : []}
+      maxCount={1}
+      options={ROLE_TYPE_SUGGESTIONS.map((roleType) => ({
+        label: roleType,
+        value: roleType,
+      }))}
+      placeholder="选择或自由填写角色"
+      onChange={(selectedRoleTypes) =>
+        onChange?.(selectedRoleTypes[selectedRoleTypes.length - 1] ?? '')
+      }
+    />
+  )
+}
 
 interface Props {
   projectId: string
@@ -225,6 +265,17 @@ export default function MembersTab({ projectId }: Props) {
           columns={[
             { title: '姓名', dataIndex: 'name', key: 'name' },
             {
+              title: '决策角色',
+              dataIndex: 'role_type',
+              key: 'role_type',
+              render: (roleType: RoleType) =>
+                roleType ? (
+                  <Tag color={getRoleTypeTagColor(roleType)}>{roleType}</Tag>
+                ) : (
+                  '-'
+                ),
+            },
+            {
               title: '备注',
               dataIndex: 'notes',
               key: 'notes',
@@ -334,6 +385,9 @@ export default function MembersTab({ projectId }: Props) {
             rules={[{ required: true, message: '请输入姓名' }]}
           >
             <Input placeholder="姓名" />
+          </Form.Item>
+          <Form.Item name="role_type" label="决策角色">
+            <RoleTypeSelect />
           </Form.Item>
           <Form.Item name="notes" label="备注">
             <Input.TextArea rows={2} />
