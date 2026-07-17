@@ -65,23 +65,38 @@ cd frontend && npm install && cd ..
 
 # 开发模式——两个终端分别跑后端和前端
 # 终端 1：后端（:3000）
-cargo run --manifest-path backend/Cargo.toml
+just dev                                   # 提示启动命令
 
-# 终端 2：前端（:5173，/api 代理到 :3000）
+# 或者手动
+cargo run --manifest-path backend/Cargo.toml
 cd frontend && npm run dev
 ```
 
-### 测试与构建
+### 生产部署
 
 ```bash
-# 后端测试
-cargo test --manifest-path backend/Cargo.toml
+# 一键构建前端 + 部署 static + 编译并启动后端
+just prod
 
-# 前端构建
-cd frontend && npm run build
+# 查看服务状态
+just status
 
-# 前端 lint
-cd frontend && npm run lint
+# 停止服务
+just stop
+```
+
+### 测试与检查
+
+```bash
+# 冒烟测试（10 个模块全 CRUD + CRM 字段验证）
+just smoke
+
+# 全量检查（clippy + 后端测试 + 冒烟测试 + 前端 tsc）
+just check
+
+# 手动构建
+just build-backend       # 后端 release
+just build-frontend      # 前端 production build
 ```
 
 ## 📋 参考文档
@@ -97,7 +112,9 @@ cd frontend && npm run lint
 | [api.md](docs/context/api.md) | `/api` 端点参考 |
 | [domain.md](docs/context/domain.md) | 领域模型与业务不变量 |
 | [conventions.md](docs/context/conventions.md) | 代码与接口约定 |
-| [deploy.md](docs/context/deploy.md) | 部署拓扑 |
+| [methodology.md](docs/methodology.md) | 售前工作方法论：七阶段详解、核心工作链、自检清单 |
+| [DESIGN.md](DESIGN.md) | 设计系统：OKLCH 色彩、Ant Design 主题、明暗双主题 |
+| [AGENTS.md](AGENTS.md) | AI 编程助手的项目入口路由 |
 
 ## 🧭 Agent 上下文
 
@@ -105,4 +122,4 @@ cd frontend && npm run lint
 
 ---
 
-⭐ 内部工具，如需接入或二次开发请先阅读 [AGENTS.md](AGENTS.md) 和架构文档。
+⭐ 发现有用？给 [sec-tracker](https://github.com/trtyr/sec-tracker) 点个 star。
