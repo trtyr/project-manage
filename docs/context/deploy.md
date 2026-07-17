@@ -49,28 +49,36 @@ createdb sec_tracker                   # as your OS user
 No TLS is configured in the default URL; the connection is plain TCP to
 `localhost`, which is fine for a single-host internal tool.
 
-## 2. Backend commands
+## 2. Backend + Frontend commands
 
-All commands assume the repo root as the working directory unless noted.
-
-### 2.1 Build, run, test, lint
+All commands assume the repo root. The `justfile` at the root provides
+one-liners for every common operation.
 
 ```bash
-cargo build --manifest-path backend/Cargo.toml
-cargo run   --manifest-path backend/Cargo.toml          # listens on 0.0.0.0:3000
-cargo test  --manifest-path backend/Cargo.toml
-cargo clippy --manifest-path backend/Cargo.toml --all-targets -- -D warnings
+# 一键生产部署（构建前端 → 部署 static → 编译并启动后端）
+just prod
+
+# 停止 / 重启 / 查看状态
+just stop
+just restart
+just status
+
+# 开发模式提示
+just dev
 ```
 
-`cargo build` and `cargo clippy` need a live PostgreSQL at the URL in
-`backend/.cargo/config.toml` because `sqlx::query!` / `sqlx::query_as!`
-macros verify SQL against the database at compile time. The config file
-injects a default `DATABASE_URL` automatically — you do **not** need
-`export DATABASE_URL=...` before building.
+### 2.1 Manual equivalents (for CI / scripting)
 
-`progress.md` records that both `cargo build` and `cargo clippy
---all-targets -- -D warnings` pass with **0 warnings** as of the
-2026-07-15 error-handling cleanup; treat any new warning as a fail.
+```bash
+just build-backend       # cargo build --release --manifest-path backend/Cargo.toml
+just build-frontend      # cd frontend && npm run build
+just deploy-static       # 构建前端并拷贝 dist/ 到 backend/static/
+just check               # clippy + 后端测试 + 冒烟测试 + 前端 tsc
+just smoke               # 仅跑 10 个冒烟测试
+just clean               # cargo clean + 删前端构建产物
+```
+
+Run `just` with no arguments to see the full recipe list.
 
 ### 2.2 Runtime `.env`
 
@@ -140,15 +148,15 @@ output.
 
 ## 4. Smoke tests
 
-Once the backend is running on `:3000`:
-
 ```bash
-curl http://localhost:3000/api/health
-# → {"status":"ok","version":"0.1.0"}      (200)
-
-curl http://localhost:3000/api/clients
-# → []                                        (200, empty array on a fresh DB)
+# 10 个模块的全 CRUD 冒烟测试 + CRM 字段验证
+just smoke
 ```
+
+The test suite covers: health check, clients CRUD, projects CRUD (including
+`tech_approval` / `competitors` fields), project contacts (including `role_type`),
+communications, tasks, phases (tree structure), members, assets, files (link type).
+Each test creates and cleans up its own data with `__SMOKE_`-prefixed UUIDs.
 
 `/api/health` always returns `200` if the process is up; it does not
 check the database. The DB-bound check is the fact that
@@ -181,7 +189,7 @@ A migration is applied automatically next time the server boots — no
 separate migrate command, no manual step. After you add the file:
 
 ```bash
-cargo run --manifest-path backend/Cargo.toml
+just db-migrate
 # look for "✅ database migrations applied" in the log
 ```
 
@@ -212,9 +220,8 @@ the repo root.
 
 | Process | Working dir | Binds | Notes |
 |---|---|---|---|
-| Backend (`cargo run` / built binary) | `backend/` | `0.0.0.0:3000` | Reads `./migrations/` relative to CWD; expects `./uploads/` writable. |
-| Frontend dev (`npm run dev`) | `frontend/` | `0.0.0.0:5173` | Proxies `/api` → backend. Not for production. |
-| Frontend prod (`npm run build && npm run preview`) | `frontend/` | `4173` by default | Static assets in `frontend/dist/`. Serve behind your reverse proxy of choice. |
+| Backend (`just prod` or `cd backend && cargo run --release`) | `backend/` | `0.0.0.0:3000` | Reads `./migrations/` relative to CWD; expects `./uploads/` writable; serves `static/` for production SPA. |
+| Frontend dev (`cd frontend && npm run dev`) | `frontend/` | `0.0.0.0:5173` | Proxies `/api` → backend. Not for production. |
 | PostgreSQL 16 | host init | `127.0.0.1:5432` (typical) | One database: `sec_tracker`. |
 
 ### 7.2 Persistent state on disk
