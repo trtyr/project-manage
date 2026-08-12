@@ -138,8 +138,7 @@ export default function CommunicationDetail() {
     .map((s) => s.trim())
     .filter(Boolean)
 
-  const linkedFiles =
-    files?.filter((f) => f.communication_id === commId) ?? []
+  const linkedFiles = files?.filter((f) => f.communication_id === commId) ?? []
 
   return (
     <div className="comm-detail-wrap fade-in">
@@ -161,21 +160,21 @@ export default function CommunicationDetail() {
           </div>
         </div>
 
-      {/* 参与人 */}
-      {participants.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          {participants.map((p) => (
-            <Tag key={p} className="tag-participant">
-              {p}
-            </Tag>
-          ))}
-        </div>
-      )}
+        {/* 参与人 */}
+        {participants.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            {participants.map((p) => (
+              <Tag key={p} className="tag-participant">
+                {p}
+              </Tag>
+            ))}
+          </div>
+        )}
 
-      {/* 正文 */}
-      <div className="md-render" style={{ marginBottom: 32 }}>
-        <Markdown>{comm.content}</Markdown>
-      </div>
+        {/* 正文 */}
+        <div className="md-render" style={{ marginBottom: 32 }}>
+          <Markdown>{comm.content}</Markdown>
+        </div>
 
         {/* 结论 */}
         {comm.conclusion && (
@@ -247,69 +246,90 @@ export default function CommunicationDetail() {
               {linkedFiles.map((f) => {
                 const isLink = f.source_type === 'link' && f.url
                 return (
-                <div key={f.id} className="comm-file-item">
-                  <div
-                    className="comm-file-item__main"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => isLink ? window.open(f.url!, '_blank', 'noopener,noreferrer') : setPreviewFile(f)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') isLink ? window.open(f.url!, '_blank', 'noopener,noreferrer') : setPreviewFile(f)
-                    }}
-                  >
-                    {isLink ? (
-                      <LinkOutlined className="comm-file-item__icon" />
-                    ) : (
-                      <PaperClipOutlined className="comm-file-item__icon" />
-                    )}
-                    <div className="comm-file-item__info">
-                      <span className="comm-file-item__name" title={f.original_name}>{f.original_name}</span>
-                      <span className="comm-file-item__size">
-                        {isLink ? '在线链接' : formatSize(f.file_size)}
-                      </span>
+                  <div key={f.id} className="comm-file-item">
+                    <div
+                      className="comm-file-item__main"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        isLink
+                          ? window.open(f.url!, '_blank', 'noopener,noreferrer')
+                          : setPreviewFile(f)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter')
+                          isLink
+                            ? window.open(
+                                f.url!,
+                                '_blank',
+                                'noopener,noreferrer',
+                              )
+                            : setPreviewFile(f)
+                      }}
+                    >
+                      {isLink ? (
+                        <LinkOutlined className="comm-file-item__icon" />
+                      ) : (
+                        <PaperClipOutlined className="comm-file-item__icon" />
+                      )}
+                      <div className="comm-file-item__info">
+                        <span
+                          className="comm-file-item__name"
+                          title={f.original_name}
+                        >
+                          {f.original_name}
+                        </span>
+                        <span className="comm-file-item__size">
+                          {isLink ? '在线链接' : formatSize(f.file_size)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="comm-file-item__actions">
+                      {isLink ? (
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<LinkOutlined />}
+                          onClick={() =>
+                            window.open(f.url!, '_blank', 'noopener,noreferrer')
+                          }
+                        />
+                      ) : (
+                        <>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => setPreviewFile(f)}
+                          />
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DownloadOutlined />}
+                            onClick={() => handleDownload(f)}
+                          />
+                        </>
+                      )}
+                      <Popconfirm
+                        title={isLink ? '确定删除此链接？' : '确定删除此文件？'}
+                        okText="删除"
+                        cancelText="取消"
+                        onConfirm={() => deleteFileMut.mutate(f.id)}
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                        />
+                      </Popconfirm>
                     </div>
                   </div>
-                  <div className="comm-file-item__actions">
-                    {isLink ? (
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<LinkOutlined />}
-                        onClick={() => window.open(f.url!, '_blank', 'noopener,noreferrer')}
-                      />
-                    ) : (
-                      <>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => setPreviewFile(f)}
-                        />
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<DownloadOutlined />}
-                          onClick={() => handleDownload(f)}
-                        />
-                      </>
-                    )}
-                    <Popconfirm
-                      title={isLink ? '确定删除此链接？' : '确定删除此文件？'}
-                      okText="删除"
-                      cancelText="取消"
-                      onConfirm={() => deleteFileMut.mutate(f.id)}
-                    >
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                    </Popconfirm>
-                  </div>
-                </div>
                 )
               })}
             </div>
           ) : (
-            <div className="comm-aside-files__empty">
-              暂无关联文件
-            </div>
+            <div className="comm-aside-files__empty">暂无关联文件</div>
           )}
         </div>
       </aside>

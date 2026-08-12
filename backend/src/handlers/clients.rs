@@ -90,10 +90,7 @@ async fn create(
 }
 
 /// `GET /api/clients/:id`
-async fn get_one(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<Json<Client>> {
+async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Client>> {
     let row = sqlx::query_as!(
         Client,
         r#"SELECT id,
@@ -169,10 +166,7 @@ async fn update(
 }
 
 /// `DELETE /api/clients/:id`
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     let res = sqlx::query!("DELETE FROM clients WHERE id = $1", id)
         .execute(&pool)
         .await?;

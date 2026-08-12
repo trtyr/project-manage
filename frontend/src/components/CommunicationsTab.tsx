@@ -215,7 +215,9 @@ export default function CommunicationsTab({ projectId }: Props) {
               {/* Secondary: existing unlinked files — only show if there are any */}
               {files && files.filter((f) => !f.communication_id).length > 0 && (
                 <>
-                  <Divider style={{ margin: '12px 0' }}>或从已有文件中选择</Divider>
+                  <Divider style={{ margin: '12px 0' }}>
+                    或从已有文件中选择
+                  </Divider>
                   <Form.Item name="comm_file_ids" noStyle>
                     <Select
                       mode="multiple"

@@ -22,12 +22,9 @@ import type {
   Phase,
   CreatePhase,
   UpdatePhase,
-  Member,
-  CreateMember,
-  UpdateMember,
-  ClientContact,
-  CreateClientContact,
-  UpdateClientContact,
+  Person,
+  CreatePerson,
+  UpdatePerson,
 } from '../types'
 
 const http = axios.create({
@@ -149,9 +146,15 @@ export const filesApi = {
     http.put<ProjectFile>(`/files/${id}`, data).then((r) => r.data),
   delete: (id: string) => http.delete(`/files/${id}`).then((r) => r.data),
   link: (id: string, communicationId: string | null) =>
-    http.put<ProjectFile>(`/files/${id}/link`, { communication_id: communicationId }).then((r) => r.data),
+    http
+      .put<ProjectFile>(`/files/${id}/link`, {
+        communication_id: communicationId,
+      })
+      .then((r) => r.data),
   linkPhase: (id: string, phaseId: string | null) =>
-    http.put<ProjectFile>(`/files/${id}/link-phase`, { phase_id: phaseId }).then((r) => r.data),
+    http
+      .put<ProjectFile>(`/files/${id}/link-phase`, { phase_id: phaseId })
+      .then((r) => r.data),
 }
 
 // --- Phases ---
@@ -166,28 +169,24 @@ export const phasesApi = {
   delete: (id: string) => http.delete(`/phases/${id}`).then((r) => r.data),
 }
 
-// --- Members ---
+// --- People (team + client, unified) ---
 
-export const membersApi = {
+export const peopleApi = {
   listByProject: (projectId: string) =>
-    http.get<Member[]>(`/projects/${projectId}/members`).then((r) => r.data),
-  create: (projectId: string, data: CreateMember) =>
-    http.post<Member>(`/projects/${projectId}/members`, data).then((r) => r.data),
-  update: (id: string, data: UpdateMember) =>
-    http.put<Member>(`/members/${id}`, data).then((r) => r.data),
-  delete: (id: string) => http.delete(`/members/${id}`).then((r) => r.data),
-}
-
-// --- Client Contacts ---
-
-export const contactsApi = {
-  listByProject: (projectId: string) =>
-    http.get<ClientContact[]>(`/projects/${projectId}/contacts`).then((r) => r.data),
-  create: (projectId: string, data: CreateClientContact) =>
-    http.post<ClientContact>(`/projects/${projectId}/contacts`, data).then((r) => r.data),
-  update: (id: string, data: UpdateClientContact) =>
-    http.put<ClientContact>(`/contacts/${id}`, data).then((r) => r.data),
-  delete: (id: string) => http.delete(`/contacts/${id}`).then((r) => r.data),
+    http.get<Person[]>(`/projects/${projectId}/people`).then((r) => r.data),
+  create: (projectId: string, data: CreatePerson) =>
+    http
+      .post<Person>(`/projects/${projectId}/people`, data)
+      .then((r) => r.data),
+  update: (id: string, data: UpdatePerson) =>
+    http.put<Person>(`/people/${id}`, data).then((r) => r.data),
+  delete: (id: string) => http.delete(`/people/${id}`).then((r) => r.data),
+  reorder: (projectId: string, side: string, ids: string[]) =>
+    http
+      .put(`/projects/${projectId}/people/reorder`, { side, ids })
+      .then((r) => r.data),
+  flipSide: (id: string) =>
+    http.post<Person>(`/people/${id}/flip-side`).then((r) => r.data),
 }
 
 // --- Health ---
@@ -201,7 +200,8 @@ export const healthApi = {
 
 // --- Error classification ---
 
-export type ApiErrorKind = 'offline' | 'server' | 'validation' | 'conflict' | 'unknown'
+export type ApiErrorKind =
+  'offline' | 'server' | 'validation' | 'conflict' | 'unknown'
 
 export interface ApiErrorInfo {
   kind: ApiErrorKind
@@ -210,7 +210,8 @@ export interface ApiErrorInfo {
 }
 
 export function classifyApiError(err: unknown): ApiErrorInfo {
-  const e = err as { response?: { status?: number }; message?: string } | undefined
+  const e = err as
+    { response?: { status?: number }; message?: string } | undefined
   const message = e?.message ?? '未知错误'
 
   // No HTTP response means the request never reached the server

@@ -19,8 +19,23 @@ function isTextType(mime: string, filename: string): boolean {
   if (textMimes.includes(mime)) return true
   const ext = filename.split('.').pop()?.toLowerCase()
   const textExts = [
-    'txt', 'md', 'json', 'csv', 'log', 'xml', 'yaml', 'yml',
-    'js', 'ts', 'py', 'sh', 'sql', 'css', 'ini', 'conf', 'toml',
+    'txt',
+    'md',
+    'json',
+    'csv',
+    'log',
+    'xml',
+    'yaml',
+    'yml',
+    'js',
+    'ts',
+    'py',
+    'sh',
+    'sql',
+    'css',
+    'ini',
+    'conf',
+    'toml',
   ]
   return ext ? textExts.includes(ext) : false
 }
@@ -62,7 +77,9 @@ export default function FilePreview({ file, open, onClose }: Props) {
             if (e.key === 'Escape') onClose()
           })
         }
-      } catch { /* cross-origin */ }
+      } catch {
+        /* cross-origin */
+      }
     }
     iframe.addEventListener('load', handleLoad)
     return () => iframe.removeEventListener('load', handleLoad)
@@ -124,7 +141,12 @@ export default function FilePreview({ file, open, onClose }: Props) {
         <iframe
           ref={iframeRef}
           src={previewUrl}
-          style={{ width: '100%', height: '85vh', border: 'none', borderRadius: 8 }}
+          style={{
+            width: '100%',
+            height: '85vh',
+            border: 'none',
+            borderRadius: 8,
+          }}
           title={file.original_name}
           sandbox="allow-same-origin allow-scripts"
         />
@@ -173,9 +195,7 @@ export default function FilePreview({ file, open, onClose }: Props) {
         !isHtmlType(file.mime_type, file.original_name) &&
         !isTextType(file.mime_type, file.original_name) && (
           <div style={{ textAlign: 'center', padding: 48 }}>
-            <Text type="secondary">
-              此文件类型不支持在线预览，请下载查看
-            </Text>
+            <Text type="secondary">此文件类型不支持在线预览，请下载查看</Text>
           </div>
         )}
     </Modal>

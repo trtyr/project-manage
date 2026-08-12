@@ -35,8 +35,7 @@ pub fn project_tasks_router() -> Router<AppState> {
 
 /// Flat router — mounted under `/api/tasks`.
 pub fn tasks_router() -> Router<AppState> {
-    Router::new()
-        .route("/tasks/{id}", get(get_one).put(update).delete(remove))
+    Router::new().route("/tasks/{id}", get(get_one).put(update).delete(remove))
 }
 
 /// `GET /api/projects/:project_id/tasks`
@@ -106,10 +105,7 @@ async fn create_for_project(
 }
 
 /// `GET /api/tasks/:id`
-async fn get_one(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<Json<Task>> {
+async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Task>> {
     let row = sqlx::query_as!(
         Task,
         r#"SELECT id, project_id, title, status, planned_date,
@@ -165,10 +161,7 @@ async fn update(
 }
 
 /// `DELETE /api/tasks/:id`
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     let res = sqlx::query!("DELETE FROM tasks WHERE id = $1", id)
         .execute(&pool)
         .await?;

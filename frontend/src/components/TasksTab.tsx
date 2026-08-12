@@ -60,10 +60,7 @@ export default function TasksTab({ projectId }: Props) {
   return (
     <div>
       <div className="tab-action">
-        <Button
-          icon={<PlusOutlined />}
-          onClick={() => setTaskOpen(true)}
-        >
+        <Button icon={<PlusOutlined />} onClick={() => setTaskOpen(true)}>
           添加任务
         </Button>
       </div>

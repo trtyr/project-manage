@@ -21,9 +21,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::error::{AppError, AppResult};
-use crate::models::{
-    CreateProject, Project, ProjectStatus, TechApprovalStatus, UpdateProject,
-};
+use crate::models::{CreateProject, Project, ProjectStatus, TechApprovalStatus, UpdateProject};
 use crate::state::AppState;
 
 pub fn projects_router() -> Router<AppState> {
@@ -63,7 +61,9 @@ async fn create(
         return Err(AppError::BadRequest("name must not be empty".into()));
     }
 
-    let status = input.status.unwrap_or_else(|| ProjectStatus::IN_PROGRESS.to_string());
+    let status = input
+        .status
+        .unwrap_or_else(|| ProjectStatus::IN_PROGRESS.to_string());
     if !ProjectStatus::is_valid(&status) {
         return Err(AppError::BadRequest(format!(
             "invalid status '{status}', must be one of {:?}",
@@ -113,10 +113,7 @@ async fn create(
 }
 
 /// `GET /api/projects/:id`
-async fn get_one(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<Json<Project>> {
+async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Project>> {
     let row = sqlx::query_as!(
         Project,
         r#"SELECT id,
@@ -205,16 +202,12 @@ async fn update(
 }
 
 /// `DELETE /api/projects/:id`
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
-    let file_paths: Vec<(String,)> = sqlx::query_as(
-        "SELECT file_path FROM project_files WHERE project_id = $1",
-    )
-    .bind(id)
-    .fetch_all(&pool)
-    .await?;
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
+    let file_paths: Vec<(String,)> =
+        sqlx::query_as("SELECT file_path FROM project_files WHERE project_id = $1")
+            .bind(id)
+            .fetch_all(&pool)
+            .await?;
 
     let upload_dir = format!("./uploads/{id}");
     if let Err(error) = tokio::fs::remove_dir_all(&upload_dir).await {

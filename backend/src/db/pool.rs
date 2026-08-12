@@ -16,9 +16,8 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 /// - `max_lifetime`: 30min — avoids long-lived connections that might
 ///   silently die behind a firewall or NAT.
 pub async fn build_pool() -> Result<PgPool, sqlx::Error> {
-    let database_url = std::env::var("DATABASE_URL").map_err(|e| {
-        sqlx::Error::Configuration(format!("DATABASE_URL is not set: {e}").into())
-    })?;
+    let database_url = std::env::var("DATABASE_URL")
+        .map_err(|e| sqlx::Error::Configuration(format!("DATABASE_URL is not set: {e}").into()))?;
 
     PgPoolOptions::new()
         .max_connections(10)

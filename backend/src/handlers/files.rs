@@ -113,8 +113,7 @@ async fn upload_file(
         }
     }
 
-    let file_data =
-        file_data.ok_or_else(|| AppError::BadRequest("no file in upload".into()))?;
+    let file_data = file_data.ok_or_else(|| AppError::BadRequest("no file in upload".into()))?;
     let original_name = original_name.unwrap_or_else(|| "unnamed".to_string());
     let mime_type = mime_type.unwrap_or_else(|| "application/octet-stream".to_string());
     let file_size = file_data.len() as i64;
@@ -196,10 +195,7 @@ async fn create_link(
     Ok((StatusCode::CREATED, Json(FileMeta::from(row))))
 }
 
-async fn get_one(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<Json<FileMeta>> {
+async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<FileMeta>> {
     let row = sqlx::query_as::<_, ProjectFile>(
         "SELECT id, project_id, communication_id, phase_id, source_type, url, original_name, stored_name, \
          mime_type, file_size, description, tags, file_path, created_at \
@@ -262,10 +258,7 @@ async fn update(
     Ok(Json(FileMeta::from(row)))
 }
 
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     // Fetch file_path before deleting so we can remove the file from disk
     let row = sqlx::query_as::<_, ProjectFile>(
         "SELECT id, project_id, communication_id, phase_id, source_type, url, original_name, stored_name, \

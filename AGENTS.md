@@ -61,6 +61,53 @@ cargo build --manifest-path backend/Cargo.toml
 (cd frontend && npm run build)
 ```
 
+## Standing Standards
+
+Initialized 2026-07-15. Full detail lives in [conventions.md](docs/context/conventions.md);
+this section is the operating-contract summary an agent must hold the bar to.
+
+### Architecture
+
+- **Module map**: one Rust file per resource across `backend/src/handlers/<r>.rs` +
+  `backend/src/models/<r>.rs` (fixed set: clients, projects, communications, tasks,
+  assets, files, phases, members, contacts). Frontend mirrors it: `frontend/src/api/index.ts`
+  (one `<r>Api` each) + `frontend/src/types/` (hand-written + ts-rs `generated/`).
+- **Dependency direction**: handlers → models → db (no cross-resource handler imports);
+  frontend pages/components → api → types. Deep modules — do not widen a file into a grab-bag.
+- **Seams**: `AppError` (single error type at the handler boundary), `ensure_project_exists`
+  guard (first await of every project-scoped handler), ts-rs codegen (backend DTOs →
+  `frontend/src/types/generated/` at test time). See [architecture](docs/context/architecture.md)
+  and [module map](docs/context/modules.md).
+
+### Error handling
+
+- Single typed `AppError` (4 variants: `NotFound`, `BadRequest`, `Database`, `Timeout`) →
+  `IntoResponse` emits `{ "error": <stable_code>, "message": <text> }`. 5xx is logged once
+  at the boundary (`tracing::error!`) with a generic client message — no internal detail
+  leaks. Conflict / FK / check violations map to 400. Frontend classifies via
+  `classifyApiError` (offline / server / validation / conflict / unknown), never by raw
+  status. Full table in [conventions.md §2](docs/context/conventions.md) and
+  [error.rs](backend/src/error.rs).
+
+### Tests
+
+- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 29 ts-rs export-binding
+  unit tests + 10 CRUD smoke tests (one per module, against a live migrated DB).
+- **Frontend**: `cd frontend && npm run test` — vitest (node env); the `classifyApiError`
+  contract suite pins [conventions.md §6.1](docs/context/conventions.md).
+- **CI gate**: [.github/workflows/ci.yml](.github/workflows/ci.yml) runs clippy
+  `-D warnings` + backend tests + oxlint + tsc + vitest + build on every push/PR.
+- New behavior ships with a test that verifies it — not a vacuous one.
+
+### Format & security
+
+- **Lint**: backend `cargo clippy -D warnings` (via `just check`); frontend `oxlint`.
+- **Format**: [backend/rustfmt.toml](backend/rustfmt.toml) +
+  [frontend/.prettierrc.json](frontend/.prettierrc.json); code is formatter-adopted and CI
+  runs `cargo fmt --check` + `prettier --check` on every push/PR. `just fmt` reformats.
+- **Audit**: [docs/context/security-baseline.md](docs/context/security-baseline.md) — frontend
+  0 vulnerabilities (react-router CSRF + transitive fixed); backend 1 (`rsa`, no upstream fix).
+
 ## Danger Zone
 
 - Projects require an existing client; deleting a client with projects is
@@ -74,3 +121,10 @@ cargo build --manifest-path backend/Cargo.toml
 - Preserve the deliberate PostgreSQL `TEXT`/`TEXT[]` trade-offs and error-envelope
   behavior unless the domain model changes intentionally. See the [domain
   invariants](docs/context/domain.md) and [database guide](docs/context/database.md).
+
+## Open Items
+
+- **`rsa` dependency (unfixable)**: [RUSTSEC-2023-0071](https://rustsec.org/advisories/RUSTSEC-2023-0071)
+  (Marvin Attack, medium) has no fixed release. Transitive via the TLS stack; backend has no
+  RSA-key crypto surface so exposure is low. Monitor upstream; revisit when a fixed `rsa` lands.
+  See [security-baseline.md](docs/context/security-baseline.md).

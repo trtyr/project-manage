@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Button,
   Table,
   Tag,
   Input,
+  Select,
   Modal,
   Popconfirm,
   Upload,
@@ -18,13 +19,13 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
-  PaperClipOutlined,
   LinkOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { filesApi, communicationsApi, phasesApi } from '../api'
 import type { ProjectFile } from '../types'
+import FileIcon from './FileIcon'
 import { formatSize } from '../utils/format'
 
 interface Props {
@@ -38,9 +39,9 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
   const queryClient = useQueryClient()
 
   const [fileOpen, setFileOpen] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [fileDesc, setFileDesc] = useState('')
-  const [fileTags, setFileTags] = useState('')
+  const [fileTags, setFileTags] = useState<string[]>([])
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file')
   const [linkUrl, setLinkUrl] = useState('')
   const [linkName, setLinkName] = useState('')
@@ -64,39 +65,39 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
   })
 
   const uploadFileMut = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (uploadMode === 'link') {
         if (!linkUrl.trim()) throw new Error('no url')
         const tags = fileTags
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-        return filesApi.createLink(projectId, {
+        const result = await filesApi.createLink(projectId, {
           name: linkName.trim() || linkUrl.trim(),
           url: linkUrl.trim(),
           description: fileDesc || undefined,
           tags,
         })
+        return [result]
       }
-      if (!selectedFile) throw new Error('no file')
+      if (selectedFiles.length === 0) throw new Error('no files')
       const tags = fileTags
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-      return filesApi.upload(projectId, selectedFile, fileDesc || undefined, tags)
+      return Promise.all(
+        selectedFiles.map((f) =>
+          filesApi.upload(projectId, f, fileDesc || undefined, tags),
+        ),
+      )
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
       message.success(uploadMode === 'link' ? '链接已添加' : '文件已上传')
       setFileOpen(false)
-      setSelectedFile(null)
+      setSelectedFiles([])
       setFileDesc('')
-      setFileTags('')
+      setFileTags([])
       setLinkUrl('')
       setLinkName('')
       setUploadMode('file')
     },
-    onError: () => message.error(uploadMode === 'link' ? '添加失败' : '上传失败'),
+    onError: () =>
+      message.error(uploadMode === 'link' ? '添加失败' : '上传失败'),
   })
 
   const deleteFileMut = useMutation({
@@ -121,13 +122,178 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
     }
   }
 
+  const columns = useMemo(
+    () => [
+      {
+        title: '文件名',
+        dataIndex: 'original_name',
+        key: 'original_name',
+        render: (name: string, r: ProjectFile) => (
+          <Space>
+            <FileIcon
+              filename={r.original_name}
+              mimeType={r.mime_type}
+              sourceType={r.source_type}
+            />
+            {r.source_type === 'link' && r.url ? (
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={r.url}
+              >
+                {name}
+              </a>
+            ) : (
+              <a
+                role="button"
+                tabIndex={0}
+                title={name}
+                onClick={() => onFilePreview?.(r)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onFilePreview?.(r)
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                {name}
+              </a>
+            )}
+          </Space>
+        ),
+      },
+      {
+        title: '大小',
+        dataIndex: 'file_size',
+        key: 'file_size',
+        width: 90,
+        render: (s: number, r: ProjectFile) =>
+          r.source_type === 'link' ? '-' : formatSize(s),
+      },
+      {
+        title: '标签',
+        dataIndex: 'tags',
+        key: 'tags',
+        render: (tags: string[]) =>
+          tags.map((t) => (
+            <Tag key={t} style={{ marginBottom: 2 }}>
+              {t}
+            </Tag>
+          )),
+      },
+      {
+        title: '描述',
+        dataIndex: 'description',
+        key: 'description',
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '上传时间',
+        dataIndex: 'created_at',
+        key: 'created_at',
+        width: 120,
+        render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
+      },
+      {
+        title: '来源',
+        key: 'source',
+        width: 140,
+        render: (_: unknown, r: ProjectFile) => {
+          if (!r.communication_id)
+            return <span style={{ color: 'var(--muted-hex)' }}>直接上传</span>
+          const comm = communications?.find((c) => c.id === r.communication_id)
+          if (!comm)
+            return <span style={{ color: 'var(--muted-hex)' }}>已关联</span>
+          const preview = comm.content.slice(0, 12).replace(/\n/g, ' ')
+          return (
+            <a
+              role="button"
+              tabIndex={0}
+              title={`${dayjs(comm.occurred_at).format('M月D日')}的沟通记录`}
+              onClick={() =>
+                navigate(
+                  `/projects/${projectId}/communications/${r.communication_id}`,
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter')
+                  navigate(
+                    `/projects/${projectId}/communications/${r.communication_id}`,
+                  )
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              沟通 · {preview}
+              {comm.content.length > 12 ? '…' : ''}
+            </a>
+          )
+        },
+      },
+      {
+        title: '阶段',
+        key: 'phase',
+        width: 120,
+        render: (_: unknown, r: ProjectFile) => {
+          if (!r.phase_id)
+            return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          const ph = phases?.find((p) => p.id === r.phase_id)
+          return (
+            <span title={ph?.description || ''}>{ph?.name ?? '未知阶段'}</span>
+          )
+        },
+      },
+      {
+        title: '',
+        key: 'action',
+        width: 110,
+        render: (_: unknown, r: ProjectFile) => (
+          <Space>
+            {r.source_type === 'link' && r.url ? (
+              <Button
+                type="text"
+                size="small"
+                icon={<LinkOutlined />}
+                onClick={() =>
+                  window.open(r.url!, '_blank', 'noopener,noreferrer')
+                }
+              />
+            ) : (
+              <>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => onFilePreview?.(r)}
+                />
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  onClick={() => handleDownload(r)}
+                />
+              </>
+            )}
+            <Popconfirm
+              title={r.source_type === 'link' ? '删除该链接？' : '删除该文件？'}
+              onConfirm={() => deleteFileMut.mutate(r.id)}
+            >
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [communications, phases, navigate, projectId, onFilePreview],
+  )
+
   return (
     <div>
       <div className="tab-action">
-        <Button
-          icon={<PlusOutlined />}
-          onClick={() => setFileOpen(true)}
-        >
+        <Button icon={<PlusOutlined />} onClick={() => setFileOpen(true)}>
           上传文件
         </Button>
       </div>
@@ -136,152 +302,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         rowKey="id"
         size="small"
         pagination={false}
-        columns={[
-          {
-            title: '文件名',
-            dataIndex: 'original_name',
-            key: 'original_name',
-            render: (name: string, r: ProjectFile) => (
-              <Space>
-                {r.source_type === 'link' ? (
-                  <LinkOutlined style={{ color: 'var(--muted-hex)' }} />
-                ) : (
-                  <PaperClipOutlined style={{ color: 'var(--muted-hex)' }} />
-                )}
-                {r.source_type === 'link' && r.url ? (
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={r.url}
-                  >
-                    {name}
-                  </a>
-                ) : (
-                  <a
-                    role="button"
-                    tabIndex={0}
-                    title={name}
-                    onClick={() => onFilePreview?.(r)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') onFilePreview?.(r) }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {name}
-                  </a>
-                )}
-              </Space>
-            ),
-          },
-          {
-            title: '大小',
-            dataIndex: 'file_size',
-            key: 'file_size',
-            width: 90,
-            render: (s: number, r: ProjectFile) =>
-              r.source_type === 'link' ? '-' : formatSize(s),
-          },
-          {
-            title: '标签',
-            dataIndex: 'tags',
-            key: 'tags',
-            render: (tags: string[]) =>
-              tags.map((t) => (
-                <Tag key={t} style={{ marginBottom: 2 }}>
-                  {t}
-                </Tag>
-              )),
-          },
-          {
-            title: '描述',
-            dataIndex: 'description',
-            key: 'description',
-            render: (v: string | null) => v ?? '-',
-          },
-          {
-            title: '上传时间',
-            dataIndex: 'created_at',
-            key: 'created_at',
-            width: 120,
-            render: (v: string) =>
-              dayjs(v).format('YYYY-MM-DD HH:mm'),
-          },
-          {
-            title: '来源',
-            key: 'source',
-            width: 140,
-            render: (_: unknown, r: ProjectFile) => {
-              if (!r.communication_id) return <span style={{ color: 'var(--muted-hex)' }}>直接上传</span>
-              const comm = communications?.find((c) => c.id === r.communication_id)
-              if (!comm) return <span style={{ color: 'var(--muted-hex)' }}>已关联</span>
-              const preview = comm.content.slice(0, 12).replace(/\n/g, ' ')
-              return (
-                <a
-                  role="button"
-                  tabIndex={0}
-                  title={`${dayjs(comm.occurred_at).format('M月D日')}的沟通记录`}
-                  onClick={() => navigate(`/projects/${projectId}/communications/${r.communication_id}`)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/projects/${projectId}/communications/${r.communication_id}`) }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  沟通 · {preview}{comm.content.length > 12 ? '…' : ''}
-                </a>
-              )
-            },
-          },
-          {
-            title: '阶段',
-            key: 'phase',
-            width: 120,
-            render: (_: unknown, r: ProjectFile) => {
-              if (!r.phase_id) return <span style={{ color: 'var(--muted-hex)' }}>-</span>
-              const ph = phases?.find((p) => p.id === r.phase_id)
-              return <span title={ph?.description || ''}>{ph?.name ?? '未知阶段'}</span>
-            },
-          },
-          {
-            title: '',
-            key: 'action',
-            width: 110,
-            render: (_: unknown, r: ProjectFile) => (
-              <Space>
-                {r.source_type === 'link' && r.url ? (
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<LinkOutlined />}
-                    onClick={() => window.open(r.url!, '_blank', 'noopener,noreferrer')}
-                  />
-                ) : (
-                  <>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EyeOutlined />}
-                      onClick={() => onFilePreview?.(r)}
-                    />
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<DownloadOutlined />}
-                      onClick={() => handleDownload(r)}
-                    />
-                  </>
-                )}
-                <Popconfirm
-                  title={r.source_type === 'link' ? '删除该链接？' : '删除该文件？'}
-                  onConfirm={() => deleteFileMut.mutate(r.id)}
-                >
-                  <Button
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                  />
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]}
+        columns={columns}
         locale={{ emptyText: '还没有上传文件' }}
       />
 
@@ -299,9 +320,9 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         open={fileOpen}
         onCancel={() => {
           setFileOpen(false)
-          setSelectedFile(null)
+          setSelectedFiles([])
           setFileDesc('')
-          setFileTags('')
+          setFileTags([])
           setLinkUrl('')
           setLinkName('')
           setUploadMode('file')
@@ -310,31 +331,37 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         confirmLoading={uploadFileMut.isPending}
         okText={uploadMode === 'link' ? '添加' : '上传'}
         cancelText="取消"
-        okButtonProps={{ disabled: uploadMode === 'file' ? !selectedFile : !linkUrl.trim() }}
+        okButtonProps={{
+          disabled:
+            uploadMode === 'file'
+              ? selectedFiles.length === 0
+              : !linkUrl.trim(),
+        }}
         width={480}
       >
         <div style={{ marginTop: 16 }}>
           {uploadMode === 'file' ? (
             <Upload.Dragger
-              maxCount={1}
+              multiple
               beforeUpload={(file) => {
-                setSelectedFile(file)
+                setSelectedFiles((prev) => [...prev, file])
                 return false
               }}
-              onRemove={() => setSelectedFile(null)}
-              fileList={
-                selectedFile
-                  ? [
-                      {
-                        uid: '-1',
-                        name: selectedFile.name,
-                      } as UploadFile,
-                    ]
-                  : []
+              onRemove={(file) =>
+                setSelectedFiles((prev) =>
+                  prev.filter((f) => f.name !== file.name),
+                )
               }
+              fileList={selectedFiles.map(
+                (f, i) =>
+                  ({
+                    uid: `${i}`,
+                    name: f.name,
+                  }) as UploadFile,
+              )}
             >
               <p style={{ margin: 0, color: 'var(--muted-hex)' }}>
-                点击或拖拽文件到此处
+                点击或拖拽文件到此处（可多选）
               </p>
             </Upload.Dragger>
           ) : (
@@ -360,11 +387,12 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
             value={fileDesc}
             onChange={(e) => setFileDesc(e.target.value)}
           />
-          <Input
-            style={{ marginTop: 8 }}
-            placeholder="标签，逗号分隔（可选）"
+          <Select
+            mode="tags"
+            style={{ marginTop: 8, width: '100%' }}
+            placeholder="标签（回车添加）"
             value={fileTags}
-            onChange={(e) => setFileTags(e.target.value)}
+            onChange={setFileTags}
           />
         </div>
       </Modal>

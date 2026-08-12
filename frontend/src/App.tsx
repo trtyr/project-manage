@@ -57,7 +57,10 @@ class ErrorBoundary extends Component<
     return { hasError: true }
   }
 
-  componentDidCatch(error: Error, errorInfo: { componentStack?: string }): void {
+  componentDidCatch(
+    error: Error,
+    errorInfo: { componentStack?: string },
+  ): void {
     // Surface the failure for the console / external loggers.
     // The fallback UI is rendered from `state.hasError`; we keep the raw
     // error out of state to avoid leaking sensitive details into React DevTools.

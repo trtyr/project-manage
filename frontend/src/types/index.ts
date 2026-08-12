@@ -17,45 +17,28 @@
 
 import type { Asset as GeneratedAsset } from './generated/Asset'
 import type { Client as GeneratedClient } from './generated/Client'
-import type {
-  ClientContact as GeneratedClientContact,
-} from './generated/ClientContact'
-import type {
-  Communication as GeneratedCommunication,
-} from './generated/Communication'
-import type {
-  CommunicationWithProject as GeneratedCommunicationWithProject,
-} from './generated/CommunicationWithProject'
+import type { Communication as GeneratedCommunication } from './generated/Communication'
+import type { CommunicationWithProject as GeneratedCommunicationWithProject } from './generated/CommunicationWithProject'
 import type { CreateAsset } from './generated/CreateAsset'
-import type {
-  CreateClient as GeneratedCreateClient,
-} from './generated/CreateClient'
-import type {
-  CreateClientContact,
-} from './generated/CreateClientContact'
+import type { CreateClient as GeneratedCreateClient } from './generated/CreateClient'
 import type { CreateCommunication } from './generated/CreateCommunication'
 import type { CreateLink as GeneratedCreateLink } from './generated/CreateLink'
-import type { CreateMember } from './generated/CreateMember'
+import type { CreatePerson } from './generated/CreatePerson'
 import type { CreatePhase } from './generated/CreatePhase'
-import type {
-  CreateProject as GeneratedCreateProject,
-} from './generated/CreateProject'
+import type { CreateProject as GeneratedCreateProject } from './generated/CreateProject'
 import type { CreateTask as GeneratedCreateTask } from './generated/CreateTask'
 import type { FileMeta } from './generated/FileMeta'
 import type { FileWithProject } from './generated/FileWithProject'
-import type { Member as GeneratedMember } from './generated/Member'
+import type { Person as GeneratedPerson } from './generated/Person'
 import type { Phase as GeneratedPhase } from './generated/Phase'
 import type { Project as GeneratedProject } from './generated/Project'
 import type { Task as GeneratedTask } from './generated/Task'
-import type {
-  UpdateProject as GeneratedUpdateProject,
-} from './generated/UpdateProject'
+import type { UpdateProject as GeneratedUpdateProject } from './generated/UpdateProject'
 import type { UpdateAsset } from './generated/UpdateAsset'
 import type { UpdateClient } from './generated/UpdateClient'
-import type { UpdateClientContact } from './generated/UpdateClientContact'
 import type { UpdateCommunication } from './generated/UpdateCommunication'
 import type { UpdateFile } from './generated/UpdateFile'
-import type { UpdateMember } from './generated/UpdateMember'
+import type { UpdatePerson } from './generated/UpdatePerson'
 import type { UpdatePhase } from './generated/UpdatePhase'
 import type { UpdateTask as GeneratedUpdateTask } from './generated/UpdateTask'
 
@@ -71,8 +54,6 @@ export type ISODate = string
 export type ProjectStatus = 'in_progress' | 'completed' | 'paused'
 
 export type TechApprovalStatus = '未接触' | 'POC中' | '已认可' | '技术否决'
-
-export type RoleType = string
 
 export type TaskStatus = 'current' | 'next' | 'todo'
 
@@ -91,8 +72,7 @@ export type Project = GeneratedProject
 export type Task = GeneratedTask
 export type Asset = GeneratedAsset
 export type Phase = GeneratedPhase
-export type Member = GeneratedMember
-export type ClientContact = GeneratedClientContact
+export type Person = GeneratedPerson
 
 // `ProjectFile` was the frontend-facing name for `FileMeta` (the Rust DB
 // row carries `stored_name`/`file_path` and is intentionally not exported).
@@ -152,18 +132,16 @@ export type UpdateTask = Omit<GeneratedUpdateTask, 'status'> & {
 
 export type {
   CreateAsset,
-  CreateClientContact,
   CreateCommunication,
-  CreateMember,
+  CreatePerson,
   CreatePhase,
   FileMeta,
   FileWithProject,
   UpdateAsset,
   UpdateClient,
-  UpdateClientContact,
   UpdateCommunication,
   UpdateFile,
-  UpdateMember,
+  UpdatePerson,
   UpdatePhase,
 }
 

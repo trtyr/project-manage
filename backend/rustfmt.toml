@@ -1,0 +1,8 @@
+edition = "2024"
+
+# Preserve the project's semantic import grouping — e.g. `axum::{ Json, Router }`
+# stays at the end of a brace group after the submodule paths, instead of being
+# alphabetised to the top. Default `reorder_imports = true` would rewrite 54
+# files for no behavioural gain, so we pin this off and let rustfmt enforce
+# everything else (spacing, braces, line width, etc.).
+reorder_imports = false

@@ -86,6 +86,14 @@ status:
         echo "⏸️  后端未运行"; \
     fi
 
+# === 格式化 ===
+
+# 格式化后端 (rustfmt) + 前端 (prettier)。代码已采纳格式化器；CI 强制 fmt-check。
+fmt:
+    cargo fmt --manifest-path backend/Cargo.toml
+    cd frontend && npm run format
+    @echo "✅ 格式化完成"
+
 # === 清理 ===
 
 # 清理构建产物

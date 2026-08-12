@@ -1,10 +1,4 @@
-//! Asset (资产) HTTP handlers.
-//!
-//! Routes:
-//! - `GET    /api/projects/:project_id/assets`
-//! - `POST   /api/projects/:project_id/assets`
-//! - `PUT    /api/assets/:id`
-//! - `DELETE /api/assets/:id`
+//! Asset (资产) HTTP handlers — CRUD with access_method / credentials / vendor.
 
 use axum::{
     extract::{Path, State},
@@ -20,6 +14,11 @@ use crate::db::helpers::ensure_project_exists;
 use crate::error::{AppError, AppResult};
 use crate::models::{Asset, CreateAsset, UpdateAsset};
 use crate::state::AppState;
+
+/// Full column list for `assets` queries. Add new columns here so every
+/// SELECT / RETURNING stays in sync.
+const ASSET_COLUMNS: &str =
+    "id, project_id, name, asset_type, value, description, access_method, credentials, vendor, created_at, updated_at";
 
 pub fn project_assets_router() -> Router<AppState> {
     Router::new().route(
@@ -37,10 +36,10 @@ async fn list_by_project(
     Path(project_id): Path<Uuid>,
 ) -> AppResult<Json<Vec<Asset>>> {
     ensure_project_exists(&pool, project_id).await?;
-    let rows = sqlx::query_as::<_, Asset>(
-        "SELECT id, project_id, name, asset_type, value, description, created_at, updated_at \
-         FROM assets WHERE project_id = $1 ORDER BY created_at DESC",
-    )
+    let rows = sqlx::query_as::<_, Asset>(&format!(
+        "SELECT {ASSET_COLUMNS} FROM assets \
+         WHERE project_id = $1 ORDER BY created_at DESC"
+    ))
     .bind(project_id)
     .fetch_all(&pool)
     .await?;
@@ -58,29 +57,30 @@ async fn create_for_project(
     ensure_project_exists(&pool, project_id).await?;
 
     let row = sqlx::query_as::<_, Asset>(
-        "INSERT INTO assets (project_id, name, asset_type, value, description) \
-         VALUES ($1, $2, $3, $4, $5) \
-         RETURNING id, project_id, name, asset_type, value, description, created_at, updated_at",
+        "INSERT INTO assets (project_id, name, asset_type, value, description, \
+         access_method, credentials, vendor) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+         RETURNING id, project_id, name, asset_type, value, description, \
+                   access_method, credentials, vendor, created_at, updated_at",
     )
     .bind(project_id)
     .bind(&input.name)
     .bind(input.asset_type.as_deref().unwrap_or("other"))
     .bind(input.value.as_ref())
     .bind(input.description.as_ref())
+    .bind(input.access_method.as_ref())
+    .bind(input.credentials.as_ref())
+    .bind(input.vendor.as_ref())
     .fetch_one(&pool)
     .await?;
 
     Ok((StatusCode::CREATED, Json(row)))
 }
 
-async fn get_one(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<Json<Asset>> {
-    let row = sqlx::query_as::<_, Asset>(
-        "SELECT id, project_id, name, asset_type, value, description, created_at, updated_at \
-         FROM assets WHERE id = $1",
-    )
+async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Asset>> {
+    let row = sqlx::query_as::<_, Asset>(&format!(
+        "SELECT {ASSET_COLUMNS} FROM assets WHERE id = $1"
+    ))
     .bind(id)
     .fetch_optional(&pool)
     .await?
@@ -96,25 +96,29 @@ async fn update(
     let row = sqlx::query_as::<_, Asset>(
         "UPDATE assets SET name = COALESCE($2, name), \
          asset_type = COALESCE($3, asset_type), value = COALESCE($4, value), \
-         description = COALESCE($5, description), updated_at = NOW() \
+         description = COALESCE($5, description), \
+         access_method = COALESCE($6, access_method), \
+         credentials = COALESCE($7, credentials), \
+         vendor = COALESCE($8, vendor), updated_at = NOW() \
          WHERE id = $1 \
-         RETURNING id, project_id, name, asset_type, value, description, created_at, updated_at",
+         RETURNING id, project_id, name, asset_type, value, description, \
+                   access_method, credentials, vendor, created_at, updated_at",
     )
     .bind(id)
     .bind(input.name.as_ref())
     .bind(input.asset_type.as_ref())
     .bind(input.value.as_ref())
     .bind(input.description.as_ref())
+    .bind(input.access_method.as_ref())
+    .bind(input.credentials.as_ref())
+    .bind(input.vendor.as_ref())
     .fetch_optional(&pool)
     .await?
     .ok_or_else(|| AppError::NotFound(format!("asset {id} not found")))?;
     Ok(Json(row))
 }
 
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     let res = sqlx::query!("DELETE FROM assets WHERE id = $1", id)
         .execute(&pool)
         .await?;

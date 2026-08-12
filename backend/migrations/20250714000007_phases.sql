@@ -1,6 +1,6 @@
 -- Phases: project phase planning with nesting (parent_id self-reference).
 -- Supports大阶段/小阶段 tree structure. Cascade delete removes children.
-CREATE TABLE phases (
+CREATE TABLE IF NOT EXISTS phases (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id    UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     parent_id     UUID REFERENCES phases(id) ON DELETE CASCADE,
@@ -16,5 +16,5 @@ CREATE TABLE phases (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX phases_project_id_idx ON phases(project_id);
-CREATE INDEX phases_parent_id_idx ON phases(parent_id);
+CREATE INDEX IF NOT EXISTS phases_project_id_idx ON phases(project_id);
+CREATE INDEX IF NOT EXISTS phases_parent_id_idx ON phases(parent_id);

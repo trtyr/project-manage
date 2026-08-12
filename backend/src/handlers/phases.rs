@@ -81,10 +81,7 @@ async fn create_for_project(
     Ok((StatusCode::CREATED, Json(row)))
 }
 
-async fn get_one(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<Json<Phase>> {
+async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Phase>> {
     let row = sqlx::query_as::<_, Phase>(
         "SELECT id, project_id, parent_id, name, description, sort_order, \
          planned_start, planned_end, actual_start, actual_end, status, \
@@ -133,10 +130,7 @@ async fn update(
     Ok(Json(row))
 }
 
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     // DB cascade deletes child phases automatically (parent_id ON DELETE CASCADE)
     let res = sqlx::query!("DELETE FROM phases WHERE id = $1", id)
         .execute(&pool)

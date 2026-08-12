@@ -1,11 +1,11 @@
 :root {
   /* Design tokens — OKLCH (source of truth, see DESIGN.md) */
   --bg: oklch(0.985 0.003 180);
-  --surface: oklch(1.000 0.000 0);
-  --ink: oklch(0.200 0.010 180);
-  --primary: oklch(0.550 0.095 180);
-  --accent: oklch(0.680 0.130 55);
-  --muted: oklch(0.500 0.008 180);
+  --surface: oklch(1 0 0);
+  --ink: oklch(0.2 0.01 180);
+  --primary: oklch(0.55 0.095 180);
+  --accent: oklch(0.68 0.13 55);
+  --muted: oklch(0.5 0.008 180);
 
   /* Hex fallbacks */
   --bg-hex: #f5f7f7;
@@ -16,7 +16,8 @@
   --muted-hex: #5f6868;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
 
   /* Spacing */
@@ -36,8 +37,10 @@
   --duration-slow: 250ms;
 
   /* Shadows */
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.03), 0 2px 8px rgba(20,131,116,0.05);
-  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.06), 0 8px 24px rgba(20,131,116,0.1);
+  --shadow-card:
+    0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(20, 131, 116, 0.05);
+  --shadow-card-hover:
+    0 4px 12px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(20, 131, 116, 0.1);
 
   /* Semantic surfaces */
   --card-surface: #ffffff;
@@ -45,7 +48,7 @@
   --subtle-bg: #f5f7f7;
   --hairline: #e8eded;
   --hairline-light: #f0f3f3;
-  --overlay: rgba(0,0,0,0.04);
+  --overlay: rgba(0, 0, 0, 0.04);
   --primary-rgb: 20, 131, 116;
   --sidebar-bg: #f7f8f8;
 
@@ -53,12 +56,12 @@
 }
 
 html.dark {
-  --bg: oklch(0.160 0.005 180);
-  --surface: oklch(0.200 0.005 180);
-  --ink: oklch(0.880 0.008 180);
-  --primary: oklch(0.680 0.110 180);
-  --accent: oklch(0.750 0.130 55);
-  --muted: oklch(0.600 0.008 180);
+  --bg: oklch(0.16 0.005 180);
+  --surface: oklch(0.2 0.005 180);
+  --ink: oklch(0.88 0.008 180);
+  --primary: oklch(0.68 0.11 180);
+  --accent: oklch(0.75 0.13 55);
+  --muted: oklch(0.6 0.008 180);
 
   --bg-hex: #141616;
   --surface-hex: #1e2222;
@@ -67,15 +70,16 @@ html.dark {
   --accent-hex: #e0a560;
   --muted-hex: #9aa0a0;
 
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.15);
-  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-card-hover:
+    0 4px 12px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
 
   --card-surface: #1e2222;
   --card-surface-hover: #282c2c;
   --subtle-bg: #161818;
   --hairline: #2a2e2e;
   --hairline-light: #232727;
-  --overlay: rgba(255,255,255,0.06);
+  --overlay: rgba(255, 255, 255, 0.06);
   --primary-rgb: 45, 184, 158;
   --sidebar-bg: #0f1111;
 
@@ -253,7 +257,7 @@ body {
 }
 
 .app-content__inner {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -345,7 +349,9 @@ body {
   color: var(--muted-hex);
   font-size: 16px;
   line-height: 1;
-  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
   opacity: 0;
 }
 
@@ -901,6 +907,36 @@ body {
 
 .file-pill:hover {
   border-color: rgba(var(--primary-rgb), 0.3);
+}
+
+/* === Members tab: draggable card row === */
+
+.member-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: var(--card-surface);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.member-card:hover {
+  border-color: rgba(var(--primary-rgb), 0.3);
+}
+
+.member-card__handle {
+  display: flex;
+  align-items: center;
+  color: var(--muted-hex);
+  cursor: grab;
+  touch-action: none;
+}
+
+.member-card__handle:active {
+  cursor: grabbing;
 }
 
 /* === Reduced motion === */

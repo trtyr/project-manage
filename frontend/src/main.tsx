@@ -11,10 +11,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error: any) => {
-        if (failureCount >= 3) return false;
-        const status = error?.response?.status;
-        if (status && status >= 400 && status < 500) return false;
-        return true;
+        if (failureCount >= 3) return false
+        const status = error?.response?.status
+        if (status && status >= 400 && status < 500) return false
+        return true
       },
       retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
       refetchOnWindowFocus: false,

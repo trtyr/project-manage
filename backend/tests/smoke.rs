@@ -77,9 +77,7 @@ async fn start_test_server(pool: PgPool) -> String {
 /// the variable is normally set without an explicit `export`.
 async fn connect_pool() -> PgPool {
     let url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set for smoke tests");
-    PgPool::connect(&url)
-        .await
-        .expect("connect to PostgreSQL")
+    PgPool::connect(&url).await.expect("connect to PostgreSQL")
 }
 
 /// Create a parent client for tests that exercise project-scoped
@@ -353,77 +351,6 @@ async fn test_projects_crud() {
 }
 
 // =========================================================================
-// 4. project_contacts_crud — also exercises CRM field role_type
-// =========================================================================
-
-#[tokio::test]
-async fn test_project_contacts_crud() {
-    let pool = connect_pool().await;
-    let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
-    let suffix = Uuid::new_v4();
-
-    let client = create_test_client(&http, &base_url, &suffix).await;
-    let client_id = json_id(&client);
-    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
-    let project_id = json_id(&project);
-
-    // 1. CREATE contact with role_type.
-    let resp = http
-        .post(format!(
-            "{base_url}/api/projects/{project_id}/contacts"
-        ))
-        .json(&json!({
-            "name": "张总",
-            "role_type": "决策者",
-            "notes": "CTO, 决策链顶端",
-        }))
-        .send()
-        .await
-        .expect("POST contacts");
-    assert_eq!(resp.status(), StatusCode::CREATED);
-    let created: Value = resp.json().await.expect("create JSON");
-    let contact_id = json_id(&created);
-
-    // CRM field round-trips in the response.
-    assert_eq!(created["role_type"], "决策者");
-    assert_eq!(created["name"], "张总");
-
-    // 2. READ contact via flat endpoint.
-    let resp = http
-        .get(format!("{base_url}/api/contacts/{contact_id}"))
-        .send()
-        .await
-        .expect("GET contact");
-    assert_eq!(resp.status(), StatusCode::OK);
-    let fetched: Value = resp.json().await.expect("read JSON");
-    assert_eq!(fetched["role_type"], "决策者");
-    assert_eq!(fetched["project_id"], project_id.to_string());
-
-    // 3. UPDATE role_type to a different decision-chain value.
-    let resp = http
-        .put(format!("{base_url}/api/contacts/{contact_id}"))
-        .json(&json!({ "role_type": "技术评估人" }))
-        .send()
-        .await
-        .expect("PUT contact");
-    assert_eq!(resp.status(), StatusCode::OK);
-    let updated: Value = resp.json().await.expect("update JSON");
-    assert_eq!(updated["role_type"], "技术评估人");
-
-    // 4. DELETE contact.
-    let resp = http
-        .delete(format!("{base_url}/api/contacts/{contact_id}"))
-        .send()
-        .await
-        .expect("DELETE contact");
-    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
-
-    // 5. CLEANUP: project cascade-removes any surviving contacts, then client.
-    cleanup_project_and_client(&pool, project_id, client_id).await;
-}
-
-// =========================================================================
 // 5. communications_crud — exercises content, occurred_at, conclusion
 // =========================================================================
 
@@ -456,10 +383,7 @@ async fn test_communications_crud() {
     assert_eq!(resp.status(), StatusCode::CREATED);
     let created: Value = resp.json().await.expect("create JSON");
     let comm_id = json_id(&created);
-    assert_eq!(
-        created["content"],
-        "首次技术交流：客户对 POC 流程感兴趣"
-    );
+    assert_eq!(created["content"], "首次技术交流：客户对 POC 流程感兴趣");
     assert_eq!(created["conclusion"], "下周安排 POC 环境");
 
     // 2. READ via flat endpoint.
@@ -676,72 +600,6 @@ async fn test_phases_crud() {
 }
 
 // =========================================================================
-// 8. project_members_crud — exercises name + role
-// =========================================================================
-
-#[tokio::test]
-async fn test_project_members_crud() {
-    let pool = connect_pool().await;
-    let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
-    let suffix = Uuid::new_v4();
-
-    let client = create_test_client(&http, &base_url, &suffix).await;
-    let client_id = json_id(&client);
-    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
-    let project_id = json_id(&project);
-
-    // 1. CREATE member.
-    let resp = http
-        .post(format!("{base_url}/api/projects/{project_id}/members"))
-        .json(&json!({
-            "name": "王工",
-            "role": "售前工程师",
-            "notes": "负责 POC 演示",
-        }))
-        .send()
-        .await
-        .expect("POST member");
-    assert_eq!(resp.status(), StatusCode::CREATED);
-    let created: Value = resp.json().await.expect("create JSON");
-    let member_id = json_id(&created);
-    assert_eq!(created["name"], "王工");
-    assert_eq!(created["role"], "售前工程师");
-
-    // 2. READ via flat endpoint.
-    let resp = http
-        .get(format!("{base_url}/api/members/{member_id}"))
-        .send()
-        .await
-        .expect("GET member");
-    assert_eq!(resp.status(), StatusCode::OK);
-    let fetched: Value = resp.json().await.expect("read JSON");
-    assert_eq!(fetched["project_id"], project_id.to_string());
-
-    // 3. UPDATE role.
-    let resp = http
-        .put(format!("{base_url}/api/members/{member_id}"))
-        .json(&json!({ "role": "项目负责人" }))
-        .send()
-        .await
-        .expect("PUT member");
-    assert_eq!(resp.status(), StatusCode::OK);
-    let updated: Value = resp.json().await.expect("update JSON");
-    assert_eq!(updated["role"], "项目负责人");
-
-    // 4. DELETE member.
-    let resp = http
-        .delete(format!("{base_url}/api/members/{member_id}"))
-        .send()
-        .await
-        .expect("DELETE member");
-    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
-
-    // 5. CLEANUP.
-    cleanup_project_and_client(&pool, project_id, client_id).await;
-}
-
-// =========================================================================
 // 9. project_assets_crud — exercises type + value
 // =========================================================================
 
@@ -914,5 +772,214 @@ async fn test_project_files_crud() {
     assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 
     // 6. CLEANUP: project cascade-removes the phase; then delete client.
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 11. people_crud — unified team/client people (side + shared role)
+// =========================================================================
+
+#[tokio::test]
+async fn test_people_crud() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = reqwest::Client::new();
+    let suffix = Uuid::new_v4();
+
+    let client = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // 1. CREATE a team person — role is shared (no separate decision-role field).
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/people"))
+        .json(&json!({
+            "side": "team",
+            "name": "王工",
+            "role": "测试工程师",
+            "notes": "负责 POC"
+        }))
+        .send()
+        .await
+        .expect("POST person");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let created: Value = resp.json().await.expect("create JSON");
+    let person_id = json_id(&created);
+    assert_eq!(created["side"], "team");
+    assert_eq!(created["name"], "王工");
+    assert_eq!(created["role"], "测试工程师");
+
+    // Invalid side is rejected.
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/people"))
+        .json(&json!({ "side": "wizard", "name": "x" }))
+        .send()
+        .await
+        .expect("POST bad side");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+    // 2. UPDATE role (shared field).
+    let resp = http
+        .put(format!("{base_url}/api/people/{person_id}"))
+        .json(&json!({ "role": "项目负责人" }))
+        .send()
+        .await
+        .expect("PUT person");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let updated: Value = resp.json().await.expect("update JSON");
+    assert_eq!(updated["role"], "项目负责人");
+
+    // 3. DELETE.
+    let resp = http
+        .delete(format!("{base_url}/api/people/{person_id}"))
+        .send()
+        .await
+        .expect("DELETE person");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 12. people_reorder — sort_order is scoped per (project, side)
+// =========================================================================
+
+#[tokio::test]
+async fn test_people_reorder() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = reqwest::Client::new();
+    let suffix = Uuid::new_v4();
+
+    let client = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // Three team people append at sort_order 0,1,2 (甲,乙,丙).
+    let mut team_ids: Vec<String> = Vec::new();
+    for name in ["甲", "乙", "丙"] {
+        let row: Value = http
+            .post(format!("{base_url}/api/projects/{project_id}/people"))
+            .json(&json!({ "side": "team", "name": name }))
+            .send()
+            .await
+            .expect("POST")
+            .json()
+            .await
+            .expect("json");
+        team_ids.push(row["id"].as_str().expect("id").to_string());
+    }
+    // A client person shares the sort_order namespace per-side (independent).
+    let _client_person: Value = http
+        .post(format!("{base_url}/api/projects/{project_id}/people"))
+        .json(&json!({ "side": "client", "name": "客户A" }))
+        .send()
+        .await
+        .expect("POST client")
+        .json()
+        .await
+        .expect("json");
+
+    let names = |rows: &Value, side: &str| {
+        rows.as_array()
+            .expect("array")
+            .iter()
+            .filter(|p| p["side"] == side)
+            .map(|p| p["name"].as_str().expect("name").to_string())
+            .collect::<Vec<_>>()
+    };
+    let list: Value = http
+        .get(format!("{base_url}/api/projects/{project_id}/people"))
+        .send()
+        .await
+        .expect("GET")
+        .json()
+        .await
+        .expect("json");
+    assert_eq!(names(&list, "team"), vec!["甲", "乙", "丙"]);
+
+    // Reorder team to reverse; client ordering is untouched.
+    let reversed: Vec<&str> = team_ids.iter().rev().map(|s| s.as_str()).collect();
+    let resp = http
+        .put(format!("{base_url}/api/projects/{project_id}/people/reorder"))
+        .json(&json!({ "side": "team", "ids": reversed }))
+        .send()
+        .await
+        .expect("PUT reorder");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+    let list: Value = http
+        .get(format!("{base_url}/api/projects/{project_id}/people"))
+        .send()
+        .await
+        .expect("GET")
+        .json()
+        .await
+        .expect("json");
+    assert_eq!(names(&list, "team"), vec!["丙", "乙", "甲"], "team reordered");
+    assert_eq!(names(&list, "client"), vec!["客户A"], "client untouched");
+
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 13. people_flip_side — move team ↔ client, role preserved verbatim
+// =========================================================================
+
+#[tokio::test]
+async fn test_people_flip_side() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = reqwest::Client::new();
+    let suffix = Uuid::new_v4();
+
+    let client = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // A team person entered by mistake.
+    let created: Value = http
+        .post(format!("{base_url}/api/projects/{project_id}/people"))
+        .json(&json!({ "side": "team", "name": "赵总", "role": "技术总监" }))
+        .send()
+        .await
+        .expect("POST")
+        .json()
+        .await
+        .expect("json");
+    let person_id = created["id"].as_str().expect("id").to_string();
+
+    // Flip to client side.
+    let resp = http
+        .post(format!("{base_url}/api/people/{person_id}/flip-side"))
+        .send()
+        .await
+        .expect("POST flip");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let moved: Value = resp.json().await.expect("json");
+    assert_eq!(moved["side"], "client", "now on client side");
+    assert_eq!(moved["role"], "技术总监", "role carried verbatim — NO conversion");
+    assert_eq!(moved["id"], person_id, "same row, same id");
+
+    // The person now appears under client, not team.
+    let list: Value = http
+        .get(format!("{base_url}/api/projects/{project_id}/people"))
+        .send()
+        .await
+        .expect("GET")
+        .json()
+        .await
+        .expect("json");
+    let sides: Vec<&str> = list
+        .as_array()
+        .expect("array")
+        .iter()
+        .map(|p| p["side"].as_str().expect("side"))
+        .collect();
+    assert_eq!(sides, vec!["client"], "only client side now");
+
     cleanup_project_and_client(&pool, project_id, client_id).await;
 }

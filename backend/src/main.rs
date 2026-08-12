@@ -29,10 +29,12 @@ const REQUEST_TIMEOUT_SECS: u64 = 30;
 /// not parseable. Keeps misconfigured environments from panicking on boot.
 fn env_usize(var: &str, default: usize) -> usize {
     match std::env::var(var) {
-        Ok(value) if !value.trim().is_empty() => value.trim().parse::<usize>().unwrap_or_else(|err| {
-            warn!(var, value, error = %err, "invalid value, using default");
-            default
-        }),
+        Ok(value) if !value.trim().is_empty() => {
+            value.trim().parse::<usize>().unwrap_or_else(|err| {
+                warn!(var, value, error = %err, "invalid value, using default");
+                default
+            })
+        }
         _ => default,
     }
 }
@@ -283,9 +285,7 @@ async fn main() {
     let listener = match tokio::net::TcpListener::bind(&bind_addr).await {
         Ok(listener) => listener,
         Err(err) => {
-            error!(
-                "❌ 端口 {port} 已被占用：{err}",
-            );
+            error!("❌ 端口 {port} 已被占用：{err}",);
             eprintln!();
             eprintln!("  💡 解决方法：");
             eprintln!("      just stop          # 停止占用端口的旧进程");

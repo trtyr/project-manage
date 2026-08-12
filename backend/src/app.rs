@@ -27,10 +27,10 @@ use tower_http::{
 
 use crate::error::AppError;
 use crate::handlers::{
-    assets_router, clients_router, communications_router, contacts_router, files_router,
-    members_router, phases_router, project_assets_router, project_communications_router,
-    project_contacts_router, project_files_router, project_members_router,
-    project_phases_router, project_tasks_router, projects_router, tasks_router,
+    assets_router, clients_router, communications_router, files_router,
+    people_router, phases_router, project_assets_router, project_communications_router,
+    project_files_router, project_people_router, project_phases_router,
+    project_tasks_router, projects_router, tasks_router,
 };
 use crate::state::AppState;
 
@@ -105,8 +105,8 @@ pub fn build_app(
     body_limit_bytes: usize,
 ) -> Router {
     let static_path = std::path::Path::new(static_dir);
-    let serve_dir = ServeDir::new(static_path)
-        .fallback(ServeFile::new(static_path.join("index.html")));
+    let serve_dir =
+        ServeDir::new(static_path).fallback(ServeFile::new(static_path.join("index.html")));
 
     // Capture the timeout by move so the closure owns its own copy and
     // tower's blanket `FnMut → Service` impl provides the `Service` that
@@ -133,10 +133,8 @@ pub fn build_app(
         .nest("/api", files_router())
         .nest("/api", project_phases_router())
         .nest("/api", phases_router())
-        .nest("/api", project_members_router())
-        .nest("/api", members_router())
-        .nest("/api", project_contacts_router())
-        .nest("/api", contacts_router())
+        .nest("/api", project_people_router())
+        .nest("/api", people_router())
         .route("/api", axum::routing::any(api_not_found))
         .route("/api/", axum::routing::any(api_not_found))
         .route("/api/{*path}", axum::routing::any(api_not_found))

@@ -1,5 +1,5 @@
 -- Members: team members associated with a project.
-CREATE TABLE members (
+CREATE TABLE IF NOT EXISTS members (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     role        TEXT,
@@ -8,4 +8,4 @@ CREATE TABLE members (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX members_project_id_idx ON members(project_id);
+CREATE INDEX IF NOT EXISTS members_project_id_idx ON members(project_id);

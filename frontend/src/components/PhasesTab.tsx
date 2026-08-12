@@ -66,7 +66,11 @@ interface StandardPhaseTemplate {
 }
 
 const STANDARD_PHASES: StandardPhaseTemplate[] = [
-  { name: '需求挖掘', description: '线索验证，确认客户真实需求', sort_order: 1 },
+  {
+    name: '需求挖掘',
+    description: '线索验证，确认客户真实需求',
+    sort_order: 1,
+  },
   { name: '技术预研', description: '技术可行性评估，环境调研', sort_order: 2 },
   { name: '方案论证', description: '方案设计，技术交流', sort_order: 3 },
   { name: '立项审批', description: '推动客户内部立项', sort_order: 4 },
@@ -129,8 +133,13 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
   })
 
   const linkFileMut = useMutation({
-    mutationFn: ({ fileId, phaseId }: { fileId: string; phaseId: string | null }) =>
-      filesApi.linkPhase(fileId, phaseId),
+    mutationFn: ({
+      fileId,
+      phaseId,
+    }: {
+      fileId: string
+      phaseId: string | null
+    }) => filesApi.linkPhase(fileId, phaseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
     },
@@ -171,7 +180,8 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             padding: '10px 12px',
             marginLeft: depth * 24,
             borderRadius: 8,
-            background: depth === 0 ? 'rgba(var(--primary-rgb), 0.02)' : 'transparent',
+            background:
+              depth === 0 ? 'rgba(var(--primary-rgb), 0.02)' : 'transparent',
             border: '1px solid var(--hairline)',
             marginBottom: 8,
           }}
@@ -260,7 +270,9 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             flexWrap: 'wrap',
           }}
         >
-          <PaperClipOutlined style={{ color: 'var(--muted-hex)', fontSize: 12 }} />
+          <PaperClipOutlined
+            style={{ color: 'var(--muted-hex)', fontSize: 12 }}
+          />
           {phaseFiles.map((f) => (
             <Tag
               key={f.id}
@@ -340,7 +352,9 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
         </div>
 
         {node.children.length > 0 && (
-          <div>{node.children.map((child) => renderNode(child, depth + 1))}</div>
+          <div>
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </div>
         )}
       </div>
     )

@@ -17,6 +17,9 @@ pub struct Asset {
     pub asset_type: String,
     pub value: Option<String>,
     pub description: Option<String>,
+    pub access_method: Option<String>,
+    pub credentials: Option<String>,
+    pub vendor: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -34,6 +37,15 @@ pub struct CreateAsset {
     #[serde(default)]
     #[ts(optional)]
     pub description: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub access_method: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub credentials: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub vendor: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ts_rs::TS)]
@@ -51,4 +63,13 @@ pub struct UpdateAsset {
     #[serde(default)]
     #[ts(optional)]
     pub description: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub access_method: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub credentials: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub vendor: Option<String>,
 }

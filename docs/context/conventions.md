@@ -187,19 +187,24 @@ application-side timestamps.
 
 ### 5.2 Migration conventions
 
-- Naming: `<timestamp>_<name>.sql` for the first batch (UTC seconds,
-  e.g. `20250714000001_init_clients.sql` → `20250714000004_init_tasks.sql`).
-  After migration 004 the project switched to a shorter ordinal scheme
-  (`005_assets.sql`, `006_project_files.sql`, …). Follow whichever pattern
-  is already used in chronological order; do not renumber old files.
+- Naming: uniform `<timestamp>_<name>.sql` using UTC seconds
+  (`20250714000001_init_clients.sql` … `20250714000012_add_crm_fields.sql`).
+  sqlx applies migrations sorted by the numeric version parsed from the prefix,
+  so the timestamp MUST stay monotonic with dependency order — base tables
+  (clients / projects / communications / tasks) before the tables that reference
+  them. New migrations take the next free timestamp in sequence. Do NOT
+  reintroduce a second naming scheme: a mixed timestamp + ordinal scheme silently
+  breaks fresh-database setup (fixed 2026-08-12).
 - Idempotency is mandatory: every migration must be safely re-runnable.
   - Tables: `CREATE TABLE IF NOT EXISTS …`.
   - Functions / triggers: `CREATE OR REPLACE FUNCTION …` /
     `DROP TRIGGER IF EXISTS …` + `CREATE TRIGGER …`.
   - Column additions: `ALTER TABLE … ADD COLUMN IF NOT EXISTS …`.
-- Migrations are applied at runtime via `sqlx::migrate!()` against
-  `./migrations` (relative to `backend/`). Do not require operators to run
-  SQL by hand.
+- Migrations are applied at runtime via `sqlx::migrate::Migrator::new("./migrations")`
+  (relative to `backend/`), not the compile-time `sqlx::migrate!()` macro — this
+  keeps the SQL files readable and diffable. (`sqlx::query!` query macros still
+  verify against a live migrated DB at compile time, so a migrated DB is needed
+  to build.) Do not require operators to run SQL by hand.
 
 ## 6. Frontend conventions
 

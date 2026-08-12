@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Modal, Form, Input, Select, Radio, Empty, App, Dropdown } from 'antd'
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Radio,
+  Empty,
+  App,
+  Dropdown,
+} from 'antd'
 import { PlusOutlined, SearchOutlined, MoreOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { clientsApi, projectsApi, communicationsApi } from '../api'
-import type {
-  Project,
-  ProjectStatus,
-  CommunicationWithProject,
-} from '../types'
+import type { Project, ProjectStatus, CommunicationWithProject } from '../types'
 
 const statusOrder: Record<ProjectStatus, number> = {
   in_progress: 0,
@@ -84,8 +90,13 @@ export default function ProjectBoard() {
   })
 
   const updateProjectMut = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof projectsApi.update>[1] }) =>
-      projectsApi.update(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: Parameters<typeof projectsApi.update>[1]
+    }) => projectsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       message.success('项目已更新')
@@ -183,9 +194,7 @@ export default function ProjectBoard() {
     ? sortedProjects.filter(
         (p) =>
           p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          p.competitors
-            .toLowerCase()
-            .includes(debouncedSearch.toLowerCase()) ||
+          p.competitors.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
           (clientMap.get(p.client_id) ?? '')
             .toLowerCase()
             .includes(debouncedSearch.toLowerCase()),
@@ -198,9 +207,7 @@ export default function ProjectBoard() {
       <div className="page-header">
         <div className="page-header__left">
           <h1 className="page-header__title">项目</h1>
-          <span className="page-header__count">
-            {projects?.length ?? 0} 个
-          </span>
+          <span className="page-header__count">{projects?.length ?? 0} 个</span>
         </div>
         <Button
           type="primary"
@@ -308,9 +315,7 @@ export default function ProjectBoard() {
                   role="button"
                   tabIndex={0}
                   onClick={() =>
-                    navigate(
-                      `/projects/${c.project_id}/communications/${c.id}`,
-                    )
+                    navigate(`/projects/${c.project_id}/communications/${c.id}`)
                   }
                   onKeyDown={(e) => {
                     if (e.key === 'Enter')
@@ -322,9 +327,7 @@ export default function ProjectBoard() {
                   <span className="recent-item__date">
                     {dayjs(c.occurred_at).format('M月D日')}
                   </span>
-                  <span className="recent-item__project">
-                    {c.project_name}
-                  </span>
+                  <span className="recent-item__project">{c.project_name}</span>
                   <span className="recent-item__preview">
                     {c.content.replace(/[#*`>\-]/g, '').substring(0, 80)}
                   </span>
@@ -344,9 +347,7 @@ export default function ProjectBoard() {
           setClientMode('existing')
         }}
         onOk={handleCreate}
-        confirmLoading={
-          createProjectMut.isPending || createClientMut.isPending
-        }
+        confirmLoading={createProjectMut.isPending || createClientMut.isPending}
         width={520}
         okText="创建"
         cancelText="取消"

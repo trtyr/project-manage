@@ -27,7 +27,14 @@ import {
   FolderOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { projectsApi, communicationsApi, tasksApi, clientsApi, assetsApi, filesApi } from '../api'
+import {
+  projectsApi,
+  communicationsApi,
+  tasksApi,
+  clientsApi,
+  assetsApi,
+  filesApi,
+} from '../api'
 import type { ProjectStatus, TechApprovalStatus, ProjectFile } from '../types'
 import FilePreview from '../components/FilePreview'
 import PhasesTab from '../components/PhasesTab'
@@ -55,23 +62,35 @@ const TECH_APPROVAL_OPTIONS: Array<{
   { label: '技术否决', value: '技术否决' },
 ]
 
-const TECH_APPROVAL_TAG_COLORS: Record<
-  TechApprovalStatus,
-  string | undefined
-> = {
-  未接触: undefined,
-  POC中: 'processing',
-  已认可: 'success',
-  技术否决: 'error',
-}
+const TECH_APPROVAL_TAG_COLORS: Record<TechApprovalStatus, string | undefined> =
+  {
+    未接触: undefined,
+    POC中: 'processing',
+    已认可: 'success',
+    技术否决: 'error',
+  }
 
-function TabLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
+function TabLabel({
+  icon,
+  label,
+  count,
+}: {
+  icon: React.ReactNode
+  label: string
+  count?: number
+}) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       {icon}
       <span>{label}</span>
       {count !== undefined && count > 0 && (
-        <span style={{ fontSize: 12, color: 'var(--muted-hex)', fontVariantNumeric: 'tabular-nums' }}>
+        <span
+          style={{
+            fontSize: 12,
+            color: 'var(--muted-hex)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           {count}
         </span>
       )}
@@ -271,10 +290,14 @@ export default function ProjectDetail() {
         items={[
           {
             key: 'phases',
-            label: (
-              <TabLabel icon={<ApartmentOutlined />} label="阶段规划" />
+            label: <TabLabel icon={<ApartmentOutlined />} label="阶段规划" />,
+            children: (
+              <PhasesTab
+                projectId={id!}
+                files={files}
+                onFilePreview={(f) => setPreviewFile(f)}
+              />
             ),
-            children: <PhasesTab projectId={id!} files={files} onFilePreview={(f) => setPreviewFile(f)} />,
           },
           {
             key: 'communications',
@@ -311,9 +334,7 @@ export default function ProjectDetail() {
           },
           {
             key: 'members',
-            label: (
-              <TabLabel icon={<TeamOutlined />} label="成员" />
-            ),
+            label: <TabLabel icon={<TeamOutlined />} label="成员" />,
             children: <MembersTab projectId={id!} />,
           },
           {
@@ -325,7 +346,12 @@ export default function ProjectDetail() {
                 count={files?.length}
               />
             ),
-            children: <FilesTab projectId={id!} onFilePreview={(f) => setPreviewFile(f)} />,
+            children: (
+              <FilesTab
+                projectId={id!}
+                onFilePreview={(f) => setPreviewFile(f)}
+              />
+            ),
           },
         ]}
       />
@@ -369,10 +395,7 @@ export default function ProjectDetail() {
             />
           </Form.Item>
           <Form.Item name="competitors" label="竞品信息">
-            <Input.TextArea
-              rows={2}
-              placeholder="还有谁在抢、他们报价如何…"
-            />
+            <Input.TextArea rows={2} placeholder="还有谁在抢、他们报价如何…" />
           </Form.Item>
           <Form.Item name="phase" label="当前阶段">
             <Input placeholder="如：信息收集" />
@@ -396,10 +419,16 @@ export default function ProjectDetail() {
               </Text>
               <Text strong>{client.name}</Text>
               {client.contact_person && (
-                <Text type="secondary">{' · '}{client.contact_person}</Text>
+                <Text type="secondary">
+                  {' · '}
+                  {client.contact_person}
+                </Text>
               )}
               {client.contact_info && (
-                <Text type="secondary">{' · '}{client.contact_info}</Text>
+                <Text type="secondary">
+                  {' · '}
+                  {client.contact_info}
+                </Text>
               )}
             </div>
           )}

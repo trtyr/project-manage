@@ -1,16 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Table, Tag, Space, Button, Input, Popconfirm, App } from 'antd'
 import {
-  Table,
-  Tag,
-  Space,
-  Button,
-  Input,
-  Popconfirm,
-  App,
-} from 'antd'
-import {
-  PaperClipOutlined,
   EyeOutlined,
   DownloadOutlined,
   DeleteOutlined,
@@ -21,6 +12,7 @@ import dayjs from 'dayjs'
 import { filesApi } from '../api'
 import type { FileWithProject } from '../types'
 import FilePreview from '../components/FilePreview'
+import FileIcon from '../components/FileIcon'
 import { formatSize } from '../utils/format'
 
 export default function FileLibrary() {
@@ -61,7 +53,9 @@ export default function FileLibrary() {
     (f) =>
       f.original_name.toLowerCase().includes(search.toLowerCase()) ||
       f.project_name.toLowerCase().includes(search.toLowerCase()) ||
-      f.tags.some((t: string) => t.toLowerCase().includes(search.toLowerCase())),
+      f.tags.some((t: string) =>
+        t.toLowerCase().includes(search.toLowerCase()),
+      ),
   )
 
   return (
@@ -70,7 +64,9 @@ export default function FileLibrary() {
       <div className="page-header">
         <div className="page-header__left">
           <h1 className="page-header__title">资料库</h1>
-          <span className="page-header__count">{files?.length ?? 0} 个文件</span>
+          <span className="page-header__count">
+            {files?.length ?? 0} 个文件
+          </span>
         </div>
       </div>
 
@@ -95,13 +91,18 @@ export default function FileLibrary() {
             key: 'original_name',
             render: (name: string, r: FileWithProject) => (
               <Space>
-                {r.source_type === 'link' ? (
-                  <LinkOutlined style={{ color: 'var(--muted-hex)' }} />
-                ) : (
-                  <PaperClipOutlined style={{ color: 'var(--muted-hex)' }} />
-                )}
+                <FileIcon
+                  filename={r.original_name}
+                  mimeType={r.mime_type}
+                  sourceType={r.source_type}
+                />
                 {r.source_type === 'link' && r.url ? (
-                  <a href={r.url} target="_blank" rel="noopener noreferrer" title={r.url}>
+                  <a
+                    href={r.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={r.url}
+                  >
                     {name}
                   </a>
                 ) : (
@@ -110,7 +111,9 @@ export default function FileLibrary() {
                     tabIndex={0}
                     title={name}
                     onClick={() => setPreviewFile(r)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') setPreviewFile(r) }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setPreviewFile(r)
+                    }}
                     style={{ cursor: 'pointer' }}
                   >
                     {name}
@@ -128,9 +131,13 @@ export default function FileLibrary() {
                 role="button"
                 tabIndex={0}
                 onClick={() => navigate(`/projects/${r.project_id}`)}
-                onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/projects/${r.project_id}`) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') navigate(`/projects/${r.project_id}`)
+                }}
                 style={{ cursor: 'pointer' }}
-              >{name}</a>
+              >
+                {name}
+              </a>
             ),
           },
           {
@@ -170,7 +177,9 @@ export default function FileLibrary() {
                     type="text"
                     size="small"
                     icon={<LinkOutlined />}
-                    onClick={() => window.open(r.url!, '_blank', 'noopener,noreferrer')}
+                    onClick={() =>
+                      window.open(r.url!, '_blank', 'noopener,noreferrer')
+                    }
                   />
                 ) : (
                   <>
@@ -189,7 +198,9 @@ export default function FileLibrary() {
                   </>
                 )}
                 <Popconfirm
-                  title={r.source_type === 'link' ? '删除该链接？' : '删除该文件？'}
+                  title={
+                    r.source_type === 'link' ? '删除该链接？' : '删除该文件？'
+                  }
                   onConfirm={() => deleteMut.mutate(r.id)}
                 >
                   <Button

@@ -1,0 +1,8 @@
+# Build output & deps (not hand-edited)
+dist
+node_modules
+coverage
+
+# ts-rs regenerates these from backend DTOs on every `cargo test` — never
+# hand-format them, prettier --check would just fight the generator.
+src/types/generated/

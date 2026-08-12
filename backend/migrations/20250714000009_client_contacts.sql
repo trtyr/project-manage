@@ -1,5 +1,5 @@
 -- Client contacts: people on the client side associated with a project.
-CREATE TABLE client_contacts (
+CREATE TABLE IF NOT EXISTS client_contacts (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name        TEXT NOT NULL,
@@ -7,4 +7,4 @@ CREATE TABLE client_contacts (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX client_contacts_project_id_idx ON client_contacts(project_id);
+CREATE INDEX IF NOT EXISTS client_contacts_project_id_idx ON client_contacts(project_id);

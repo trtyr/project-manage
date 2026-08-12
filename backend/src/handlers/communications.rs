@@ -25,9 +25,7 @@ use uuid::Uuid;
 
 use crate::db::helpers::ensure_project_exists;
 use crate::error::{AppError, AppResult};
-use crate::models::{
-    Communication, CommunicationWithProject, CreateCommunication, UpdateCommunication,
-};
+use crate::models::{Communication, CommunicationWithProject, CreateCommunication, UpdateCommunication};
 use crate::state::AppState;
 
 /// Nested router — mounted under `/api/projects/:project_id`.
@@ -160,10 +158,7 @@ async fn update(
 }
 
 /// `DELETE /api/communications/:id`
-async fn remove(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> AppResult<StatusCode> {
+async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     let res = sqlx::query!("DELETE FROM communications WHERE id = $1", id)
         .execute(&pool)
         .await?;
