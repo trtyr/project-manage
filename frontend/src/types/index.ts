@@ -57,6 +57,8 @@ export type TechApprovalStatus = '未接触' | 'POC中' | '已认可' | '技术�
 
 export type TaskStatus = 'current' | 'next' | 'todo'
 
+export type TaskPriority = 'urgent' | 'high' | 'normal' | 'low'
+
 // `source_type` is a `String` in Rust; keep the narrow union here so call
 // sites that construct a `ProjectFile` get autocomplete and typo detection.
 // Reads (e.g. `r.source_type === 'link'`) keep working because `'link'`

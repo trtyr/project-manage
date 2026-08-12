@@ -27,10 +27,11 @@ use tower_http::{
 
 use crate::error::AppError;
 use crate::handlers::{
-    assets_router, clients_router, communications_router, files_router,
-    people_router, phases_router, project_assets_router, project_communications_router,
-    project_files_router, project_people_router, project_phases_router,
-    project_tasks_router, projects_router, tasks_router,
+    assets_router, clients_router, communications_router, deliverables_router,
+    files_router, people_router, phases_router, project_assets_router,
+    project_communications_router, project_deliverables_router, project_files_router,
+    project_people_router, project_phases_router, project_tasks_router,
+    projects_router, search_router, tasks_router,
 };
 use crate::state::AppState;
 
@@ -135,6 +136,9 @@ pub fn build_app(
         .nest("/api", phases_router())
         .nest("/api", project_people_router())
         .nest("/api", people_router())
+        .nest("/api", search_router())
+        .nest("/api", project_deliverables_router())
+        .nest("/api", deliverables_router())
         .route("/api", axum::routing::any(api_not_found))
         .route("/api/", axum::routing::any(api_not_found))
         .route("/api/{*path}", axum::routing::any(api_not_found))

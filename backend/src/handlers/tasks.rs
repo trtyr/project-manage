@@ -1,14 +1,4 @@
 //! Task (任务) HTTP handlers.
-//!
-//! Routes:
-//! - `GET    /api/projects/:project_id/tasks`   → list for a project
-//! - `POST   /api/projects/:project_id/tasks`   → create for a project
-//! - `GET    /api/tasks/:id`                    → read one
-//! - `PUT    /api/tasks/:id`                    → partial update
-//! - `DELETE /api/tasks/:id`                    → remove
-//!
-//! The task plan tree calls for `PUT /api/tasks/:id` specifically, hence
-//! the flat route even when creation is scoped under a project.
 
 use axum::{
     extract::{Path, State},
@@ -22,10 +12,9 @@ use uuid::Uuid;
 
 use crate::db::helpers::ensure_project_exists;
 use crate::error::{AppError, AppResult};
-use crate::models::{CreateTask, Task, TaskStatus, UpdateTask};
+use crate::models::{CreateTask, Task, TaskPriority, TaskStatus, UpdateTask};
 use crate::state::AppState;
 
-/// Nested router — mounted under `/api/projects/:project_id`.
 pub fn project_tasks_router() -> Router<AppState> {
     Router::new().route(
         "/projects/{project_id}/tasks",
@@ -33,12 +22,10 @@ pub fn project_tasks_router() -> Router<AppState> {
     )
 }
 
-/// Flat router — mounted under `/api/tasks`.
 pub fn tasks_router() -> Router<AppState> {
     Router::new().route("/tasks/{id}", get(get_one).put(update).delete(remove))
 }
 
-/// `GET /api/projects/:project_id/tasks`
 async fn list_by_project(
     State(pool): State<PgPool>,
     Path(project_id): Path<Uuid>,
@@ -48,7 +35,7 @@ async fn list_by_project(
     let rows = sqlx::query_as!(
         Task,
         r#"SELECT id, project_id, title, status, planned_date,
-                  created_at, updated_at
+                  assignee_id, priority, created_at, updated_at
            FROM tasks
            WHERE project_id = $1
            ORDER BY
@@ -57,6 +44,13 @@ async fn list_by_project(
                     WHEN 'next'    THEN 1
                     WHEN 'todo'    THEN 2
                     ELSE 3
+                END,
+                CASE priority
+                    WHEN 'urgent' THEN 0
+                    WHEN 'high'   THEN 1
+                    WHEN 'normal' THEN 2
+                    WHEN 'low'    THEN 3
+                    ELSE 4
                 END,
                 planned_date NULLS LAST,
                 created_at"#,
@@ -67,7 +61,6 @@ async fn list_by_project(
     Ok(Json(rows))
 }
 
-/// `POST /api/projects/:project_id/tasks`
 async fn create_for_project(
     State(pool): State<PgPool>,
     Path(project_id): Path<Uuid>,
@@ -85,18 +78,30 @@ async fn create_for_project(
         )));
     }
 
+    let priority = input
+        .priority
+        .unwrap_or_else(|| TaskPriority::NORMAL.to_string());
+    if !TaskPriority::is_valid(&priority) {
+        return Err(AppError::BadRequest(format!(
+            "invalid priority '{priority}', must be one of {:?}",
+            TaskPriority::ALL
+        )));
+    }
+
     ensure_project_exists(&pool, project_id).await?;
 
     let row = sqlx::query_as!(
         Task,
-        r#"INSERT INTO tasks (project_id, title, status, planned_date)
-           VALUES ($1, $2, $3, $4)
+        r#"INSERT INTO tasks (project_id, title, status, planned_date, assignee_id, priority)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id, project_id, title, status, planned_date,
-                     created_at, updated_at"#,
+                     assignee_id, priority, created_at, updated_at"#,
         project_id,
         input.title,
         status,
         input.planned_date,
+        input.assignee_id,
+        priority,
     )
     .fetch_one(&pool)
     .await?;
@@ -104,12 +109,11 @@ async fn create_for_project(
     Ok((StatusCode::CREATED, Json(row)))
 }
 
-/// `GET /api/tasks/:id`
 async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Task>> {
     let row = sqlx::query_as!(
         Task,
         r#"SELECT id, project_id, title, status, planned_date,
-                  created_at, updated_at
+                  assignee_id, priority, created_at, updated_at
            FROM tasks WHERE id = $1"#,
         id
     )
@@ -119,7 +123,6 @@ async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<
     Ok(Json(row))
 }
 
-/// `PUT /api/tasks/:id`
 async fn update(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
@@ -138,20 +141,32 @@ async fn update(
             TaskStatus::ALL
         )));
     }
+    if let Some(priority) = &input.priority
+        && !TaskPriority::is_valid(priority)
+    {
+        return Err(AppError::BadRequest(format!(
+            "invalid priority '{priority}', must be one of {:?}",
+            TaskPriority::ALL
+        )));
+    }
 
     let row = sqlx::query_as!(
         Task,
         r#"UPDATE tasks
            SET title        = COALESCE($2, title),
                status       = COALESCE($3, status),
-               planned_date = COALESCE($4, planned_date)
+               planned_date = COALESCE($4, planned_date),
+               assignee_id  = COALESCE($5, assignee_id),
+               priority     = COALESCE($6, priority)
            WHERE id = $1
            RETURNING id, project_id, title, status, planned_date,
-                     created_at, updated_at"#,
+                     assignee_id, priority, created_at, updated_at"#,
         id,
         input.title,
         input.status,
         input.planned_date,
+        input.assignee_id,
+        input.priority,
     )
     .fetch_optional(&pool)
     .await?
@@ -160,7 +175,6 @@ async fn update(
     Ok(Json(row))
 }
 
-/// `DELETE /api/tasks/:id`
 async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
     let res = sqlx::query!("DELETE FROM tasks WHERE id = $1", id)
         .execute(&pool)

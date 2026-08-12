@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Button,
   Table,
@@ -11,8 +11,22 @@ import {
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { tasksApi } from '../api'
-import type { TaskStatus } from '../types'
+import dayjs from 'dayjs'
+import { tasksApi, peopleApi } from '../api'
+import type { TaskStatus, TaskPriority } from '../types'
+
+const STATUS_OPTIONS = [
+  { label: '当前', value: 'current' },
+  { label: '下一步', value: 'next' },
+  { label: '待办', value: 'todo' },
+]
+
+const PRIORITY_OPTIONS = [
+  { label: '紧急', value: 'urgent' },
+  { label: '高', value: 'high' },
+  { label: '正常', value: 'normal' },
+  { label: '低', value: 'low' },
+]
 
 interface Props {
   projectId: string
@@ -30,11 +44,20 @@ export default function TasksTab({ projectId }: Props) {
     enabled: !!projectId,
   })
 
+  const { data: people } = useQuery({
+    queryKey: ['people', projectId],
+    queryFn: () => peopleApi.listByProject(projectId),
+    enabled: !!projectId,
+  })
+  const teamPeople = (people ?? []).filter((p) => p.side === 'team')
+
   const createTaskMut = useMutation({
     mutationFn: (v: {
       title: string
       status?: TaskStatus
       planned_date?: string
+      assignee_id?: string
+      priority?: TaskPriority
     }) => tasksApi.create(projectId, v),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
@@ -50,12 +73,91 @@ export default function TasksTab({ projectId }: Props) {
       data,
     }: {
       taskId: string
-      data: { status?: TaskStatus }
+      data: Record<string, unknown>
     }) => tasksApi.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
     },
   })
+
+  const columns = useMemo(
+    () => [
+      { title: '任务', dataIndex: 'title', key: 'title' },
+      {
+        title: '状态',
+        dataIndex: 'status',
+        key: 'status',
+        width: 110,
+        render: (s: TaskStatus, r: { id: string }) => (
+          <Select
+            size="small"
+            value={s}
+            style={{ width: 95 }}
+            options={STATUS_OPTIONS}
+            onChange={(val) =>
+              updateTaskMut.mutate({ taskId: r.id, data: { status: val } })
+            }
+          />
+        ),
+      },
+      {
+        title: '优先级',
+        dataIndex: 'priority',
+        key: 'priority',
+        width: 90,
+        render: (p: TaskPriority, r: { id: string }) => (
+          <Select
+            size="small"
+            value={p}
+            style={{ width: 80 }}
+            options={PRIORITY_OPTIONS}
+            onChange={(val) =>
+              updateTaskMut.mutate({ taskId: r.id, data: { priority: val } })
+            }
+          />
+        ),
+      },
+      {
+        title: '指派',
+        dataIndex: 'assignee_id',
+        key: 'assignee_id',
+        width: 120,
+        render: (aid: string | null, r: { id: string }) => (
+          <Select
+            size="small"
+            value={aid ?? undefined}
+            style={{ width: 110 }}
+            allowClear
+            placeholder="指派"
+            options={teamPeople.map((p) => ({ label: p.name, value: p.id }))}
+            onChange={(val) =>
+              updateTaskMut.mutate({
+                taskId: r.id,
+                data: { assignee_id: val ?? null },
+              })
+            }
+          />
+        ),
+      },
+      {
+        title: '截止',
+        dataIndex: 'planned_date',
+        key: 'planned_date',
+        width: 110,
+        render: (v: string | null) => {
+          if (!v) return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          const d = dayjs(v)
+          const overdue = d.isBefore(dayjs(), 'day')
+          return (
+            <span style={{ color: overdue ? '#ff4d4f' : 'inherit' }}>
+              {d.format('MM-DD')}
+            </span>
+          )
+        },
+      },
+    ],
+    [teamPeople],
+  )
 
   return (
     <div>
@@ -69,40 +171,7 @@ export default function TasksTab({ projectId }: Props) {
         rowKey="id"
         size="small"
         pagination={false}
-        columns={[
-          { title: '任务', dataIndex: 'title', key: 'title' },
-          {
-            title: '状态',
-            dataIndex: 'status',
-            key: 'status',
-            width: 120,
-            render: (s: TaskStatus, r: { id: string }) => (
-              <Select
-                size="small"
-                value={s}
-                style={{ width: 100 }}
-                options={[
-                  { label: '当前', value: 'current' },
-                  { label: '下一步', value: 'next' },
-                  { label: '待办', value: 'todo' },
-                ]}
-                onChange={(val) =>
-                  updateTaskMut.mutate({
-                    taskId: r.id,
-                    data: { status: val },
-                  })
-                }
-              />
-            ),
-          },
-          {
-            title: '计划日期',
-            dataIndex: 'planned_date',
-            key: 'planned_date',
-            width: 120,
-            render: (v: string | null) => v ?? '-',
-          },
-        ]}
+        columns={columns}
         locale={{ emptyText: '还没有任务' }}
       />
 
@@ -132,15 +201,19 @@ export default function TasksTab({ projectId }: Props) {
             <Input placeholder="如：端口扫描" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="todo">
+            <Select options={STATUS_OPTIONS} />
+          </Form.Item>
+          <Form.Item name="priority" label="优先级" initialValue="normal">
+            <Select options={PRIORITY_OPTIONS} />
+          </Form.Item>
+          <Form.Item name="assignee_id" label="指派给">
             <Select
-              options={[
-                { label: '当前', value: 'current' },
-                { label: '下一步', value: 'next' },
-                { label: '待办', value: 'todo' },
-              ]}
+              allowClear
+              placeholder="选择团队成员"
+              options={teamPeople.map((p) => ({ label: p.name, value: p.id }))}
             />
           </Form.Item>
-          <Form.Item name="planned_date" label="计划日期">
+          <Form.Item name="planned_date" label="截止日期">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </Form>

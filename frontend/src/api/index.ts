@@ -108,6 +108,10 @@ export const assetsApi = {
   update: (id: string, data: UpdateAsset) =>
     http.put<Asset>(`/assets/${id}`, data).then((r) => r.data),
   delete: (id: string) => http.delete(`/assets/${id}`).then((r) => r.data),
+  reorder: (projectId: string, assetIds: string[]) =>
+    http
+      .put(`/projects/${projectId}/assets/reorder`, { asset_ids: assetIds })
+      .then((r) => r.data),
 }
 
 // --- Files ---
@@ -196,6 +200,42 @@ export const healthApi = {
     http
       .get<{ status: string; version: string }>('/health')
       .then((r) => r.data),
+}
+
+// --- Search ---
+
+export interface SearchHit {
+  resource: string
+  id: string
+  title: string
+  subtitle: string | null
+  project_id: string | null
+}
+
+export const searchApi = {
+  search: (q: string) =>
+    http.get<SearchHit[]>('/search', { params: { q } }).then((r) => r.data),
+}
+
+// --- Deliverables ---
+
+import type { Deliverable } from '../types/generated/Deliverable'
+import type { CreateDeliverable } from '../types/generated/CreateDeliverable'
+import type { UpdateDeliverable } from '../types/generated/UpdateDeliverable'
+
+export const deliverablesApi = {
+  listByProject: (projectId: string) =>
+    http
+      .get<Deliverable[]>(`/projects/${projectId}/deliverables`)
+      .then((r) => r.data),
+  create: (projectId: string, data: CreateDeliverable) =>
+    http
+      .post<Deliverable>(`/projects/${projectId}/deliverables`, data)
+      .then((r) => r.data),
+  update: (id: string, data: UpdateDeliverable) =>
+    http.put<Deliverable>(`/deliverables/${id}`, data).then((r) => r.data),
+  delete: (id: string) =>
+    http.delete(`/deliverables/${id}`).then((r) => r.data),
 }
 
 // --- Error classification ---

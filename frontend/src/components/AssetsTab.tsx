@@ -17,8 +17,24 @@ import {
   EditOutlined,
   DeleteOutlined,
   CopyOutlined,
+  HolderOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { assetsApi } from '../api'
 import type { Asset } from '../types'
 
@@ -166,6 +182,36 @@ interface Props {
   projectId: string
 }
 
+/** Draggable table row for dnd-kit + AntD Table integration. */
+function SortableRow(
+  props: React.HTMLAttributes<HTMLTableRowElement> & { 'data-row-key': string },
+) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props['data-row-key'] })
+  const style: React.CSSProperties = {
+    ...props.style,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    cursor: 'move',
+    ...(isDragging ? { position: 'relative', zIndex: 99 } : {}),
+  }
+  return (
+    <tr
+      {...props}
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+    />
+  )
+}
+
 export default function AssetsTab({ projectId }: Props) {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
@@ -223,8 +269,42 @@ export default function AssetsTab({ projectId }: Props) {
     [message],
   )
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  )
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const ids = (assets ?? []).map((a) => a.id)
+    const oldIndex = ids.indexOf(String(active.id))
+    const newIndex = ids.indexOf(String(over.id))
+    if (oldIndex < 0 || newIndex < 0) return
+    const reordered = arrayMove(assets ?? [], oldIndex, newIndex)
+    queryClient.setQueryData(['assets', projectId], reordered)
+    try {
+      await assetsApi.reorder(
+        projectId,
+        reordered.map((a) => a.id),
+      )
+    } catch {
+      message.error('排序保存失败，已还原')
+      queryClient.invalidateQueries({ queryKey: ['assets', projectId] })
+    }
+  }
+
   const columns = useMemo(
     () => [
+      {
+        title: '',
+        key: 'drag',
+        width: 36,
+        render: () => (
+          <HolderOutlined
+            style={{ cursor: 'grab', color: 'var(--muted-hex)' }}
+          />
+        ),
+      },
       { title: '名称', dataIndex: 'name', key: 'name', width: 150 },
       {
         title: '类型',
@@ -369,14 +449,26 @@ export default function AssetsTab({ projectId }: Props) {
           添加资产
         </Button>
       </div>
-      <Table
-        dataSource={assets}
-        rowKey="id"
-        size="small"
-        pagination={false}
-        columns={columns}
-        locale={{ emptyText: '还没有记录资产' }}
-      />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={(assets ?? []).map((a) => a.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <Table
+            dataSource={assets}
+            rowKey="id"
+            size="small"
+            pagination={false}
+            columns={columns}
+            components={{ body: { row: SortableRow } }}
+            locale={{ emptyText: '还没有记录资产' }}
+          />
+        </SortableContext>
+      </DndContext>
 
       <Modal
         title={editingAsset ? '编辑资产' : '添加资产'}

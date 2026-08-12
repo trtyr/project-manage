@@ -10,12 +10,22 @@ import {
   Empty,
   App,
   Dropdown,
+  Card,
+  Statistic,
 } from 'antd'
-import { PlusOutlined, SearchOutlined, MoreOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
+import {
+  PlusOutlined,
+  SearchOutlined,
+  MoreOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  PauseCircleOutlined,
+  AlertOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { clientsApi, projectsApi, communicationsApi } from '../api'
+import { clientsApi, projectsApi, communicationsApi, filesApi } from '../api'
 import type { Project, ProjectStatus, CommunicationWithProject } from '../types'
 
 const statusOrder: Record<ProjectStatus, number> = {
@@ -63,6 +73,12 @@ export default function ProjectBoard() {
   const { data: recentComms } = useQuery({
     queryKey: ['communications-recent'],
     queryFn: () => communicationsApi.listRecent(5),
+    enabled: !isSearching,
+  })
+
+  const { data: recentFiles } = useQuery({
+    queryKey: ['files-all'],
+    queryFn: filesApi.listAll,
     enabled: !isSearching,
   })
 
@@ -115,6 +131,13 @@ export default function ProjectBoard() {
   })
 
   const clientMap = new Map(clients?.map((c) => [c.id, c.name]))
+
+  // --- Stats ---
+  const inProgress =
+    projects?.filter((p) => p.status === 'in_progress').length ?? 0
+  const completed =
+    projects?.filter((p) => p.status === 'completed').length ?? 0
+  const paused = projects?.filter((p) => p.status === 'paused').length ?? 0
 
   const getMenuItems = (p: Project): MenuProps['items'] => [
     {
@@ -201,13 +224,22 @@ export default function ProjectBoard() {
       )
     : sortedProjects
 
+  const recentFilesSorted = [...(recentFiles ?? [])]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, 5)
+
   return (
     <div>
       {/* Page header */}
       <div className="page-header">
         <div className="page-header__left">
-          <h1 className="page-header__title">项目</h1>
-          <span className="page-header__count">{projects?.length ?? 0} 个</span>
+          <h1 className="page-header__title">概览</h1>
+          <span className="page-header__count">
+            {projects?.length ?? 0} 个项目
+          </span>
         </div>
         <Button
           type="primary"
@@ -276,65 +308,179 @@ export default function ProjectBoard() {
         </div>
       ) : (
         <>
-          {/* === Project list === */}
-          {isLoading ? (
-            <div style={{ color: 'var(--muted-hex)', fontSize: 14 }}>
-              加载中…
-            </div>
-          ) : !projects?.length ? (
-            <Empty
-              description="还没有项目"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
+          {/* === Dashboard stats === */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 16,
+              marginBottom: 28,
+            }}
+          >
+            <Card
+              size="small"
+              variant="borderless"
+              style={{ background: 'var(--card-surface)' }}
             >
-              <Button type="primary" onClick={() => setCreateOpen(true)}>
-                创建第一个项目
-              </Button>
-            </Empty>
-          ) : (
-            <div className="project-list">
-              {filteredProjects.map((p) => (
-                <ProjectRow
-                  key={p.id}
-                  project={p}
-                  clientName={clientMap.get(p.client_id) ?? '未知客户'}
-                  onClick={() => navigate(`/projects/${p.id}`)}
-                  menuItems={getMenuItems(p)}
-                />
-              ))}
-            </div>
-          )}
+              <Statistic
+                title="进行中"
+                value={inProgress}
+                prefix={
+                  <ClockCircleOutlined
+                    style={{ color: 'var(--primary-hex)' }}
+                  />
+                }
+              />
+            </Card>
+            <Card
+              size="small"
+              variant="borderless"
+              style={{ background: 'var(--card-surface)' }}
+            >
+              <Statistic
+                title="已完成"
+                value={completed}
+                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+              />
+            </Card>
+            <Card
+              size="small"
+              variant="borderless"
+              style={{ background: 'var(--card-surface)' }}
+            >
+              <Statistic
+                title="已暂停"
+                value={paused}
+                prefix={<PauseCircleOutlined style={{ color: '#faad14' }} />}
+              />
+            </Card>
+            <Card
+              size="small"
+              variant="borderless"
+              style={{ background: 'var(--card-surface)' }}
+            >
+              <Statistic
+                title="资料"
+                value={recentFiles?.length ?? 0}
+                prefix={<AlertOutlined style={{ color: '#722ed1' }} />}
+              />
+            </Card>
+          </div>
 
-          {/* === Recent activity === */}
-          {recentComms?.length ? (
-            <div className="recent-section">
-              <div className="recent-section__label">最近活动</div>
-              {recentComms.map((c) => (
-                <div
-                  key={c.id}
-                  className="recent-item"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() =>
-                    navigate(`/projects/${c.project_id}/communications/${c.id}`)
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter')
-                      navigate(
-                        `/projects/${c.project_id}/communications/${c.id}`,
-                      )
-                  }}
-                >
-                  <span className="recent-item__date">
-                    {dayjs(c.occurred_at).format('M月D日')}
-                  </span>
-                  <span className="recent-item__project">{c.project_name}</span>
-                  <span className="recent-item__preview">
-                    {c.content.replace(/[#*`>\-]/g, '').substring(0, 80)}
-                  </span>
+          {/* === Two-column: projects + activity === */}
+          <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+            {/* Projects */}
+            <div style={{ flex: '1 1 60%', minWidth: 0 }}>
+              <div
+                className="recent-section__label"
+                style={{ marginBottom: 12 }}
+              >
+                项目列表
+              </div>
+              {isLoading ? (
+                <div style={{ color: 'var(--muted-hex)', fontSize: 14 }}>
+                  加载中…
                 </div>
-              ))}
+              ) : !projects?.length ? (
+                <Empty
+                  description="还没有项目"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                >
+                  <Button type="primary" onClick={() => setCreateOpen(true)}>
+                    创建第一个项目
+                  </Button>
+                </Empty>
+              ) : (
+                <div className="project-list">
+                  {filteredProjects.map((p) => (
+                    <ProjectRow
+                      key={p.id}
+                      project={p}
+                      clientName={clientMap.get(p.client_id) ?? '未知客户'}
+                      onClick={() => navigate(`/projects/${p.id}`)}
+                      menuItems={getMenuItems(p)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : null}
+
+            {/* Activity sidebar */}
+            <div style={{ flex: '0 0 320px' }}>
+              {/* Recent communications */}
+              {recentComms?.length ? (
+                <div style={{ marginBottom: 28 }}>
+                  <div
+                    className="recent-section__label"
+                    style={{ marginBottom: 12 }}
+                  >
+                    最近沟通
+                  </div>
+                  {recentComms.map((c) => (
+                    <div
+                      key={c.id}
+                      className="recent-item"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        navigate(
+                          `/projects/${c.project_id}/communications/${c.id}`,
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter')
+                          navigate(
+                            `/projects/${c.project_id}/communications/${c.id}`,
+                          )
+                      }}
+                    >
+                      <span className="recent-item__date">
+                        {dayjs(c.occurred_at).format('M月D日')}
+                      </span>
+                      <span className="recent-item__project">
+                        {c.project_name}
+                      </span>
+                      <span className="recent-item__preview">
+                        {c.content.replace(/[#*`>\-]/g, '').substring(0, 60)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Recent files */}
+              {recentFilesSorted.length ? (
+                <div>
+                  <div
+                    className="recent-section__label"
+                    style={{ marginBottom: 12 }}
+                  >
+                    最近上传
+                  </div>
+                  {recentFilesSorted.map((f) => (
+                    <div
+                      key={f.id}
+                      className="recent-item"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/projects/${f.project_id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter')
+                          navigate(`/projects/${f.project_id}`)
+                      }}
+                    >
+                      <span className="recent-item__date">
+                        {dayjs(f.created_at).format('M月D日')}
+                      </span>
+                      <span className="recent-item__preview">
+                        {f.original_name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
         </>
       )}
 

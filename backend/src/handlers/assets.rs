@@ -1,12 +1,13 @@
-//! Asset (资产) HTTP handlers — CRUD with access_method / credentials / vendor.
+//! Asset (资产) HTTP handlers — CRUD + drag-and-drop reorder.
 
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    routing::get,
+    routing::{get, put},
     Json, Router,
 };
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -15,16 +16,16 @@ use crate::error::{AppError, AppResult};
 use crate::models::{Asset, CreateAsset, UpdateAsset};
 use crate::state::AppState;
 
-/// Full column list for `assets` queries. Add new columns here so every
-/// SELECT / RETURNING stays in sync.
-const ASSET_COLUMNS: &str =
-    "id, project_id, name, asset_type, value, description, access_method, credentials, vendor, created_at, updated_at";
+const ASSET_COLUMNS: &str = "id, project_id, name, asset_type, value, description, \
+     access_method, credentials, vendor, sort_order, created_at, updated_at";
 
 pub fn project_assets_router() -> Router<AppState> {
-    Router::new().route(
-        "/projects/{project_id}/assets",
-        get(list_by_project).post(create_for_project),
-    )
+    Router::new()
+        .route(
+            "/projects/{project_id}/assets",
+            get(list_by_project).post(create_for_project),
+        )
+        .route("/projects/{project_id}/assets/reorder", put(reorder))
 }
 
 pub fn assets_router() -> Router<AppState> {
@@ -38,7 +39,7 @@ async fn list_by_project(
     ensure_project_exists(&pool, project_id).await?;
     let rows = sqlx::query_as::<_, Asset>(&format!(
         "SELECT {ASSET_COLUMNS} FROM assets \
-         WHERE project_id = $1 ORDER BY created_at DESC"
+         WHERE project_id = $1 ORDER BY sort_order ASC, created_at ASC"
     ))
     .bind(project_id)
     .fetch_all(&pool)
@@ -58,10 +59,11 @@ async fn create_for_project(
 
     let row = sqlx::query_as::<_, Asset>(
         "INSERT INTO assets (project_id, name, asset_type, value, description, \
-         access_method, credentials, vendor) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+         access_method, credentials, vendor, sort_order) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, \
+            (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM assets WHERE project_id = $1)) \
          RETURNING id, project_id, name, asset_type, value, description, \
-                   access_method, credentials, vendor, created_at, updated_at",
+                   access_method, credentials, vendor, sort_order, created_at, updated_at",
     )
     .bind(project_id)
     .bind(&input.name)
@@ -102,7 +104,7 @@ async fn update(
          vendor = COALESCE($8, vendor), updated_at = NOW() \
          WHERE id = $1 \
          RETURNING id, project_id, name, asset_type, value, description, \
-                   access_method, credentials, vendor, created_at, updated_at",
+                   access_method, credentials, vendor, sort_order, created_at, updated_at",
     )
     .bind(id)
     .bind(input.name.as_ref())
@@ -125,5 +127,31 @@ async fn remove(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<S
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound(format!("asset {id} not found")));
     }
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Deserialize)]
+struct ReorderRequest {
+    asset_ids: Vec<Uuid>,
+}
+
+async fn reorder(
+    State(pool): State<PgPool>,
+    Path(project_id): Path<Uuid>,
+    Json(input): Json<ReorderRequest>,
+) -> AppResult<StatusCode> {
+    ensure_project_exists(&pool, project_id).await?;
+    let mut tx = pool.begin().await?;
+    for (idx, id) in input.asset_ids.iter().enumerate() {
+        sqlx::query!(
+            "UPDATE assets SET sort_order = $2 WHERE id = $1 AND project_id = $3",
+            id,
+            idx as i32,
+            project_id
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
 }

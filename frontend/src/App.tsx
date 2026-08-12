@@ -1,12 +1,13 @@
 import { useState, useEffect, Component } from 'react'
-import { ConfigProvider, Switch } from 'antd'
+import { ConfigProvider, Switch, Input } from 'antd'
+import { SearchOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { FolderOutlined, DatabaseOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { lightTheme, darkTheme } from './theme'
-import { projectsApi } from './api'
+import { projectsApi, searchApi } from './api'
 import ProjectBoard from './pages/ProjectBoard'
 import ProjectDetail from './pages/ProjectDetail'
 import CommunicationDetail from './pages/CommunicationDetail'
@@ -122,10 +123,42 @@ function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   })
 
+  const [searchText, setSearchText] = useState('')
+  const [searchHits, setSearchHits] = useState<
+    Awaited<ReturnType<typeof searchApi.search>>
+  >([])
+  const [searchOpen, setSearchOpen] = useState(false)
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
     localStorage.setItem('theme', isDark ? 'dark' : 'light')
   }, [isDark])
+
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setSearchHits([])
+      setSearchOpen(false)
+      return
+    }
+    const timer = setTimeout(async () => {
+      const hits = await searchApi.search(searchText)
+      setSearchHits(hits)
+      setSearchOpen(true)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchText])
+
+  const handleSearchClick = (
+    hit: Awaited<ReturnType<typeof searchApi.search>>[number],
+  ) => {
+    setSearchOpen(false)
+    setSearchText('')
+    if (hit.resource === 'project') {
+      navigate(`/projects/${hit.id}`)
+    } else if (hit.project_id) {
+      navigate(`/projects/${hit.project_id}`)
+    }
+  }
 
   const { data: projects } = useQuery({
     queryKey: ['projects'],
@@ -160,6 +193,63 @@ function App() {
             <div className="sidebar-logo__dot" />
             <span className="sidebar-logo__text">sec-tracker</span>
           </div>
+
+          <Input
+            size="small"
+            placeholder="全局搜索…"
+            prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            allowClear
+            style={{ margin: '4px 8px 8px', width: 'calc(100% - 16px)' }}
+          />
+          {searchOpen && searchHits.length > 0 && (
+            <div
+              style={{
+                margin: '0 8px 8px',
+                background: 'var(--card-surface)',
+                border: '1px solid var(--hairline)',
+                borderRadius: 6,
+                maxHeight: 300,
+                overflowY: 'auto',
+              }}
+            >
+              {searchHits.map((hit) => (
+                <div
+                  key={`${hit.resource}-${hit.id}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleSearchClick(hit)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSearchClick(hit)
+                  }}
+                  style={{
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid var(--hairline-light)',
+                    fontSize: 13,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: 'var(--primary-hex)',
+                      marginRight: 6,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {hit.resource}
+                  </span>
+                  <span style={{ color: 'var(--ink-hex)' }}>{hit.title}</span>
+                  {hit.subtitle && (
+                    <span style={{ color: 'var(--muted-hex)', marginLeft: 4 }}>
+                      · {hit.subtitle}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           <nav className="sidebar-nav">
             {navItems.map((item) => (

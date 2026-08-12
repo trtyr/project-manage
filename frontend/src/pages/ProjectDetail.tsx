@@ -25,6 +25,8 @@ import {
   TeamOutlined,
   DatabaseOutlined,
   FolderOutlined,
+  FieldTimeOutlined,
+  ScheduleOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -38,6 +40,8 @@ import {
 import type { ProjectStatus, TechApprovalStatus, ProjectFile } from '../types'
 import FilePreview from '../components/FilePreview'
 import PhasesTab from '../components/PhasesTab'
+import TimelineTab from '../components/TimelineTab'
+import DeliverablesTab from '../components/DeliverablesTab'
 import MembersTab from '../components/MembersTab'
 import CommunicationsTab from '../components/CommunicationsTab'
 import TasksTab from '../components/TasksTab'
@@ -352,6 +356,16 @@ export default function ProjectDetail() {
                 onFilePreview={(f) => setPreviewFile(f)}
               />
             ),
+          },
+          {
+            key: 'timeline',
+            label: <TabLabel icon={<FieldTimeOutlined />} label="时间线" />,
+            children: <TimelineTab projectId={id!} />,
+          },
+          {
+            key: 'deliverables',
+            label: <TabLabel icon={<ScheduleOutlined />} label="交付物" />,
+            children: <DeliverablesTab projectId={id!} />,
           },
         ]}
       />

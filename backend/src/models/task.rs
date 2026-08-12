@@ -19,11 +19,22 @@ pub mod TaskStatus {
 
     pub const ALL: &[&str] = &[CURRENT, NEXT, TODO];
 
-    /// `true` if `input` is one of the allowed task status values.
-    // `PartialEq` for `str` is not yet stable in const fn, so this is
-    // a regular `fn` — still cheap to inline at the call site.
     pub fn is_valid(input: &str) -> bool {
         matches!(input, CURRENT | NEXT | TODO)
+    }
+}
+
+#[allow(non_snake_case)]
+pub mod TaskPriority {
+    pub const URGENT: &str = "urgent";
+    pub const HIGH: &str = "high";
+    pub const NORMAL: &str = "normal";
+    pub const LOW: &str = "low";
+
+    pub const ALL: &[&str] = &[URGENT, HIGH, NORMAL, LOW];
+
+    pub fn is_valid(input: &str) -> bool {
+        matches!(input, URGENT | HIGH | NORMAL | LOW)
     }
 }
 
@@ -33,12 +44,12 @@ pub struct Task {
     pub id: Uuid,
     pub project_id: Uuid,
     pub title: String,
-    // Override the `String` mapping to the narrow frontend union. The DB
-    // keeps `status` as free-form text so adding a value doesn't need a
-    // migration; the TS narrowing happens entirely at the type layer.
     #[ts(type = "'current' | 'next' | 'todo'")]
     pub status: String,
     pub planned_date: Option<NaiveDate>,
+    pub assignee_id: Option<Uuid>,
+    #[ts(type = "'urgent' | 'high' | 'normal' | 'low'")]
+    pub priority: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -47,13 +58,19 @@ pub struct Task {
 #[ts(export, export_to = "../../frontend/src/types/generated/")]
 pub struct CreateTask {
     pub title: String,
-    /// Defaults to `TaskStatus::TODO`.
     #[serde(default)]
     #[ts(optional)]
     pub status: Option<String>,
     #[serde(default)]
     #[ts(optional)]
     pub planned_date: Option<NaiveDate>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub assignee_id: Option<Uuid>,
+    #[serde(default)]
+    #[ts(optional)]
+    #[ts(type = "'urgent' | 'high' | 'normal' | 'low'")]
+    pub priority: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ts_rs::TS)]
@@ -68,4 +85,11 @@ pub struct UpdateTask {
     #[serde(default)]
     #[ts(optional)]
     pub planned_date: Option<NaiveDate>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub assignee_id: Option<Uuid>,
+    #[serde(default)]
+    #[ts(optional)]
+    #[ts(type = "'urgent' | 'high' | 'normal' | 'low'")]
+    pub priority: Option<String>,
 }

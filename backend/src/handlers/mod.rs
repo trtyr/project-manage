@@ -6,10 +6,12 @@
 pub mod assets;
 pub mod clients;
 pub mod communications;
+pub mod deliverables;
 pub mod files;
 pub mod people;
 pub mod phases;
 pub mod projects;
+pub mod search;
 pub mod tasks;
 
 pub use clients::clients_router;
@@ -20,3 +22,5 @@ pub use assets::{assets_router, project_assets_router};
 pub use files::{files_router, project_files_router};
 pub use phases::{phases_router, project_phases_router};
 pub use people::{people_router, project_people_router};
+pub use search::search_router;
+pub use deliverables::{deliverables_router, project_deliverables_router};
