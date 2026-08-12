@@ -1,4 +1,4 @@
-# sec-tracker — backend
+# project-manage — backend
 
 Rust + Axum + sqlx + PostgreSQL. Single user, internal-tool MVP.
 
@@ -36,7 +36,7 @@ The legacy `/api/health` endpoint from Phase 0 is preserved unchanged.
 ### Prereqs
 
 - Rust 1.93 (matches `edition = "2024"` in `Cargo.toml`).
-- PostgreSQL 16 reachable at `postgres://localhost:5432/sec_tracker`.
+- PostgreSQL 16 reachable at `postgres://localhost:5432/project_manage`.
   The credentials use the OS user via peer/trust auth (matches local brew install).
 - A `.env` file at the repo root with `DATABASE_URL=...` (defaults already provided).
   `.cargo/config.toml` keeps a working default when `.env` is absent so

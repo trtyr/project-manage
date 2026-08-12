@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO clients (\n               name, contact_person, contact_info, notes,\n               products, security_concerns, background_info\n           )\n           VALUES ($1, $2, $3, $4, $5, $6, $7)\n           RETURNING id,\n                     name,\n                     contact_person,\n                     contact_info,\n                     notes,\n                     products       AS \"products!: Vec<String>\",\n                     security_concerns AS \"security_concerns!: Vec<String>\",\n                     background_info,\n                     created_at,\n                     updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "contact_person",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "contact_info",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "products!: Vec<String>",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "security_concerns!: Vec<String>",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "background_info",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "eb1047672545a758ba3303292ad2b48a152f74d5080d458a10b5be9c8b174889"
+}

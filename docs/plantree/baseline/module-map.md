@@ -1,11 +1,11 @@
-# Module Map — sec-tracker
+# Module Map — project-manage
 
 > 新项目，尚未有代码。以下为预期模块结构，待实现后校准。
 
 ## 预期架构
 
 ```
-sec-tracker/
+project-manage/
 ├── backend/               # Rust 后端
 │   ├── src/
 │   │   ├── main.rs        # 入口

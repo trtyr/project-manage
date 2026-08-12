@@ -1,4 +1,4 @@
-# Runtime Health & Robustness Review — sec-tracker
+# Runtime Health & Robustness Review — project-manage
 
 > Scope: backend (`backend/src/`, `backend/migrations/`) and frontend (`frontend/src/`).
 > Tech stack: Rust (Axum 0.8 + sqlx 0.8 + tokio) + React 19 + React Query 5 + axios.
@@ -52,7 +52,7 @@ facing HTTP service.
 
 | Aspect | Score | Evidence | Recommendation |
 |---|---|---|---|
-| Tracing init | **B** | `main.rs:52-57` — `tracing_subscriber::fmt().with_env_filter(...).init()`. Default filter `info,sec_tracker_backend=debug,sqlx=warn` is sensible. | Good. Add structured (JSON) output optionally via `tracing-subscriber` `fmt::layer().json()` when `LOG_FORMAT=json`. |
+| Tracing init | **B** | `main.rs:52-57` — `tracing_subscriber::fmt().with_env_filter(...).init()`. Default filter `info,project_manage_backend=debug,sqlx=warn` is sensible. | Good. Add structured (JSON) output optionally via `tracing-subscriber` `fmt::layer().json()` when `LOG_FORMAT=json`. |
 | Informational logs | **D** | Only **two** `info!` calls exist in the entire backend: `main.rs:74` (migrations applied) and `main.rs:122` (server started). | Add logs at: pool construction (size/timeouts/driver), bind addr & PID, every handler entry for non-GET, every file upload/download with `id` + size + `project_id`. |
 | Error logs | **C** | `error.rs:93-95` — `tracing::error!(error = ?self, "request failed with 5xx")` — good: server-side full error, generic message to client. | Keep. Surface DB constraint violation messages via `tracing::warn!` for 4xx (currently they're not logged at all). |
 | HTTP access log | **F** | No `tower_http::trace::TraceLayer`, no custom middleware. There is **zero** per-request log anywhere in the codebase. `grep 'TraceLayer\|trace::' backend/src/` → 0. | Add `TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO).include_headers(false)).on_request(...).on_response(...).on_failure(...)`. |

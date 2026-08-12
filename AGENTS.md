@@ -1,4 +1,4 @@
-# sec-tracker
+# project-manage
 
 > Fullstack tracker for security-services clients, projects, and delivery work.
 
@@ -20,7 +20,7 @@ for verified versions and development topology.
 
 ## Overview
 
-sec-tracker centralizes security-services client and project work that would
+project-manage centralizes security-services client and project work that would
 otherwise be spread across spreadsheets, chat, and email. The React SPA
 communicates with the Axum backend over `/api`, while SQLx manages a
 PostgreSQL-backed project domain. See the [architecture overview](docs/context/architecture.md)
@@ -40,7 +40,7 @@ for schema and migration behavior.
 
 ## Commands
 
-The backend expects PostgreSQL at `postgres://localhost:5432/sec_tracker`; the
+The backend expects PostgreSQL at `postgres://localhost:5432/project_manage`; the
 frontend dev server runs on `:5173` and proxies API calls to the backend on
 `:3000`. See the [technology stack](docs/context/tech-stack.md) for tooling
 details.

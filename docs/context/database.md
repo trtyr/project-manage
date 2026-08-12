@@ -1,4 +1,4 @@
-# Database — sec-tracker
+# Database — project-manage
 
 PostgreSQL 16 with sqlx 0.8 as the access layer. This document covers the
 engine, migration inventory, schema conventions, domain ER, query patterns,
@@ -7,7 +7,7 @@ and operational notes.
 ## 1. Engine and access layer
 
 - **Engine:** PostgreSQL 16. Connection string default
-  `postgres://localhost:5432/sec_tracker`, sourced from `DATABASE_URL` at
+  `postgres://localhost:5432/project_manage`, sourced from `DATABASE_URL` at
   runtime (via `dotenvy`) and from `backend/.cargo/config.toml` at build
   time so `sqlx::query!` macros resolve without manual export.
 - **Driver crate:**
@@ -266,7 +266,7 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
 6. Do not normalise a `TEXT[]` column pre-emptively — wait for a real
    filter/search requirement (see migration 001's inline comment).
 7. Verify by running `cargo run` against a fresh
-   `postgres://localhost:5432/sec_tracker` and confirm
+   `postgres://localhost:5432/project_manage` and confirm
    `_sqlx_migrations` records the new filename and checksum.
 
 ## 7. Operational notes

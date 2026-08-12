@@ -1,8 +1,8 @@
-# sec-tracker technology stack
+# project-manage technology stack
 
 ## Purpose and verification scope
 
-This document records the technology choices used by **sec-tracker**, an
+This document records the technology choices used by **project-manage**, an
 internal project-tracking system for security services teams. It is organized
 by purpose so runtime, build, database, and design decisions can be located
 without reading the whole repository.
@@ -57,7 +57,7 @@ references below:
 ## 2. Backend stack
 
 `backend/Cargo.toml` is the source of truth for the Rust crate versions and
-feature flags. The crate package itself is `sec-tracker-backend` at `0.1.0`.
+feature flags. The crate package itself is `project-manage-backend` at `0.1.0`.
 
 ### HTTP and asynchronous runtime
 
@@ -172,7 +172,7 @@ The package scripts are also build-tooling contracts:
 | Client layer | SQLx `0.8` with `"postgres"` | Async PostgreSQL pool and query execution |
 | TLS/runtime | `"runtime-tokio"`, `"tls-rustls"` | Tokio execution with Rustls support |
 | Schema format | 11 first-party `*.sql` migrations | Readable, diffable PostgreSQL schema history |
-| Build-time URL | `DATABASE_URL = { value = "postgres://localhost:5432/sec_tracker", force = false }` | Cargo development default; an explicit shell value wins |
+| Build-time URL | `DATABASE_URL = { value = "postgres://localhost:5432/project_manage", force = false }` | Cargo development default; an explicit shell value wins |
 
 Migrations use **sqlx-migrate at runtime, not compile-time macros**. The
 backend loads `./migrations` with `migrate::Migrator::new(...)` and applies

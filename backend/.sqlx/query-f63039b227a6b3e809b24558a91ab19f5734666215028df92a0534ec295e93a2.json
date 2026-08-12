@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE clients\n           SET name             = COALESCE($2, name),\n               contact_person   = COALESCE($3, contact_person),\n               contact_info     = COALESCE($4, contact_info),\n               notes            = COALESCE($5, notes),\n               products         = COALESCE($6, products),\n               security_concerns = COALESCE($7, security_concerns),\n               background_info  = COALESCE($8, background_info)\n           WHERE id = $1\n           RETURNING id,\n                     name,\n                     contact_person,\n                     contact_info,\n                     notes,\n                     products       AS \"products!: Vec<String>\",\n                     security_concerns AS \"security_concerns!: Vec<String>\",\n                     background_info,\n                     created_at,\n                     updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "contact_person",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "contact_info",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "products!: Vec<String>",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "security_concerns!: Vec<String>",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "background_info",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "f63039b227a6b3e809b24558a91ab19f5734666215028df92a0534ec295e93a2"
+}

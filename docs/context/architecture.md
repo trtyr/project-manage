@@ -1,4 +1,4 @@
-# sec-tracker — Architecture
+# project-manage — Architecture
 
 End-to-end view of the fullstack system: what it is, how the pieces fit, and why
 the seams look the way they do. Every claim below was verified by reading the
@@ -9,7 +9,7 @@ in each section.
 
 ## 1. System overview
 
-**sec-tracker** is an internal project tracking system for a network-security
+**project-manage** is an internal project tracking system for a network-security
 services team. Product managers and security engineers use it in an office
 setting (mixed light, multiple tools open) to centralise work that previously
 lived in Excel / WeChat / email: client accounts, project status,

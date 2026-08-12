@@ -14,7 +14,7 @@ on:
 # pointing the compile-time + runtime sqlx checks at the service container.
 env:
   CARGO_TERM_COLOR: always
-  DATABASE_URL: postgres://postgres:postgres@localhost:5432/sec_tracker
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/project_manage
 
 jobs:
   ci:
@@ -26,11 +26,11 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: sec_tracker
+          POSTGRES_DB: project_manage
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d sec_tracker"
+          --health-cmd "pg_isready -U postgres -d project_manage"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

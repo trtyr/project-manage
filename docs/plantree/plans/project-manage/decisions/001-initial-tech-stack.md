@@ -1,4 +1,4 @@
-# Decisions — sec-tracker
+# Decisions — project-manage
 
 ## D1: 后端使用 Rust
 

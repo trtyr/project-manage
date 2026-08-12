@@ -1,4 +1,4 @@
-# sec-tracker — Module Catalog
+# project-manage — Module Catalog
 
 Every feature module in the codebase: file path, one-sentence responsibility, public API, internal dependencies. Backend first (handlers → models → db), then frontend (pages → components → shared). All descriptions were verified against the actual source.
 

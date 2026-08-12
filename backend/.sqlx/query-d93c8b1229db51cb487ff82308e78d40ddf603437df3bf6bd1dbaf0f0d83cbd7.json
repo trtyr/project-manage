@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE projects\n           SET client_id = COALESCE($2, client_id),\n               name      = COALESCE($3, name),\n               status    = COALESCE($4, status),\n               phase     = COALESCE($5, phase),\n               goals     = COALESCE($6, goals),\n               tech_approval = COALESCE($7, tech_approval),\n               competitors   = COALESCE($8, competitors)\n           WHERE id = $1\n           RETURNING id,\n                     client_id,\n                     name,\n                     status,\n                     phase,\n                     goals AS \"goals!: Vec<String>\",\n                     tech_approval,\n                     competitors,\n                     created_at,\n                     updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "client_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "phase",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "goals!: Vec<String>",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "tech_approval",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "competitors",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d93c8b1229db51cb487ff82308e78d40ddf603437df3bf6bd1dbaf0f0d83cbd7"
+}

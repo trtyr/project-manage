@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, project_id, title, status, planned_date,\n                  assignee_id, priority, created_at, updated_at\n           FROM tasks\n           WHERE project_id = $1\n           ORDER BY\n                CASE status\n                    WHEN 'current' THEN 0\n                    WHEN 'next'    THEN 1\n                    WHEN 'todo'    THEN 2\n                    ELSE 3\n                END,\n                CASE priority\n                    WHEN 'urgent' THEN 0\n                    WHEN 'high'   THEN 1\n                    WHEN 'normal' THEN 2\n                    WHEN 'low'    THEN 3\n                    ELSE 4\n                END,\n                planned_date NULLS LAST,\n                created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "planned_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 5,
+        "name": "assignee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "priority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1f8a620a1f1cb9c0eee678b9cf067b7cadef95a767feca678ef7de1c1a6db2fd"
+}

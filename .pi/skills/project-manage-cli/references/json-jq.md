@@ -7,15 +7,15 @@ transform, and extract exactly what you need.
 
 ```bash
 # Get a specific field
-sec-tracker projects list | jq '.[0].name'
+project-manage projects list | jq '.[0].name'
 # "门户网站开发"
 
 # Raw output (no quotes)
-sec-tracker projects list | jq -r '.[0].id'
+project-manage projects list | jq -r '.[0].id'
 # 3cf2230a-f5c8-4137-8e60-bb4016cc9180
 
 # Multiple fields as an object
-sec-tracker projects get "$PID" | jq '{name, status, phase}'
+project-manage projects get "$PID" | jq '{name, status, phase}'
 # {"name":"门户网站开发","status":"in_progress","phase":null}
 ```
 
@@ -23,39 +23,39 @@ sec-tracker projects get "$PID" | jq '{name, status, phase}'
 
 ```bash
 # Filter by field value
-sec-tracker tasks list --project-id "$PID" \
+project-manage tasks list --project-id "$PID" \
   | jq '.[] | select(.priority=="urgent")'
 
 # Filter by multiple conditions
-sec-tracker tasks list --project-id "$PID" \
+project-manage tasks list --project-id "$PID" \
   | jq '.[] | select(.status=="current" and .priority=="high")'
 
 # Filter by text match (regex)
-sec-tracker people list --project-id "$PID" \
+project-manage people list --project-id "$PID" \
   | jq '.[] | select(.name | test("赵"))'
 
 # Filter by side
-sec-tracker people list --project-id "$PID" \
+project-manage people list --project-id "$PID" \
   | jq '.[] | select(.side=="team")'
 
 # Case-insensitive text match
-sec-tracker clients list | jq '.[] | select(.name | test("数据"; "i"))'
+project-manage clients list | jq '.[] | select(.name | test("数据"; "i"))'
 ```
 
 ## Extracting IDs
 
 ```bash
 # First item's ID
-sec-tracker projects list | jq -r '.[0].id'
+project-manage projects list | jq -r '.[0].id'
 
 # All IDs as an array
-sec-tracker projects list | jq '[.[].id]'
+project-manage projects list | jq '[.[].id]'
 
 # ID of a named item
-sec-tracker clients list | jq -r '.[] | select(.name=="示例客户") | .id'
+project-manage clients list | jq -r '.[] | select(.name=="示例客户") | .id'
 
 # IDs matching a pattern
-sec-tracker deliverables list --project-id "$PID" \
+project-manage deliverables list --project-id "$PID" \
   | jq -r '.[] | select(.status=="pending") | .id'
 ```
 
@@ -63,18 +63,18 @@ sec-tracker deliverables list --project-id "$PID" \
 
 ```bash
 # Count items
-sec-tracker tasks list --project-id "$PID" | jq 'length'
+project-manage tasks list --project-id "$PID" | jq 'length'
 
 # Count by status
-sec-tracker tasks list --project-id "$PID" \
+project-manage tasks list --project-id "$PID" \
   | jq 'group_by(.status) | map({status: .[0].status, count: length})'
 
 # Count by priority
-sec-tracker tasks list --project-id "$PID" \
+project-manage tasks list --project-id "$PID" \
   | jq 'group_by(.priority) | map({priority: .[0].priority, count: length})'
 
 # Project completion stats
-sec-tracker phases list --project-id "$PID" \
+project-manage phases list --project-id "$PID" \
   | jq '{total: length, completed: [.[] | select(.status=="completed")] | length}'
 ```
 
@@ -82,16 +82,16 @@ sec-tracker phases list --project-id "$PID" \
 
 ```bash
 # Simplify to a flat list of names
-sec-tracker assets list --project-id "$PID" \
+project-manage assets list --project-id "$PID" \
   | jq '.[] | "\(.name) [\(.asset_type)]"'
 
 # Build a markdown table
-sec-tracker deliverables list --project-id "$PID" \
+project-manage deliverables list --project-id "$PID" \
   | jq -r '["| 名称 | 状态 | 截止日期 |", "|---|---|---|"] + 
     [.[] | "| \(.name) | \(.status) | \(.due_date // "-") |"] | .[]'
 
 # Key-value summary
-sec-tracker projects get "$PID" | jq -r '
+project-manage projects get "$PID" | jq -r '
   "项目: \(.name)",
   "状态: \(.status)",
   "阶段: \(.phase // "未设置")",
@@ -105,14 +105,14 @@ The ID-from-one-command-as-input-to-another pattern:
 
 ```bash
 # Find project ID from client name, then list tasks
-CID=$(sec-tracker clients list | jq -r '.[] | select(.name=="示例客户") | .id')
-PID=$(sec-tracker projects list --client-id "$CID" | jq -r '.[0].id')
-sec-tracker tasks list --project-id "$PID"
+CID=$(project-manage clients list | jq -r '.[] | select(.name=="示例客户") | .id')
+PID=$(project-manage projects list --client-id "$CID" | jq -r '.[0].id')
+project-manage tasks list --project-id "$PID"
 
 # Or in one line (less readable)
-sec-tracker tasks list --project-id "$(
-  sec-tracker projects list --client-id "$(
-    sec-tracker clients list | jq -r '.[] | select(.name=="示例客户") | .id'
+project-manage tasks list --project-id "$(
+  project-manage projects list --client-id "$(
+    project-manage clients list | jq -r '.[] | select(.name=="示例客户") | .id'
   )" | jq -r '.[0].id'
 )"
 ```
@@ -121,7 +121,7 @@ sec-tracker tasks list --project-id "$(
 
 ```bash
 # Check if a command succeeded before extracting output
-if RESULT=$(sec-tracker projects get "$PID" 2>/dev/null); then
+if RESULT=$(project-manage projects get "$PID" 2>/dev/null); then
   NAME=$(echo "$RESULT" | jq -r '.name')
   echo "Project: $NAME"
 else
@@ -130,7 +130,7 @@ else
 fi
 
 # Validate JSON structure
-sec-tracker projects list | jq -e '.[0].id' > /dev/null 2>&1 || {
+project-manage projects list | jq -e '.[0].id' > /dev/null 2>&1 || {
   echo "No projects found or invalid response"
   exit 1
 }
@@ -140,7 +140,7 @@ sec-tracker projects list | jq -e '.[0].id' > /dev/null 2>&1 || {
 
 ```bash
 # If a field contains JSON or long text
-sec-tracker communications get "$COMM_ID" | jq '.content' -r
+project-manage communications get "$COMM_ID" | jq '.content' -r
 ```
 
 ## Common jq flags

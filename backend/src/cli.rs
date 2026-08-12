@@ -1,16 +1,16 @@
-//! CLI module — turns `sec-tracker-backend` into a dual-purpose binary:
+//! CLI module — turns `project-manage-backend` into a dual-purpose binary:
 //! - no args (or `serve`) → start the HTTP server (original behaviour)
 //! - subcommands → HTTP client that talks to the API, with JSON output
 //!   designed for both AI-driven automation and human inspection.
 //!
 //! Usage:
-//!   sec-tracker                                    # serve
-//!   sec-tracker projects list                       # list all projects
-//!   sec-tracker projects list --client-id <uuid>    # filter by client
-//!   sec-tracker projects create --data '{"name":"X",...}'
-//!   sec-tracker tasks list --project-id <uuid>
-//!   sec-tracker search "keyword"
-//!   sec-tracker --api-url http://other:3000 projects list
+//!   project-manage                                    # serve
+//!   project-manage projects list                       # list all projects
+//!   project-manage projects list --client-id <uuid>    # filter by client
+//!   project-manage projects create --data '{"name":"X",...}'
+//!   project-manage tasks list --project-id <uuid>
+//!   project-manage search "keyword"
+//!   project-manage --api-url http://other:3000 projects list
 
 use clap::{Parser, Subcommand};
 use reqwest::Client;
@@ -21,13 +21,13 @@ use std::process;
 // Top-level CLI
 // ---------------------------------------------------------------------------
 
-/// sec-tracker CLI — manage clients, projects, tasks, phases, people,
+/// project-manage CLI — manage clients, projects, tasks, phases, people,
 /// assets, files, deliverables, and communications.
 #[derive(Parser)]
-#[command(name = "sec-tracker", version = env!("CARGO_PKG_VERSION"))]
+#[command(name = "project-manage", version = env!("CARGO_PKG_VERSION"))]
 pub struct Cli {
-    /// API server base URL (default: http://localhost:3000, or $SEC_TRACKER_URL)
-    #[arg(long, default_value_t = default_api_url(), env = "SEC_TRACKER_URL")]
+    /// API server base URL (default: http://localhost:3000, or $PROJECT_MANAGE_URL)
+    #[arg(long, default_value_t = default_api_url(), env = "PROJECT_MANAGE_URL")]
     pub api_url: String,
 
     /// Output format: json (default, AI-friendly) or table (human-readable)
@@ -218,7 +218,7 @@ pub async fn run(cli: Cli) {
         Some(Command::Deliverables(cmd)) => do_deliverables(&client, api, cmd, fmt).await,
         Some(Command::Search { query }) => do_search(&client, api, &query, fmt).await,
         None => {
-            eprintln!("use 'sec-tracker --help' for available commands, or run without args to serve");
+            eprintln!("use 'project-manage --help' for available commands, or run without args to serve");
             return;
         }
     };

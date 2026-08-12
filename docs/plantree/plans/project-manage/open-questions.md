@@ -1,4 +1,4 @@
-# Open Questions — sec-tracker
+# Open Questions — project-manage
 
 ## 技术选型（已全部确认 ✅）
 

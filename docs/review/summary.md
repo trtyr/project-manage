@@ -1,6 +1,6 @@
 # Project Review Summary
 
-**Project:** sec-tracker (网络安全项目跟踪工具)
+**Project:** project-manage (网络安全项目跟踪工具)
 **Date:** 2026-07-14
 **Stack:** Rust (Axum + sqlx + PostgreSQL) / React 19 (Vite + Ant Design + React Query)
 

@@ -1,4 +1,4 @@
-# Test & Release Gates — sec-tracker
+# Test & Release Gates — project-manage
 
 > 新项目，以下为预期测试策略。
 

@@ -4,4 +4,4 @@
 # Required because sqlx::query! / sqlx::query_as! macros verify SQL against
 # a live database at compile time.
 [env]
-DATABASE_URL = { value = "postgres://localhost:5432/sec_tracker", force = false }
+DATABASE_URL = { value = "postgres://localhost:5432/project_manage", force = false }

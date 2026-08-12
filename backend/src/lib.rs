@@ -1,4 +1,4 @@
-//! sec-tracker backend library.
+//! project-manage backend library.
 //!
 //! Exposes every module the binary entrypoint (`src/main.rs`) and the
 //! integration tests (`tests/smoke.rs`) need. The binary only owns

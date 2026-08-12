@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE communications\n           SET content      = COALESCE($2, content),\n               occurred_at  = COALESCE($3, occurred_at),\n               participants = COALESCE($4, participants),\n               conclusion   = COALESCE($5, conclusion)\n           WHERE id = $1\n           RETURNING id, project_id, content, occurred_at,\n                     participants, conclusion, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "occurred_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "participants",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "conclusion",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "0332920638f4ce64f8fec9b9d11640348fc6c8f18f58f37a25883a57b246ae36"
+}

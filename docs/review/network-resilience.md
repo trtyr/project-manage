@@ -1,6 +1,6 @@
 # Network Resilience Review
 
-**Scope:** sec-tracker — Axum REST backend (PostgreSQL) + React/Ant Design frontend (Vite + Axios + React Query).
+**Scope:** project-manage — Axum REST backend (PostgreSQL) + React/Ant Design frontend (Vite + Axios + React Query).
 **Network surface:** One HTTP server on `0.0.0.0:3000` (backend) consumed by one axios instance on `/api` (frontend, proxied through Vite in dev). No WebSockets, no SSE, no EventSource, no external HTTP client (no `reqwest`, no `hyper::Client`) — the backend never initiates outbound network calls.
 
 | Criterion | Score | Evidence | Recommendation |

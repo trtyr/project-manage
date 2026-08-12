@@ -1260,6 +1260,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "project-manage-backend"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "clap",
+ "dotenvy",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http 0.7.0",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs",
+ "uuid",
+]
+
+[[package]]
 name = "quinn"
 version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1551,28 +1573,6 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
-
-[[package]]
-name = "sec-tracker-backend"
-version = "0.1.0"
-dependencies = [
- "axum",
- "chrono",
- "clap",
- "dotenvy",
- "reqwest",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror",
- "tokio",
- "tower",
- "tower-http 0.7.0",
- "tracing",
- "tracing-subscriber",
- "ts-rs",
- "uuid",
-]
 
 [[package]]
 name = "serde"

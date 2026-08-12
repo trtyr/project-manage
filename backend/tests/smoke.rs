@@ -3,7 +3,7 @@
 //! Each test:
 //! 1. Opens its own `PgPool` from `DATABASE_URL`.
 //! 2. Starts an Axum test server on a random loopback port via
-//!    `sec_tracker_backend::app::build_app`.
+//!    `project_manage_backend::app::build_app`.
 //! 3. Performs CREATE → READ → UPDATE → DELETE over HTTP and asserts
 //!    each response status + body shape.
 //! 4. Cleans up rows at the end (idempotent with the CRUD DELETE step).
@@ -13,7 +13,7 @@
 //! parallel without `#[serial]`.
 //!
 //! Run with:
-//!   export DATABASE_URL=postgres://localhost:5432/sec_tracker
+//!   export DATABASE_URL=postgres://localhost:5432/project_manage
 //!   cargo test --test smoke -- --nocapture
 //!
 //! Or via the `just smoke` recipe (sets up env via `.cargo/config.toml`).
@@ -24,7 +24,7 @@ use sqlx::PgPool;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
-use sec_tracker_backend::app::build_app;
+use project_manage_backend::app::build_app;
 
 /// Per-request timeout for the test server. Matches production's
 /// `REQUEST_TIMEOUT_SECS` constant in `main.rs`.

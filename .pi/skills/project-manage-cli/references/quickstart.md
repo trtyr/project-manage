@@ -5,19 +5,24 @@
 The same binary that serves HTTP also acts as the CLI client:
 
 ```bash
-./backend/target/debug/sec-tracker-backend           # debug build
-./backend/target/release/sec-tracker-backend          # release build
+./backend/target/debug/project-manage-backend           # debug build
+./backend/target/release/project-manage-backend          # release build
 ```
 
 The CLI talks to the API server over HTTP — it does NOT access the database
 directly.
+
+> **Naming note:** the binary is `project-manage-backend` (the crate name).
+> In examples below and across the reference files, `project-manage` is used
+> as shorthand for this binary — substitute the real path
+> `./backend/target/debug/project-manage-backend` (or an alias you set up).
 
 ## Starting the server
 
 The CLI requires a running API server. Start it first:
 
 ```bash
-cd backend && PORT=9999 ./target/debug/sec-tracker-backend &
+cd backend && PORT=9999 ./target/debug/project-manage-backend &
 ```
 
 Wait for the startup log line:
@@ -35,10 +40,10 @@ Three ways — pick one:
 
 ```bash
 # 1. Environment variable (recommended for multi-command sessions)
-export SEC_TRACKER_URL=http://localhost:9999
+export PROJECT_MANAGE_URL=http://localhost:9999
 
 # 2. Per-command flag
-./target/debug/sec-tracker-backend --api-url http://localhost:9999 projects list
+./target/debug/project-manage-backend --api-url http://localhost:9999 projects list
 
 # 3. The default is http://localhost:3000 if nothing is set
 ```
@@ -47,7 +52,7 @@ export SEC_TRACKER_URL=http://localhost:9999
 
 | Option | Default | Description |
 |---|---|---|
-| `--api-url URL` | `http://localhost:3000` or `$SEC_TRACKER_URL` | API server base URL |
+| `--api-url URL` | `http://localhost:3000` or `$PROJECT_MANAGE_URL` | API server base URL |
 | `--format json\|table` | `json` | Output format |
 | `--help` | — | Show help for any command level |
 | `--version` | — | Show binary version |
@@ -56,10 +61,10 @@ export SEC_TRACKER_URL=http://localhost:9999
 
 ```bash
 # ✅ Correct
-sec-tracker --api-url http://localhost:9999 --format table projects list
+project-manage --api-url http://localhost:9999 --format table projects list
 
 # ❌ Wrong — --api-url ignored
-sec-tracker projects list --api-url http://localhost:9999
+project-manage projects list --api-url http://localhost:9999
 ```
 
 ## Output formats
@@ -96,9 +101,9 @@ id                                   │ name               │ status
 Every command level supports `--help`:
 
 ```bash
-sec-tracker --help                # top-level commands
-sec-tracker projects --help       # project subcommands
-sec-tracker tasks create --help   # create flags
+project-manage --help                # top-level commands
+project-manage projects --help       # project subcommands
+project-manage tasks create --help   # create flags
 ```
 
 ## Error responses

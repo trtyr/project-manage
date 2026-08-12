@@ -1,4 +1,4 @@
-# Baseline — sec-tracker
+# Baseline — project-manage
 
 项目级上下文，供所有计划引用。
 

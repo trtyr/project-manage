@@ -1,4 +1,4 @@
-//! sec-tracker — backend entrypoint.
+//! project-manage — backend entrypoint.
 //!
 //! Phase 2 (API layer): all resource routers are mounted under `/api`
 //! inside `app::build_app`. Health check stays at `/api/health` per the
@@ -15,9 +15,9 @@ use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info, warn};
 
-use sec_tracker_backend::app::build_app;
-use sec_tracker_backend::cli::{self, Cli};
-use sec_tracker_backend::db;
+use project_manage_backend::app::build_app;
+use project_manage_backend::cli::{self, Cli};
+use project_manage_backend::db;
 
 /// Per-attempt backoff (seconds) for the startup DB bootstrap.
 /// One initial attempt + these retries means up to 6 attempts total,
@@ -239,7 +239,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info,sec_tracker_backend=debug,sqlx=warn".into()),
+                .unwrap_or_else(|_| "info,project_manage_backend=debug,sqlx=warn".into()),
         )
         .init();
 
@@ -310,7 +310,7 @@ async fn main() {
         addr = %bind_addr,
         body_limit_mb = max_body_size_mb,
         request_timeout_secs = REQUEST_TIMEOUT_SECS,
-        "🚀 sec-tracker 后端已启动"
+        "🚀 project-manage 后端已启动"
     );
 
     // 6. Graceful shutdown. `build_app` already consumed its own clone of

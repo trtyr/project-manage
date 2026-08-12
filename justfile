@@ -1,4 +1,4 @@
-# sec-tracker 一键命令
+# project-manage 一键命令
 # 首次使用：brew install just
 
 default:

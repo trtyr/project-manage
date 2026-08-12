@@ -4,7 +4,7 @@
 [![PostgreSQL](https://img.shields.io/badge/postgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
 ![Platform](https://img.shields.io/badge/platform-cross--platform-8B5CF6?style=flat-square)
 
-# sec-tracker
+# project-manage
 
 **为项目交付团队打造的项目跟踪管理系统。** 把散落在 Excel / 微信 / 邮件里的客户信息、项目进度、沟通记录、任务规划集中到一处，让项目状态一目了然。基于 Rust/Axum + React/TypeScript + PostgreSQL 构建，编译期类型安全的 SQL 查询，前后端分离架构。
 
@@ -54,7 +54,7 @@
 ### 前置条件
 
 - **Rust** ≥ 1.85（edition 2024）
-- **PostgreSQL 16**，默认连接 `postgres://localhost:5432/sec_tracker`
+- **PostgreSQL 16**，默认连接 `postgres://localhost:5432/project_manage`
 - **Node.js**（最新 LTS），用于前端构建
 
 ### 安装与开发
@@ -122,4 +122,4 @@ just build-frontend      # 前端 production build
 
 ---
 
-⭐ 发现有用？给 [sec-tracker](https://github.com/trtyr/sec-tracker) 点个 star。
+⭐ 发现有用？给 [project-manage](https://github.com/trtyr/sec-tracker) 点个 star。

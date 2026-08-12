@@ -191,7 +191,7 @@ function App() {
             }}
           >
             <div className="sidebar-logo__dot" />
-            <span className="sidebar-logo__text">sec-tracker</span>
+            <span className="sidebar-logo__text">项目管理</span>
           </div>
 
           <Input

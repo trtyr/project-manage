@@ -16,4 +16,4 @@
 # `backend/.cargo/config.toml` keeps the same value as a fallback for
 # older invocations that resolve the backend package directly.
 [env]
-DATABASE_URL = { value = "postgres://localhost:5432/sec_tracker", force = false }
+DATABASE_URL = { value = "postgres://localhost:5432/project_manage", force = false }

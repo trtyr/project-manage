@@ -1,4 +1,4 @@
-# sec-tracker — Conventions
+# project-manage — Conventions
 
 Project-specific deviations and patterns. Generic Rust / React / PostgreSQL
 idioms are intentionally omitted — only the rules you have to know to read or
@@ -7,7 +7,7 @@ extend this codebase live here.
 Conventions are derived from `backend/src/error.rs`, `backend/src/db/helpers.rs`,
 the handler/model modules, migrations, `frontend/src/api/index.ts`,
 `frontend/src/main.tsx`, and `frontend/src/App.tsx`. If a pattern disagrees with
-a more general rule on the wider web, this file wins for sec-tracker.
+a more general rule on the wider web, this file wins for project-manage.
 
 ## 1. Naming
 
@@ -265,4 +265,4 @@ state anywhere else (cookies, in-memory only, etc.).
   during upload failure handling. It is not used for routine validation
   errors — those are 4xx and the client handles them.
 - The default filter at startup is
-  `info,sec_tracker_backend=debug,sqlx=warn` (configurable via `RUST_LOG`).
+  `info,project_manage_backend=debug,sqlx=warn` (configurable via `RUST_LOG`).

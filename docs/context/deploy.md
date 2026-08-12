@@ -1,15 +1,15 @@
-# sec-tracker — Deploy & runtime guide
+# project-manage — Deploy & runtime guide
 
-End-to-end playbook for running sec-tracker on a developer machine or a small
+End-to-end playbook for running project-manage on a developer machine or a small
 internal host. Generic Rust / React / PostgreSQL knowledge is intentionally
-omitted — only the sec-tracker-specific knobs that actually matter at build,
+omitted — only the project-manage-specific knobs that actually matter at build,
 boot, and run time are recorded here.
 
 Evidence sources: `backend/Cargo.toml`, `backend/.cargo/config.toml`,
 `backend/src/main.rs`, `backend/src/db/`, `backend/migrations/`,
 `frontend/package.json`, `frontend/vite.config.ts`, `progress.md`. If a rule
 here disagrees with a more general web tutorial, this file wins for
-sec-tracker.
+project-manage.
 
 Related docs in this folder: `conventions.md` (code patterns),
 `tech-stack.md` (version pin rationale), `modules.md` (file layout).
@@ -24,17 +24,17 @@ Related docs in this folder: `conventions.md` (code patterns),
 
 ### 1.1 PostgreSQL role & auth
 
-The migrations and runtime expect a database called `sec_tracker` reachable
-at `postgres://localhost:5432/sec_tracker`. The default `DATABASE_URL` baked
+The migrations and runtime expect a database called `project_manage` reachable
+at `postgres://localhost:5432/project_manage`. The default `DATABASE_URL` baked
 into `backend/.cargo/config.toml` points at the default `postgres` peer-auth
 role on `localhost:5432`, matching what `brew install postgresql@16`
 ship out of the box:
 
 - macOS / Linux default Postgres installs use **peer / trust** auth on
   the Unix socket, so the OS user that runs `cargo run` also owns the
-  `sec_tracker` database.
+  `project_manage` database.
 - If you run Postgres under a non-default role, either create the
-  database as that role (`createdb sec_tracker`) or set `DATABASE_URL`
+  database as that role (`createdb project_manage`) or set `DATABASE_URL`
   explicitly in `backend/.env` — the runtime URL always wins over the
   build-time default.
 
@@ -43,7 +43,7 @@ The default install flow on macOS / Linux is:
 ```bash
 brew install postgresql@16           # or apt/dnf equivalent
 brew services start postgresql@16
-createdb sec_tracker                   # as your OS user
+createdb project_manage                   # as your OS user
 ```
 
 No TLS is configured in the default URL; the connection is plain TCP to
@@ -89,8 +89,8 @@ environment variables injected externally (e.g. by an orchestrator).
 Minimum required keys:
 
 ```dotenv
-DATABASE_URL=postgres://localhost:5432/sec_tracker
-RUST_LOG=info,sec_tracker_backend=debug,sqlx=warn
+DATABASE_URL=postgres://localhost:5432/project_manage
+RUST_LOG=info,project_manage_backend=debug,sqlx=warn
 ```
 
 `PORT`, `MAX_BODY_SIZE_MB`, and `CORS_ALLOWED_ORIGINS` all have safe
@@ -103,7 +103,7 @@ Order matters because each step assumes the previous one has succeeded.
 1. `dotenvy::dotenv()` — load `.env`; tolerate a missing file (logs at
    `debug`, never errors).
 2. `tracing_subscriber::fmt()` init — env filter `RUST_LOG` if set, else
-   `info,sec_tracker_backend=debug,sqlx=warn`.
+   `info,project_manage_backend=debug,sqlx=warn`.
 3. `build_pool_with_retry()` — **1 initial attempt + 5 retries**, backoff
    `1s / 2s / 4s / 8s / 16s` (constant `STARTUP_RETRY_DELAYS_SECS`). Panics
    only after all six attempts fail.
@@ -162,7 +162,7 @@ Each test creates and cleans up its own data with `__SMOKE_`-prefixed UUIDs.
 check the database. The DB-bound check is the fact that
 `build_pool_with_retry` and `run_migrations_with_retry` completed —
 both panic on the process if they fail, so reaching the `info!("🚀
-sec-tracker 后端已启动")` log line is the actual readiness signal.
+project-manage 后端已启动")` log line is the actual readiness signal.
 
 ## 5. Adding a migration
 
@@ -204,15 +204,15 @@ the runtime `.env` (or orchestrator env) is authoritative.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DATABASE_URL` | `postgres://localhost:5432/sec_tracker` | PostgreSQL connection string. Consumed by sqlx macros (compile) and the pool (runtime). |
-| `RUST_LOG` | `info,sec_tracker_backend=debug,sqlx=warn` | `tracing-subscriber` env filter. |
+| `DATABASE_URL` | `postgres://localhost:5432/project_manage` | PostgreSQL connection string. Consumed by sqlx macros (compile) and the pool (runtime). |
+| `RUST_LOG` | `info,project_manage_backend=debug,sqlx=warn` | `tracing-subscriber` env filter. |
 | `PORT` | `3000` | TCP port the Axum server binds. Read with `env_u16`; bad or empty values fall back to the default with a `warn` log line. |
 | `MAX_BODY_SIZE_MB` | `100` | Cap for request bodies, expressed in MiB. Wired to `DefaultBodyLimit::max(max_body_size_mb * 1024 * 1024)`, so this is what actually governs multipart uploads. Set higher if you intend to receive files over 100 MB. |
 | `CORS_ALLOWED_ORIGINS` | Any (permissive) | Comma-separated list of allowed origins. Semantics: unset or empty → `Any` (development default); exactly `*` → `Any`; otherwise only the listed origins. Malformed entries are dropped with a `warn` rather than blocking boot. |
 
 ## 7. Deploy shape
 
-sec-tracker is a **single-user internal-tool MVP**. It is not yet wired
+project-manage is a **single-user internal-tool MVP**. It is not yet wired
 for CI — `.github/workflows/` is absent — so deploys are manual from
 the repo root.
 
@@ -222,7 +222,7 @@ the repo root.
 |---|---|---|---|
 | Backend (`just prod` or `cd backend && cargo run --release`) | `backend/` | `0.0.0.0:3000` | Reads `./migrations/` relative to CWD; expects `./uploads/` writable; serves `static/` for production SPA. |
 | Frontend dev (`cd frontend && npm run dev`) | `frontend/` | `0.0.0.0:5173` | Proxies `/api` → backend. Not for production. |
-| PostgreSQL 16 | host init | `127.0.0.1:5432` (typical) | One database: `sec_tracker`. |
+| PostgreSQL 16 | host init | `127.0.0.1:5432` (typical) | One database: `project_manage`. |
 
 ### 7.2 Persistent state on disk
 
@@ -236,7 +236,7 @@ Operational requirements:
 
 - `uploads/` must be **writable** by the user the backend runs as.
 - `uploads/` must be **backed up** the same way you back up the
-  `sec_tracker` database — the two are coupled (each row in
+  `project_manage` database — the two are coupled (each row in
   `project_files` references a stored file on disk).
 - Restoring from backup means restoring the database **and**
   `uploads/` together; restoring only one will produce dangling

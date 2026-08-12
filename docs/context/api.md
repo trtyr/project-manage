@@ -1,4 +1,4 @@
-# sec-tracker — API Reference
+# project-manage — API Reference
 
 Complete HTTP surface mounted under `/api` in `backend/src/main.rs`.
 Every endpoint below has been verified against `backend/src/handlers/*.rs`

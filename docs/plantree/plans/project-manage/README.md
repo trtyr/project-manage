@@ -1,4 +1,4 @@
-# Plan: sec-tracker MVP
+# Plan: project-manage MVP
 
 ## 范围
 

@@ -11,12 +11,12 @@ Legend: 🏠 = flat resource (list doesn't need project), 📋 = project-scoped.
 ## 🏠 Projects
 
 ```bash
-sec-tracker projects list                          # all projects
-sec-tracker projects list --client-id UUID         # filter by client
-sec-tracker projects get UUID
-sec-tracker projects create --data '{...}'
-sec-tracker projects update UUID --data '{...}'
-sec-tracker projects delete UUID                   # ⚠ CASCADE deletes child rows
+project-manage projects list                          # all projects
+project-manage projects list --client-id UUID         # filter by client
+project-manage projects get UUID
+project-manage projects create --data '{...}'
+project-manage projects update UUID --data '{...}'
+project-manage projects delete UUID                   # ⚠ CASCADE deletes child rows
 ```
 
 ### CreateProject DTO
@@ -40,10 +40,10 @@ All fields optional: `name`, `client_id`, `status`, `phase`, `goals`,
 
 ```bash
 # Minimal project
-sec-tracker projects create --data '{"client_id":"e37e...","name":"测试项目"}'
+project-manage projects create --data '{"client_id":"e37e...","name":"测试项目"}'
 
 # Full project
-sec-tracker projects create --data '{
+project-manage projects create --data '{
   "client_id":"e37e0c75-4921-4414-907c-2feb6d7af6d6",
   "name":"门户网站开发",
   "status":"in_progress",
@@ -54,7 +54,7 @@ sec-tracker projects create --data '{
 }'
 
 # Mark complete
-sec-tracker projects update UUID --data '{"status":"completed"}'
+project-manage projects update UUID --data '{"status":"completed"}'
 ```
 
 ---
@@ -62,11 +62,11 @@ sec-tracker projects update UUID --data '{"status":"completed"}'
 ## 🏠 Clients
 
 ```bash
-sec-tracker clients list
-sec-tracker clients get UUID
-sec-tracker clients create --data '{...}'
-sec-tracker clients update UUID --data '{...}'
-sec-tracker clients delete UUID         # ⚠ restricted if client has projects
+project-manage clients list
+project-manage clients get UUID
+project-manage clients create --data '{...}'
+project-manage clients update UUID --data '{...}'
+project-manage clients delete UUID         # ⚠ restricted if client has projects
 ```
 
 ### CreateClient DTO
@@ -89,7 +89,7 @@ All fields optional: `name`, `contact_person`, `contact_info`, `notes`,
 ### Examples
 
 ```bash
-sec-tracker clients create --data '{
+project-manage clients create --data '{
   "name":"示例客户",
   "products":["监控系统","数据管理系统"],
   "security_concerns":["数据泄露","勒索软件"]
@@ -101,11 +101,11 @@ sec-tracker clients create --data '{
 ## 📋 Phases
 
 ```bash
-sec-tracker phases list --project-id PID
-sec-tracker phases get UUID
-sec-tracker phases create --project-id PID --data '{...}'
-sec-tracker phases update UUID --data '{...}'
-sec-tracker phases delete UUID
+project-manage phases list --project-id PID
+project-manage phases get UUID
+project-manage phases create --project-id PID --data '{...}'
+project-manage phases update UUID --data '{...}'
+project-manage phases delete UUID
 ```
 
 ### CreatePhase DTO
@@ -124,10 +124,10 @@ sec-tracker phases delete UUID
 
 ```bash
 # Simple phase
-sec-tracker phases create --project-id PID --data '{"name":"需求挖掘","status":"pending"}'
+project-manage phases create --project-id PID --data '{"name":"需求挖掘","status":"pending"}'
 
 # Phase with dates
-sec-tracker phases create --project-id PID --data '{
+project-manage phases create --project-id PID --data '{
   "name":"POC测试",
   "status":"in_progress",
   "planned_start":"2026-09-01T00:00:00Z",
@@ -136,7 +136,7 @@ sec-tracker phases create --project-id PID --data '{
 
 # Import standard 7-phase template
 for phase in "需求挖掘" "技术预研" "方案论证" "立项审批" "启动采购" "商务招标" "签单冲刺"; do
-  sec-tracker phases create --project-id $PID --data "{\"name\":\"$phase\",\"status\":\"pending\"}"
+  project-manage phases create --project-id $PID --data "{\"name\":\"$phase\",\"status\":\"pending\"}"
 done
 ```
 
@@ -145,11 +145,11 @@ done
 ## 📋 Tasks
 
 ```bash
-sec-tracker tasks list --project-id PID
-sec-tracker tasks get UUID
-sec-tracker tasks create --project-id PID --data '{...}'
-sec-tracker tasks update UUID --data '{...}'
-sec-tracker tasks delete UUID
+project-manage tasks list --project-id PID
+project-manage tasks get UUID
+project-manage tasks create --project-id PID --data '{...}'
+project-manage tasks update UUID --data '{...}'
+project-manage tasks delete UUID
 ```
 
 ### CreateTask DTO
@@ -166,7 +166,7 @@ sec-tracker tasks delete UUID
 
 ```bash
 # Urgent task with assignee
-sec-tracker tasks create --project-id PID --data '{
+project-manage tasks create --project-id PID --data '{
   "title":"梳理Agent架构",
   "priority":"urgent",
   "status":"current",
@@ -174,10 +174,10 @@ sec-tracker tasks create --project-id PID --data '{
 }'
 
 # Simple todo
-sec-tracker tasks create --project-id PID --data '{"title":"更新接口文档"}'
+project-manage tasks create --project-id PID --data '{"title":"更新接口文档"}'
 
 # Move to next
-sec-tracker tasks update UUID --data '{"status":"next"}'
+project-manage tasks update UUID --data '{"status":"next"}'
 ```
 
 ---
@@ -185,12 +185,12 @@ sec-tracker tasks update UUID --data '{"status":"next"}'
 ## 📋 People
 
 ```bash
-sec-tracker people list --project-id PID
-sec-tracker people get UUID
-sec-tracker people create --project-id PID --data '{...}'
-sec-tracker people update UUID --data '{...}'
-sec-tracker people delete UUID
-sec-tracker people flip UUID             # move team↔client
+project-manage people list --project-id PID
+project-manage people get UUID
+project-manage people create --project-id PID --data '{...}'
+project-manage people update UUID --data '{...}'
+project-manage people delete UUID
+project-manage people flip UUID             # move team↔client
 ```
 
 ### CreatePerson DTO
@@ -210,24 +210,24 @@ All fields optional: `name`, `role`, `notes`.
 
 ```bash
 # Team member
-sec-tracker people create --project-id PID --data '{
+project-manage people create --project-id PID --data '{
   "side":"team",
   "name":"赵俊宇",
   "role":"项目经理"
 }'
 
 # Client-side contact
-sec-tracker people create --project-id PID --data '{
+project-manage people create --project-id PID --data '{
   "side":"client",
   "name":"黄嘉骏",
   "role":"领导"
 }'
 
 # Change role
-sec-tracker people update UUID --data '{"role":"技术负责人"}'
+project-manage people update UUID --data '{"role":"技术负责人"}'
 
 # Move to other side
-sec-tracker people flip UUID
+project-manage people flip UUID
 ```
 
 ---
@@ -235,11 +235,11 @@ sec-tracker people flip UUID
 ## 📋 Assets
 
 ```bash
-sec-tracker assets list --project-id PID
-sec-tracker assets get UUID
-sec-tracker assets create --project-id PID --data '{...}'
-sec-tracker assets update UUID --data '{...}'
-sec-tracker assets delete UUID
+project-manage assets list --project-id PID
+project-manage assets get UUID
+project-manage assets create --project-id PID --data '{...}'
+project-manage assets update UUID --data '{...}'
+project-manage assets delete UUID
 ```
 
 ### CreateAsset DTO
@@ -258,7 +258,7 @@ sec-tracker assets delete UUID
 
 ```bash
 # 监控系统 asset
-sec-tracker assets create --project-id PID --data '{
+project-manage assets create --project-id PID --data '{
   "name":"示例厂商 监控系统",
   "asset_type":"监控系统",
   "access_method":"访问控制登录",
@@ -267,7 +267,7 @@ sec-tracker assets create --project-id PID --data '{
 }'
 
 # Threat intelligence
-sec-tracker assets create --project-id PID --data '{
+project-manage assets create --project-id PID --data '{
   "name":"NGTIP",
   "asset_type":"威胁情报",
   "vendor":"示例厂商在线",
@@ -275,7 +275,7 @@ sec-tracker assets create --project-id PID --data '{
 }'
 
 # Update credentials only
-sec-tracker assets update UUID --data '{"credentials":"new-token-value"}'
+project-manage assets update UUID --data '{"credentials":"new-token-value"}'
 ```
 
 ---
@@ -283,10 +283,10 @@ sec-tracker assets update UUID --data '{"credentials":"new-token-value"}'
 ## 🏠 Files
 
 ```bash
-sec-tracker files list                          # all files across projects
-sec-tracker files list --project-id PID         # per-project
-sec-tracker files get UUID
-sec-tracker files delete UUID
+project-manage files list                          # all files across projects
+project-manage files list --project-id PID         # per-project
+project-manage files get UUID
+project-manage files delete UUID
 ```
 
 ⚠ **File upload/update NOT available via CLI.** For multipart uploads:
@@ -302,12 +302,12 @@ curl -F "file=@local.pdf" \
 ## 📋 Communications
 
 ```bash
-sec-tracker communications list                    # recent across all projects
-sec-tracker communications list --project-id PID   # per-project
-sec-tracker communications get UUID
-sec-tracker communications create --project-id PID --data '{...}'
-sec-tracker communications update UUID --data '{...}'
-sec-tracker communications delete UUID
+project-manage communications list                    # recent across all projects
+project-manage communications list --project-id PID   # per-project
+project-manage communications get UUID
+project-manage communications create --project-id PID --data '{...}'
+project-manage communications update UUID --data '{...}'
+project-manage communications delete UUID
 ```
 
 ### CreateCommunication DTO
@@ -326,7 +326,7 @@ All fields optional: `content`, `occurred_at`, `participants`, `conclusion`.
 ### Examples
 
 ```bash
-sec-tracker communications create --project-id PID --data '{
+project-manage communications create --project-id PID --data '{
   "content":"与客户确认POC测试范围和时间节点",
   "occurred_at":"2026-09-01T10:00:00Z",
   "participants":"赵俊宇、黄嘉骏",
@@ -339,11 +339,11 @@ sec-tracker communications create --project-id PID --data '{
 ## 📋 Deliverables
 
 ```bash
-sec-tracker deliverables list --project-id PID
-sec-tracker deliverables get UUID
-sec-tracker deliverables create --project-id PID --data '{...}'
-sec-tracker deliverables update UUID --data '{...}'
-sec-tracker deliverables delete UUID
+project-manage deliverables list --project-id PID
+project-manage deliverables get UUID
+project-manage deliverables create --project-id PID --data '{...}'
+project-manage deliverables update UUID --data '{...}'
+project-manage deliverables delete UUID
 ```
 
 ### CreateDeliverable DTO
@@ -359,20 +359,20 @@ sec-tracker deliverables delete UUID
 
 ```bash
 # New deliverable
-sec-tracker deliverables create --project-id PID --data '{
+project-manage deliverables create --project-id PID --data '{
   "name":"安全评估报告",
   "status":"pending",
   "due_date":"2026-10-15"
 }'
 
 # Mark delivered with linked file
-sec-tracker deliverables update UUID --data '{
+project-manage deliverables update UUID --data '{
   "status":"delivered",
   "linked_file_id":"FILE_UUID"
 }'
 
 # Mark accepted
-sec-tracker deliverables update UUID --data '{"status":"accepted"}'
+project-manage deliverables update UUID --data '{"status":"accepted"}'
 ```
 
 ---
@@ -380,7 +380,7 @@ sec-tracker deliverables update UUID --data '{"status":"accepted"}'
 ## 🔍 Search
 
 ```bash
-sec-tracker search "keyword"
+project-manage search "keyword"
 ```
 
 Searches across projects, clients, communications, tasks, and people using
@@ -398,8 +398,8 @@ ILIKE matching. Returns array of `SearchHit`:
 
 ```bash
 # Find everything related to "安全"
-sec-tracker search "安全"
+project-manage search "安全"
 
 # Find a person by name
-sec-tracker search "赵俊宇"
+project-manage search "赵俊宇"
 ```
