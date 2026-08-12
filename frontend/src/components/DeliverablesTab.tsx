@@ -97,7 +97,10 @@ export default function DeliverablesTab({ projectId }: Props) {
             style={{ width: 90 }}
             options={STATUS_OPTIONS}
             onChange={(val: string) =>
-              updateMut.mutate({ id: r.id, data: { status: val as 'pending' | 'delivered' | 'accepted' } })
+              updateMut.mutate({
+                id: r.id,
+                data: { status: val as 'pending' | 'delivered' | 'accepted' },
+              })
             }
           />
         ),

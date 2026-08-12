@@ -11,6 +11,7 @@ import {
   Select,
   DatePicker,
   Popconfirm,
+  Upload,
   App,
   Empty,
 } from 'antd'
@@ -20,6 +21,7 @@ import {
   EditOutlined,
   PaperClipOutlined,
   ThunderboltOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -143,6 +145,15 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
     },
+  })
+
+  const uploadFileMut = useMutation({
+    mutationFn: (file: File) => filesApi.upload(projectId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files', projectId] })
+      message.success('文件已上传')
+    },
+    onError: () => message.error('上传失败'),
   })
 
   const importTemplateMut = useMutation({
@@ -274,64 +285,68 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             style={{ color: 'var(--muted-hex)', fontSize: 12 }}
           />
           {phaseFiles.map((f) => (
-            <Tag
+            <Popconfirm
               key={f.id}
-              closable
-              onClose={(e) => {
-                e.preventDefault()
+              title="取消关联该文件？"
+              onConfirm={() =>
                 linkFileMut.mutate({ fileId: f.id, phaseId: null })
-              }}
-              style={{
-                fontSize: 12,
-                maxWidth: 200,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                cursor: 'default',
-              }}
+              }
+              okText="取消关联"
+              cancelText="保留"
             >
-              {f.source_type === 'link' ? (
-                <a
-                  href={f.url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  title={f.original_name}
-                  style={{ color: 'inherit' }}
-                >
-                  🔗 {f.original_name}
-                </a>
-              ) : (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  title={f.original_name}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onFilePreview?.(f)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') onFilePreview?.(f)
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {f.original_name}
-                  <Text
-                    type="secondary"
-                    style={{ fontSize: 11, marginLeft: 4 }}
+              <Tag
+                style={{
+                  fontSize: 12,
+                  maxWidth: 200,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                }}
+              >
+                {f.source_type === 'link' ? (
+                  <a
+                    href={f.url!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title={f.original_name}
+                    style={{ color: 'inherit' }}
                   >
-                    {formatSize(f.file_size)}
-                  </Text>
-                </span>
-              )}
-            </Tag>
+                    🔗 {f.original_name}
+                  </a>
+                ) : (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    title={f.original_name}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onFilePreview?.(f)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') onFilePreview?.(f)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {f.original_name}
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: 11, marginLeft: 4 }}
+                    >
+                      {formatSize(f.file_size)}
+                    </Text>
+                  </span>
+                )}
+              </Tag>
+            </Popconfirm>
           ))}
           {availableFiles.length > 0 && (
             <Select
               size="small"
               placeholder="关联文件"
               variant="borderless"
-              style={{ width: 140 }}
+              style={{ width: 220 }}
               value={undefined}
               onChange={(fileId: string) => {
                 linkFileMut.mutate({ fileId, phaseId: node.id })
@@ -344,7 +359,18 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
               optionFilterProp="label"
             />
           )}
-          {phaseFiles.length === 0 && availableFiles.length === 0 && (
+          <Upload
+            showUploadList={false}
+            beforeUpload={(file) => {
+              uploadFileMut.mutate(file)
+              return false
+            }}
+          >
+            <Tooltip title="上传新文件到此阶段">
+              <Button type="text" size="small" icon={<UploadOutlined />} />
+            </Tooltip>
+          </Upload>
+          {phaseFiles.length === 0 && !availableFiles.length && (
             <Text type="secondary" style={{ fontSize: 12 }}>
               暂无产物
             </Text>
