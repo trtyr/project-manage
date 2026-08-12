@@ -8,6 +8,7 @@
 //! through the public surface (notably `app::build_app`).
 
 pub mod app;
+pub mod cli;
 pub mod db;
 pub mod error;
 pub mod handlers;
