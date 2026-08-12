@@ -49,11 +49,7 @@ function buildTree(phases: Phase[]): PhaseNode[] {
   return roots
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
+// (removed — file sizes shown by FilesTab inline instead)
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: '待开始', color: 'var(--muted-hex)' },
@@ -285,61 +281,61 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             style={{ color: 'var(--muted-hex)', fontSize: 12 }}
           />
           {phaseFiles.map((f) => (
-            <Popconfirm
+            <Space
               key={f.id}
-              title="取消关联该文件？"
-              onConfirm={() =>
-                linkFileMut.mutate({ fileId: f.id, phaseId: null })
-              }
-              okText="取消关联"
-              cancelText="保留"
+              size={2}
+              style={{
+                background: 'var(--card-surface)',
+                border: '1px solid var(--hairline)',
+                borderRadius: 6,
+                padding: '2px 6px 2px 10px',
+              }}
             >
-              <Tag
-                style={{
-                  fontSize: 12,
-                  maxWidth: 200,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                }}
+              {f.source_type === 'link' ? (
+                <a
+                  href={f.url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  title={f.original_name}
+                  style={{ color: 'inherit', fontSize: 12 }}
+                >
+                  🔗 {f.original_name}
+                </a>
+              ) : (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  title={f.original_name}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onFilePreview?.(f)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onFilePreview?.(f)
+                  }}
+                  style={{ cursor: 'pointer', fontSize: 12 }}
+                >
+                  {f.original_name}
+                </span>
+              )}
+              <Popconfirm
+                title="取消关联？"
+                okText="取消关联"
+                cancelText="保留"
+                onConfirm={() =>
+                  linkFileMut.mutate({ fileId: f.id, phaseId: null })
+                }
               >
-                {f.source_type === 'link' ? (
-                  <a
-                    href={f.url!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    title={f.original_name}
-                    style={{ color: 'inherit' }}
-                  >
-                    🔗 {f.original_name}
-                  </a>
-                ) : (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    title={f.original_name}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onFilePreview?.(f)
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') onFilePreview?.(f)
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {f.original_name}
-                    <Text
-                      type="secondary"
-                      style={{ fontSize: 11, marginLeft: 4 }}
-                    >
-                      {formatSize(f.file_size)}
-                    </Text>
-                  </span>
-                )}
-              </Tag>
-            </Popconfirm>
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  style={{ fontSize: 11, padding: 0, width: 18 }}
+                />
+              </Popconfirm>
+            </Space>
           ))}
           {availableFiles.length > 0 && (
             <Select
