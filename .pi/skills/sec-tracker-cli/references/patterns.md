@@ -69,8 +69,9 @@ sec-tracker phases list --project-id "$PID" \
 # Log a milestone communication
 sec-tracker communications create --project-id "$PID" --data '{
   "content":"已完成全部阶段工作，进入交付验收阶段",
-  "sentiment":"积极",
-  "participants":["项目经理","客户决策人"]
+  "occurred_at":"2026-09-01T10:00:00Z",
+  "participants":"项目经理、客户决策人",
+  "conclusion":"项目交付完成"
 }'
 ```
 

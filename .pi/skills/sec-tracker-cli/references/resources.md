@@ -315,18 +315,22 @@ sec-tracker communications delete UUID
 | Field | Type | Required | Default | Notes |
 |---|---|---|---|---|
 | `content` | string | ✅ | — | Communication content |
-| `participants` | string[] | — | `[]` | Participant names |
-| `communication_type` | string | — | null | 会议/电话/微信/邮件 ... |
-| `sentiment` | string | — | null | 积极/中性/消极 |
+| `occurred_at` | ISO 8601 | ✅ | — | When it occurred, e.g. `"2026-09-01T10:00:00Z"` |
+| `participants` | string | — | null | Participant names as a single string |
+| `conclusion` | string | — | null | Conclusion/outcome |
+
+### UpdateCommunication DTO
+
+All fields optional: `content`, `occurred_at`, `participants`, `conclusion`.
 
 ### Examples
 
 ```bash
 sec-tracker communications create --project-id PID --data '{
   "content":"与客户确认POC测试范围和时间节点",
-  "participants":["赵俊宇","黄嘉骏"],
-  "communication_type":"会议",
-  "sentiment":"积极"
+  "occurred_at":"2026-09-01T10:00:00Z",
+  "participants":"赵俊宇、黄嘉骏",
+  "conclusion":"确认下周启动POC"
 }'
 ```
 
