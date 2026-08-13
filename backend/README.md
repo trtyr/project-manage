@@ -6,12 +6,10 @@ Rust + Axum + sqlx + PostgreSQL. Single user, internal-tool MVP.
 
 ```text
 src/
-├── main.rs           ← entrypoint: CLI dispatch → dotenvy → tracing → pool+retry
+├── main.rs           ← entrypoint: dotenvy → tracing → pool+retry
 │                       → migrate+retry → env → build_app → serve → readiness check
 ├── app.rs            ← build_app(): single source of truth for the Router —
 │                       17 `.nest("/api", …)` mounts + CORS/timeout/trace/body-limit
-├── cli.rs            ← dual-mode CLI: no args/`serve` → server; subcommand → HTTP
-│                       client over /api (projects/clients/.../deliverables/search)
 ├── error.rs          ← AppError (4 variants) → unified JSON { error, message }
 ├── state.rs          ← AppState { pool } + FromRef for axum
 ├── db/
@@ -62,8 +60,6 @@ cargo run
 
 On boot the binary (`main.rs`):
 
-0. **CLI dispatch** — if a subcommand other than `serve` is given, run as an
-   HTTP client over `/api` and exit (see `cli.rs`). Otherwise fall through.
 1. Loads `.env` via `dotenvy` (missing file tolerated).
 2. Builds the Postgres pool (1 + 5 retries, 1/2/4/8/16 s backoff).
 3. Applies any pending migrations from `./migrations/` (sqlx::Migrator, retried).

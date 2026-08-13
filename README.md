@@ -24,7 +24,7 @@
 
 **工程特性**
 
-- **双模式 CLI**：同一个二进制既能 `serve` 启动服务，也能当 HTTP 客户端管理资源（见下方 [CLI 用法](#-cli-用法)）
+- **独立 CLI（`pm`）**：从 server 解耦出来的命令行客户端，AI 可编程管理资源（见下方 [CLI 用法](#-cli-用法)）
 - 编译期类型检查的 SQL（`sqlx::query!`），拼写错误在编译阶段就暴露
 - 运行时迁移（非编译期宏），SQL 文件保持可读、可 diff；启动自动重试 + 就绪自检
 - 前后端类型同步：ts-rs 在测试期把后端 DTO 生成成 TypeScript
@@ -124,16 +124,19 @@ just build-frontend      # 前端 production build
 
 ## 💻 CLI 用法
 
-同一个 `project-manage-backend` 二进制是**双模式**的：无参数（或 `serve`）启动 HTTP 服务器；带子命令则当 HTTP 客户端，直接对 `/api` 增删改查，输出 JSON（默认，AI 友好）或表格。
+`pm` 是独立的命令行客户端（在 `cli/` crate 里，与 server 二进制 `project-manage-backend` 解耦），直接对 `/api` 增删改查，输出 JSON（默认，AI 友好）或表格。先构建一次：
 
 ```bash
-project-manage                                    # 启动服务器（等同 serve）
-project-manage projects list                      # 列出所有项目
-project-manage projects list --client-id <uuid>   # 按客户过滤
-project-manage people flip <id>                   # 团队 ↔ 客户换边
-project-manage deliverables list --project-id <uuid>
-project-manage --format table search "关键词"     # 全局跨资源搜索
-project-manage --api-url http://other:3000 clients list   # 指向远端实例
+cargo build --manifest-path cli/Cargo.toml     # 或 cargo install --path cli 装到 PATH
+```
+
+```bash
+pm projects list                               # 列出所有项目
+pm projects list --client-id <uuid>            # 按客户过滤
+pm people flip <id>                            # 团队 ↔ 客户换边
+pm deliverables list --project-id <uuid>
+pm --format table search "关键词"              # 全局跨资源搜索
+pm --api-url http://localhost:9999 clients list  # 指向远端实例（如 Docker）
 ```
 
 支持的资源子命令：`clients` / `projects` / `phases` / `tasks` / `people` / `assets` / `files` / `communications` / `deliverables`，每个都有 `list` / `get` / `create --data '<json>'` / `update` / `delete`（`people` 额外有 `flip`），外加顶层的 `search`。默认连 `http://localhost:{PORT}`，可用 `--api-url` 或环境变量 `$PROJECT_MANAGE_URL` 覆盖。详见 [modules.md §G](docs/context/modules.md)。

@@ -100,12 +100,6 @@ development defaults — see §6.
 
 Order matters because each step assumes the previous one has succeeded.
 
-0. **CLI dispatch** (`main.rs`) — `Cli::parse()` runs first. If a
-   subcommand other than `serve` is given, the binary runs as an HTTP
-   *client* against the API (see `cli.rs` and the CLI section of
-   `modules.md`) and exits without starting a server. With no args or
-   `serve`, execution falls through to the server boot below.
-
 1. `dotenvy::dotenv()` — load `.env`; tolerate a missing file (logs at
    `debug`, never errors).
 2. `tracing_subscriber::fmt()` init — env filter `RUST_LOG` if set, else
@@ -236,7 +230,7 @@ the runtime `.env` (or orchestrator env) is authoritative.
 | `MAX_BODY_SIZE_MB` | `100` | Cap for request bodies, expressed in MiB. Wired to `DefaultBodyLimit::max(max_body_size_mb * 1024 * 1024)`, so this is what actually governs multipart uploads. Set higher if you intend to receive files over 100 MB. |
 | `CORS_ALLOWED_ORIGINS` | Any (permissive) | Comma-separated list of allowed origins. Semantics: unset or empty → `Any` (development default); exactly `*` → `Any`; otherwise only the listed origins. Malformed entries are dropped with a `warn` rather than blocking boot. |
 | `STATIC_DIR` | `./static` | Directory served as the production SPA (with an `index.html` fallback for client-side routing). The Docker image sets `/app/static`. A missing dir is logged at `warn`; the API still works, only frontend assets are unavailable. |
-| `PROJECT_MANAGE_URL` | `http://localhost:{PORT}` | Base URL the **CLI** subcommands talk to (see `cli.rs`). Falls back to `http://localhost:3000`; overridable per-invocation with `--api-url`. Only relevant in CLI-client mode, not when serving. |
+| `PROJECT_MANAGE_URL` | `http://localhost:{PORT}` | Base URL the standalone **`pm` CLI** talks to (see `cli/`). Falls back to `http://localhost:3000`; overridable per-invocation with `--api-url`. Relevant only to the CLI, not the server. |
 
 ## 7. Deploy shape
 

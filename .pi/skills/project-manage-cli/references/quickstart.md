@@ -2,27 +2,30 @@
 
 ## Binary location
 
-The same binary that serves HTTP also acts as the CLI client:
+`pm` is a standalone binary in the `cli/` crate — **decoupled from the
+server** binary (`project-manage-backend`):
 
 ```bash
-./backend/target/debug/project-manage-backend           # debug build
-./backend/target/release/project-manage-backend          # release build
+cargo build --manifest-path cli/Cargo.toml   # debug build
+cli/target/debug/pm                           # debug binary
+
+cargo install --path cli                      # install to ~/.cargo/bin
+pm                                             # then just call `pm`
 ```
 
 The CLI talks to the API server over HTTP — it does NOT access the database
-directly.
-
-> **Naming note:** the binary is `project-manage-backend` (the crate name).
-> In examples below and across the reference files, `project-manage` is used
-> as shorthand for this binary — substitute the real path
-> `./backend/target/debug/project-manage-backend` (or an alias you set up).
+directly, and it does **not** need to run on the same machine as the server.
 
 ## Starting the server
 
-The CLI requires a running API server. Start it first:
+The CLI requires a running API server. Two options:
 
 ```bash
-cd backend && PORT=9999 ./target/debug/project-manage-backend &
+# Local dev — serves on :3000
+cargo run --manifest-path backend/Cargo.toml
+
+# Docker (recommended for a clean host) — app on :9999 → container :3000
+docker compose up -d --build
 ```
 
 Wait for the startup log line:
@@ -31,7 +34,7 @@ Wait for the startup log line:
 ✅ 就绪检查通过 — 服务已完全启动，可接受请求
 ```
 
-If the port is already in use, check with `lsof -ti:9999` and kill the old
+If the port is already in use, check with `lsof -ti:<PORT>` and kill the old
 process, or use a different `PORT`.
 
 ## Targeting the API
@@ -43,7 +46,7 @@ Three ways — pick one:
 export PROJECT_MANAGE_URL=http://localhost:9999
 
 # 2. Per-command flag
-./target/debug/project-manage-backend --api-url http://localhost:9999 projects list
+pm --api-url http://localhost:9999 projects list
 
 # 3. The default is http://localhost:3000 if nothing is set
 ```
@@ -61,10 +64,10 @@ export PROJECT_MANAGE_URL=http://localhost:9999
 
 ```bash
 # ✅ Correct
-project-manage --api-url http://localhost:9999 --format table projects list
+pm --api-url http://localhost:9999 --format table projects list
 
 # ❌ Wrong — --api-url ignored
-project-manage projects list --api-url http://localhost:9999
+pm projects list --api-url http://localhost:9999
 ```
 
 ## Output formats
@@ -101,9 +104,9 @@ id                                   │ name               │ status
 Every command level supports `--help`:
 
 ```bash
-project-manage --help                # top-level commands
-project-manage projects --help       # project subcommands
-project-manage tasks create --help   # create flags
+pm --help                # top-level commands
+pm projects --help       # project subcommands
+pm tasks create --help   # create flags
 ```
 
 ## Error responses

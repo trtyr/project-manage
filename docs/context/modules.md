@@ -405,29 +405,29 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 
 ---
 
-## G. CLI client (`backend/src/cli.rs`)
+## G. CLI client (`cli/src/main.rs`)
 
-The `project-manage-backend` binary is **dual-mode**: with no args (or `serve`)
-it starts the HTTP server (see `main.rs` / §2.3 of `deploy.md`); with any other
-subcommand it acts as an HTTP **client** against the API and exits. The same
-binary ships in the Docker image — there is no separate CLI build.
+`pm` is a **standalone** CLI binary in the `cli/` crate, decoupled from the
+server. It does not ship in the Docker image — it runs wherever the AI or
+operator is (host, CI, another machine) and reaches the server over HTTP via
+`--api-url` / `$PROJECT_MANAGE_URL`.
 
 | Field | Value |
 |---|---|
-| Entry | `pub async fn run(cli: Cli)` — called from `main.rs` only when `cli.command` is `Some` and not `Serve`. |
+| Entry | `#[tokio::main] async fn main()` — parses `Cli`, then dispatches to the per-resource handler. |
 | Top-level flags | `--api-url <url>` (default `http://localhost:{PORT}`, else `:3000`; or `$PROJECT_MANAGE_URL`), `--format json\|table` (json is default and AI-friendly; table is a minimal human renderer). |
 | Resource subcommands | `clients`, `projects`, `phases`, `tasks`, `people`, `assets`, `files`, `communications`, `deliverables` — each with `list` / `get` / `create --data '<json>'` / `update --data '<json>'` / `delete` (files lack `create`/`update`; people add `flip <id>`). |
-| Other subcommands | `serve` (no-op — handled by the server entrypoint), `search <query>` (global cross-resource search). |
+| Other subcommands | `search <query>` (global cross-resource search). |
 | HTTP details | One `reqwest::Client` with a 30 s timeout. Writes are `POST`/`PUT`/`DELETE` over JSON; a non-2xx status becomes `Err(<status>)` and the process exits 1. |
 | Output | JSON bodies are pretty-printed; arrays in `table` mode render a header + aligned columns (cell cap 40 chars). |
-| Internal deps | `clap` (derive), `reqwest`, `serde_json`. Talks to the server purely over `/api` — no direct DB access. |
+| Internal deps | `clap` (derive), `reqwest`, `serde_json`, `tokio`. Its own `cli/` crate — no dependency on the backend. Talks to the server purely over `/api` — no direct DB access. |
 
 Example:
 
 ```bash
-project-manage projects list --client-id <uuid>
-project-manage --api-url http://other:3000 people flip <id>
-project-manage --format table search "演练"
+pm projects list --client-id <uuid>
+pm --api-url http://localhost:9999 people flip <id>
+pm --format table search "演练"
 ```
 
 ---

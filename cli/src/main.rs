@@ -1,16 +1,14 @@
-//! CLI module — turns `project-manage-backend` into a dual-purpose binary:
-//! - no args (or `serve`) → start the HTTP server (original behaviour)
-//! - subcommands → HTTP client that talks to the API, with JSON output
-//!   designed for both AI-driven automation and human inspection.
+//! Standalone project-manage CLI (`pm`) — a thin HTTP client over the
+//! project-manage API. Decoupled from the server binary; talks to whatever
+//! server `--api-url` (or `$PROJECT_MANAGE_URL`) points at.
 //!
 //! Usage:
-//!   project-manage                                    # serve
-//!   project-manage projects list                       # list all projects
-//!   project-manage projects list --client-id <uuid>    # filter by client
-//!   project-manage projects create --data '{"name":"X",...}'
-//!   project-manage tasks list --project-id <uuid>
-//!   project-manage search "keyword"
-//!   project-manage --api-url http://other:3000 projects list
+//!   pm projects list                       # list all projects
+//!   pm projects list --client-id <uuid>    # filter by client
+//!   pm projects create --data '{"name":"X",...}'
+//!   pm people flip <id>
+//!   pm search "keyword"
+//!   pm --api-url http://localhost:9999 clients list
 
 use clap::{Parser, Subcommand};
 use reqwest::Client;
@@ -21,10 +19,10 @@ use std::process;
 // Top-level CLI
 // ---------------------------------------------------------------------------
 
-/// project-manage CLI — manage clients, projects, tasks, phases, people,
-/// assets, files, deliverables, and communications.
+/// project-manage command-line client — manage clients, projects, tasks,
+/// phases, people, assets, files, deliverables, and communications over HTTP.
 #[derive(Parser)]
-#[command(name = "project-manage", version = env!("CARGO_PKG_VERSION"))]
+#[command(name = "pm", version = env!("CARGO_PKG_VERSION"))]
 pub struct Cli {
     /// API server base URL (default: http://localhost:3000, or $PROJECT_MANAGE_URL)
     #[arg(long, default_value_t = default_api_url(), env = "PROJECT_MANAGE_URL")]
@@ -54,9 +52,6 @@ fn default_api_url() -> String {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Start the HTTP server (same as no args)
-    Serve,
-
     #[command(subcommand)]
     Projects(ProjectCmd),
 
@@ -190,7 +185,12 @@ pub enum DeliverableCmd {
 // Runner — called from main.rs when CLI args are present
 // ---------------------------------------------------------------------------
 
-pub async fn run(cli: Cli) {
+#[tokio::main]
+async fn main() {
+    run(Cli::parse()).await;
+}
+
+async fn run(cli: Cli) {
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
@@ -203,10 +203,6 @@ pub async fn run(cli: Cli) {
     let api = cli.api_url.trim_end_matches('/');
 
     let result = match cli.command {
-        Some(Command::Serve) => {
-            eprintln!("'serve' is handled by the server entrypoint, not the CLI runner.");
-            return;
-        }
         Some(Command::Projects(cmd)) => do_projects(&client, api, cmd, fmt).await,
         Some(Command::Clients(cmd)) => do_clients(&client, api, cmd, fmt).await,
         Some(Command::Phases(cmd)) => do_phases(&client, api, cmd, fmt).await,
@@ -218,7 +214,7 @@ pub async fn run(cli: Cli) {
         Some(Command::Deliverables(cmd)) => do_deliverables(&client, api, cmd, fmt).await,
         Some(Command::Search { query }) => do_search(&client, api, &query, fmt).await,
         None => {
-            eprintln!("use 'project-manage --help' for available commands, or run without args to serve");
+            eprintln!("use 'pm --help' for available commands");
             return;
         }
     };

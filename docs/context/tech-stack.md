@@ -58,6 +58,8 @@ references below:
 
 `backend/Cargo.toml` is the source of truth for the Rust crate versions and
 feature flags. The crate package itself is `project-manage-backend` at `0.1.0`.
+The standalone CLI lives in a separate `cli/` crate (`project-manage-cli`,
+binary `pm`) — decoupled from the server, no dependency on the backend.
 
 ### HTTP and asynchronous runtime
 
@@ -238,12 +240,13 @@ modals, and tabs. `App.tsx` selects `lightTheme` or `darkTheme` through
 
 ## 7. First-party source inventory
 
-The repository’s approximate first-party source count is **101 files**:
+The repository’s approximate first-party source count is **102 files**:
 
 | Bucket | Count | Scope |
 |---|---:|---|
-| Rust | 30 `.rs` | `backend/src/**/*.rs` |
-| SQL | 18 `.sql` | `backend/migrations/` |
+| Rust (server) | 29 `.rs` | `backend/src/**/*.rs` |
+| Rust (CLI) | 1 `.rs` | `cli/src/**/*.rs` |
+| SQL | 19 `.sql` | `backend/migrations/` |
 | TypeScript | 34 `.ts` | `frontend/src/**/*.ts` (incl. ts-rs `generated/`) |
 | TSX | 19 `.tsx` | `frontend/src/**/*.tsx` |
-| **Total** | **101** | Excludes dependencies; includes generated TS bindings |
+| **Total** | **102** | Excludes dependencies; includes generated TS bindings |

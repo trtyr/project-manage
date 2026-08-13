@@ -11,12 +11,12 @@ Legend: 🏠 = flat resource (list doesn't need project), 📋 = project-scoped.
 ## 🏠 Projects
 
 ```bash
-project-manage projects list                          # all projects
-project-manage projects list --client-id UUID         # filter by client
-project-manage projects get UUID
-project-manage projects create --data '{...}'
-project-manage projects update UUID --data '{...}'
-project-manage projects delete UUID                   # ⚠ CASCADE deletes child rows
+pm projects list                          # all projects
+pm projects list --client-id UUID         # filter by client
+pm projects get UUID
+pm projects create --data '{...}'
+pm projects update UUID --data '{...}'
+pm projects delete UUID                   # ⚠ CASCADE deletes child rows
 ```
 
 ### CreateProject DTO
@@ -40,10 +40,10 @@ All fields optional: `name`, `client_id`, `status`, `phase`, `goals`,
 
 ```bash
 # Minimal project
-project-manage projects create --data '{"client_id":"e37e...","name":"测试项目"}'
+pm projects create --data '{"client_id":"e37e...","name":"测试项目"}'
 
 # Full project
-project-manage projects create --data '{
+pm projects create --data '{
   "client_id":"e37e0c75-4921-4414-907c-2feb6d7af6d6",
   "name":"门户网站开发",
   "status":"in_progress",
@@ -54,7 +54,7 @@ project-manage projects create --data '{
 }'
 
 # Mark complete
-project-manage projects update UUID --data '{"status":"completed"}'
+pm projects update UUID --data '{"status":"completed"}'
 ```
 
 ---
@@ -62,11 +62,11 @@ project-manage projects update UUID --data '{"status":"completed"}'
 ## 🏠 Clients
 
 ```bash
-project-manage clients list
-project-manage clients get UUID
-project-manage clients create --data '{...}'
-project-manage clients update UUID --data '{...}'
-project-manage clients delete UUID         # ⚠ restricted if client has projects
+pm clients list
+pm clients get UUID
+pm clients create --data '{...}'
+pm clients update UUID --data '{...}'
+pm clients delete UUID         # ⚠ restricted if client has projects
 ```
 
 ### CreateClient DTO
@@ -89,7 +89,7 @@ All fields optional: `name`, `contact_person`, `contact_info`, `notes`,
 ### Examples
 
 ```bash
-project-manage clients create --data '{
+pm clients create --data '{
   "name":"示例客户",
   "products":["监控系统","数据管理系统"],
   "security_concerns":["数据泄露","勒索软件"]
@@ -101,11 +101,11 @@ project-manage clients create --data '{
 ## 📋 Phases
 
 ```bash
-project-manage phases list --project-id PID
-project-manage phases get UUID
-project-manage phases create --project-id PID --data '{...}'
-project-manage phases update UUID --data '{...}'
-project-manage phases delete UUID
+pm phases list --project-id PID
+pm phases get UUID
+pm phases create --project-id PID --data '{...}'
+pm phases update UUID --data '{...}'
+pm phases delete UUID
 ```
 
 ### CreatePhase DTO
@@ -124,10 +124,10 @@ project-manage phases delete UUID
 
 ```bash
 # Simple phase
-project-manage phases create --project-id PID --data '{"name":"需求挖掘","status":"pending"}'
+pm phases create --project-id PID --data '{"name":"需求挖掘","status":"pending"}'
 
 # Phase with dates
-project-manage phases create --project-id PID --data '{
+pm phases create --project-id PID --data '{
   "name":"POC测试",
   "status":"in_progress",
   "planned_start":"2026-09-01T00:00:00Z",
@@ -136,7 +136,7 @@ project-manage phases create --project-id PID --data '{
 
 # Import standard 7-phase template
 for phase in "需求挖掘" "技术预研" "方案论证" "立项审批" "启动采购" "商务招标" "签单冲刺"; do
-  project-manage phases create --project-id $PID --data "{\"name\":\"$phase\",\"status\":\"pending\"}"
+  pm phases create --project-id $PID --data "{\"name\":\"$phase\",\"status\":\"pending\"}"
 done
 ```
 
@@ -145,11 +145,11 @@ done
 ## 📋 Tasks
 
 ```bash
-project-manage tasks list --project-id PID
-project-manage tasks get UUID
-project-manage tasks create --project-id PID --data '{...}'
-project-manage tasks update UUID --data '{...}'
-project-manage tasks delete UUID
+pm tasks list --project-id PID
+pm tasks get UUID
+pm tasks create --project-id PID --data '{...}'
+pm tasks update UUID --data '{...}'
+pm tasks delete UUID
 ```
 
 ### CreateTask DTO
@@ -166,7 +166,7 @@ project-manage tasks delete UUID
 
 ```bash
 # Urgent task with assignee
-project-manage tasks create --project-id PID --data '{
+pm tasks create --project-id PID --data '{
   "title":"梳理Agent架构",
   "priority":"urgent",
   "status":"current",
@@ -174,10 +174,10 @@ project-manage tasks create --project-id PID --data '{
 }'
 
 # Simple todo
-project-manage tasks create --project-id PID --data '{"title":"更新接口文档"}'
+pm tasks create --project-id PID --data '{"title":"更新接口文档"}'
 
 # Move to next
-project-manage tasks update UUID --data '{"status":"next"}'
+pm tasks update UUID --data '{"status":"next"}'
 ```
 
 ---
@@ -185,12 +185,12 @@ project-manage tasks update UUID --data '{"status":"next"}'
 ## 📋 People
 
 ```bash
-project-manage people list --project-id PID
-project-manage people get UUID
-project-manage people create --project-id PID --data '{...}'
-project-manage people update UUID --data '{...}'
-project-manage people delete UUID
-project-manage people flip UUID             # move team↔client
+pm people list --project-id PID
+pm people get UUID
+pm people create --project-id PID --data '{...}'
+pm people update UUID --data '{...}'
+pm people delete UUID
+pm people flip UUID             # move team↔client
 ```
 
 ### CreatePerson DTO
@@ -210,24 +210,24 @@ All fields optional: `name`, `role`, `notes`.
 
 ```bash
 # Team member
-project-manage people create --project-id PID --data '{
+pm people create --project-id PID --data '{
   "side":"team",
   "name":"赵俊宇",
   "role":"项目经理"
 }'
 
 # Client-side contact
-project-manage people create --project-id PID --data '{
+pm people create --project-id PID --data '{
   "side":"client",
   "name":"黄嘉骏",
   "role":"领导"
 }'
 
 # Change role
-project-manage people update UUID --data '{"role":"技术负责人"}'
+pm people update UUID --data '{"role":"技术负责人"}'
 
 # Move to other side
-project-manage people flip UUID
+pm people flip UUID
 ```
 
 ---
@@ -235,11 +235,11 @@ project-manage people flip UUID
 ## 📋 Assets
 
 ```bash
-project-manage assets list --project-id PID
-project-manage assets get UUID
-project-manage assets create --project-id PID --data '{...}'
-project-manage assets update UUID --data '{...}'
-project-manage assets delete UUID
+pm assets list --project-id PID
+pm assets get UUID
+pm assets create --project-id PID --data '{...}'
+pm assets update UUID --data '{...}'
+pm assets delete UUID
 ```
 
 ### CreateAsset DTO
@@ -258,7 +258,7 @@ project-manage assets delete UUID
 
 ```bash
 # 监控系统 asset
-project-manage assets create --project-id PID --data '{
+pm assets create --project-id PID --data '{
   "name":"示例厂商 监控系统",
   "asset_type":"监控系统",
   "access_method":"访问控制登录",
@@ -267,7 +267,7 @@ project-manage assets create --project-id PID --data '{
 }'
 
 # Threat intelligence
-project-manage assets create --project-id PID --data '{
+pm assets create --project-id PID --data '{
   "name":"NGTIP",
   "asset_type":"威胁情报",
   "vendor":"示例厂商在线",
@@ -275,7 +275,7 @@ project-manage assets create --project-id PID --data '{
 }'
 
 # Update credentials only
-project-manage assets update UUID --data '{"credentials":"new-token-value"}'
+pm assets update UUID --data '{"credentials":"new-token-value"}'
 ```
 
 ---
@@ -283,10 +283,10 @@ project-manage assets update UUID --data '{"credentials":"new-token-value"}'
 ## 🏠 Files
 
 ```bash
-project-manage files list                          # all files across projects
-project-manage files list --project-id PID         # per-project
-project-manage files get UUID
-project-manage files delete UUID
+pm files list                          # all files across projects
+pm files list --project-id PID         # per-project
+pm files get UUID
+pm files delete UUID
 ```
 
 ⚠ **File upload/update NOT available via CLI.** For multipart uploads:
@@ -302,12 +302,12 @@ curl -F "file=@local.pdf" \
 ## 📋 Communications
 
 ```bash
-project-manage communications list                    # recent across all projects
-project-manage communications list --project-id PID   # per-project
-project-manage communications get UUID
-project-manage communications create --project-id PID --data '{...}'
-project-manage communications update UUID --data '{...}'
-project-manage communications delete UUID
+pm communications list                    # recent across all projects
+pm communications list --project-id PID   # per-project
+pm communications get UUID
+pm communications create --project-id PID --data '{...}'
+pm communications update UUID --data '{...}'
+pm communications delete UUID
 ```
 
 ### CreateCommunication DTO
@@ -326,7 +326,7 @@ All fields optional: `content`, `occurred_at`, `participants`, `conclusion`.
 ### Examples
 
 ```bash
-project-manage communications create --project-id PID --data '{
+pm communications create --project-id PID --data '{
   "content":"与客户确认POC测试范围和时间节点",
   "occurred_at":"2026-09-01T10:00:00Z",
   "participants":"赵俊宇、黄嘉骏",
@@ -339,11 +339,11 @@ project-manage communications create --project-id PID --data '{
 ## 📋 Deliverables
 
 ```bash
-project-manage deliverables list --project-id PID
-project-manage deliverables get UUID
-project-manage deliverables create --project-id PID --data '{...}'
-project-manage deliverables update UUID --data '{...}'
-project-manage deliverables delete UUID
+pm deliverables list --project-id PID
+pm deliverables get UUID
+pm deliverables create --project-id PID --data '{...}'
+pm deliverables update UUID --data '{...}'
+pm deliverables delete UUID
 ```
 
 ### CreateDeliverable DTO
@@ -359,20 +359,20 @@ project-manage deliverables delete UUID
 
 ```bash
 # New deliverable
-project-manage deliverables create --project-id PID --data '{
+pm deliverables create --project-id PID --data '{
   "name":"安全评估报告",
   "status":"pending",
   "due_date":"2026-10-15"
 }'
 
 # Mark delivered with linked file
-project-manage deliverables update UUID --data '{
+pm deliverables update UUID --data '{
   "status":"delivered",
   "linked_file_id":"FILE_UUID"
 }'
 
 # Mark accepted
-project-manage deliverables update UUID --data '{"status":"accepted"}'
+pm deliverables update UUID --data '{"status":"accepted"}'
 ```
 
 ---
@@ -380,7 +380,7 @@ project-manage deliverables update UUID --data '{"status":"accepted"}'
 ## 🔍 Search
 
 ```bash
-project-manage search "keyword"
+pm search "keyword"
 ```
 
 Searches across projects, clients, communications, tasks, and people using
@@ -398,8 +398,8 @@ ILIKE matching. Returns array of `SearchHit`:
 
 ```bash
 # Find everything related to "安全"
-project-manage search "安全"
+pm search "安全"
 
 # Find a person by name
-project-manage search "赵俊宇"
+pm search "赵俊宇"
 ```

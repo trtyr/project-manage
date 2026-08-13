@@ -9,14 +9,12 @@
 use std::{path::PathBuf, time::Duration};
 
 use axum::http::HeaderValue;
-use clap::Parser;
 use sqlx::{migrate, PgPool};
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info, warn};
 
 use project_manage_backend::app::build_app;
-use project_manage_backend::cli::{self, Cli};
 use project_manage_backend::db;
 
 /// Per-attempt backoff (seconds) for the startup DB bootstrap.
@@ -218,15 +216,6 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() {
-    // Check for CLI subcommands first. If the user supplied a command
-    // other than `serve`, run the CLI client and exit. Otherwise, start
-    // the HTTP server as usual.
-    let cli = Cli::parse();
-    if cli.command.as_ref().is_some_and(|c| !matches!(c, cli::Command::Serve)) {
-        cli::run(cli).await;
-        return;
-    }
-
     // 1. Load .env first so DATABASE_URL is visible to both the macros
     //    (during the build that produced this binary) and the runtime pool.
     //    We tolerate a missing .env so the binary still runs from a

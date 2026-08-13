@@ -27,6 +27,22 @@ one. All security framing and the security-named field were removed.
 Verified: clippy `-D warnings` clean; `cargo test` 40 passed (29 ts-rs + 11
 smoke); frontend build OK + 20 vitest passed.
 
+## 2026-08-13 — Decouple CLI into standalone `pm` crate
+
+The CLI used to be a "client mode" of the server binary, which trapped it
+inside the Docker image. Split it out so the AI/operator can run it from the
+host and reach the server over HTTP.
+
+- [x] New `cli/` crate: binary `pm` (`project-manage-cli`), a thin HTTP client
+  (clap + reqwest + serde_json + tokio), no dependency on the backend.
+- [x] Backend is now server-only: removed `cli.rs`, `pub mod cli`, `clap`, and
+  the `Cli::parse()` dispatch from `main.rs`.
+- [x] Updated the `project-manage-cli` skill + README + modules §G + deploy +
+  backend/README to reflect the `pm` binary and cargo/docker server startup.
+
+Verified: backend 40 tests green (29 ts-rs + 11 smoke); `pm --api-url
+http://localhost:9999 clients list` and `search` work against Docker.
+
 ## 2026-07-15 — Backend error-handling hardening
 
 - [x] Extracted `ensure_project_exists` into `backend/src/db/helpers.rs`,

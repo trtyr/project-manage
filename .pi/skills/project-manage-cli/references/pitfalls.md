@@ -13,7 +13,7 @@ CLI error: error sending request for url (http://localhost:3000/api/projects):
 Fix: start the server first.
 
 ```bash
-cd backend && PORT=9999 ./target/debug/project-manage-backend &
+cargo run --manifest-path backend/Cargo.toml &
 # Wait for: ✅ 就绪检查通过
 ```
 
@@ -25,23 +25,23 @@ Use single quotes for the shell wrapper and double quotes inside:
 
 ```bash
 # ✅ Correct
-project-manage projects create --data '{"name":"My Project","status":"in_progress"}'
+pm projects create --data '{"name":"My Project","status":"in_progress"}'
 
 # ❌ Wrong — shell variable expansion in double quotes
-project-manage projects create --data "{"name":"$NAME"}"
+pm projects create --data "{"name":"$NAME"}"
 # Shell tries to expand $NAME and breaks JSON parsing
 ```
 
 For strings containing single quotes, use `'\''` escape:
 
 ```bash
-project-manage projects create --data '{"name":"It'\''s a project"}'
+pm projects create --data '{"name":"It'\''s a project"}'
 ```
 
 Or use a heredoc:
 
 ```bash
-project-manage projects create --data "$(cat <<'JSON'
+pm projects create --data "$(cat <<'JSON'
 {
   "name": "It's a project",
   "status": "in_progress"
@@ -56,10 +56,10 @@ JSON
 
 ```bash
 # ✅ Correct
-project-manage --api-url http://localhost:9999 projects list
+pm --api-url http://localhost:9999 projects list
 
 # ❌ Wrong — silently ignored
-project-manage projects list --api-url http://localhost:9999
+pm projects list --api-url http://localhost:9999
 ```
 
 When in doubt, put everything before the resource name.
@@ -72,11 +72,11 @@ CLI side since we're constructing a generic `Value`):
 
 ```bash
 # ❌ "nam" is a typo — it'll be silently ignored
-project-manage projects create --data '{"nam":"Test"}'
+pm projects create --data '{"nam":"Test"}'
 # The API receives an empty body with no "name" field → returns 422
 ```
 
-Always double-check field names against the DTO tables in [[resources]].
+Always double-check field names against the DTO tables in [resources](resources.md).
 
 ## No file upload via CLI
 
@@ -115,11 +115,11 @@ list and create:
 
 ```bash
 # ❌ Missing --project-id
-project-manage tasks list
+pm tasks list
 # Error: argument '--project-id' is required
 
 # ✅
-project-manage tasks list --project-id "$PID"
+pm tasks list --project-id "$PID"
 ```
 
 ## Whitespace in shell loops
@@ -128,12 +128,12 @@ When iterating over names with spaces, use `while read` not `for`:
 
 ```bash
 # ❌ Breaks on names with spaces
-for name in $(project-manage people list --project-id "$PID" | jq -r '.[].name'); do
+for name in $(pm people list --project-id "$PID" | jq -r '.[].name'); do
   echo "$name"
 done
 
 # ✅ Works with any name
-project-manage people list --project-id "$PID" | jq -r '.[].name' | while read -r name; do
+pm people list --project-id "$PID" | jq -r '.[].name' | while read -r name; do
   echo "Found: $name"
 done
 ```
@@ -148,7 +148,7 @@ lsof -ti:9999
 kill -9 $(lsof -ti:9999)
 
 # Or use a different port
-PORT=9998 ./target/debug/project-manage-backend &
+PORT=9998 cargo run --manifest-path backend/Cargo.toml &
 export PROJECT_MANAGE_URL=http://localhost:9998
 ```
 
