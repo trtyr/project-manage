@@ -14,6 +14,9 @@ or behavior change; the server (`project-manage-backend`) is unaffected.
 - [x] Deleted `.github/workflows/ci.yml` (quality gate; local `just check` /
   `just smoke` remain for manual verification).
 - [x] Deleted `cli/` crate + the `project-manage-cli` Pi skill (repo + global).
+- [x] Added `scripts/pm` — stdlib-only Python CLI, full parity with the former `pm`
+  (9 resources × CRUD + people `flip` + `search` + json/table output); verified
+  end-to-end against Docker (create→get→update→delete cycle).
 - [x] Docs: removed CLI sections (README §CLI 用法, modules §G, tech-stack CLI
   row) and CI-gate references (AGENTS, deploy §6/§7). Local test/lint commands kept.
 - [x] `main.rs` arg-guard no longer points at the deleted `pm` CLI.

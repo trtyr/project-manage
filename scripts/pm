@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""project-manage CLI (``pm``) — a thin HTTP client over the ``/api``.
+
+Standalone, **stdlib-only** Python script. It is the replacement for the former
+Rust ``pm`` binary and is decoupled from the server: it talks to whatever
+``--api-url`` (or ``$PROJECT_MANAGE_URL``) points at, over plain HTTP/JSON.
+
+Output is JSON by default (AI-friendly); ``--format table`` renders a minimal
+human-readable table (cell cap 40 chars, like the old CLI).
+
+Usage examples::
+
+    pm projects list
+    pm projects list --client-id <uuid>
+    pm projects create --data '{"name":"X","client_id":"..."}'
+    pm people flip <id>
+    pm --format table search "keyword"
+    pm --api-url http://localhost:9999 clients list
+
+Resources: clients, projects, phases, tasks, people, assets, files,
+communications, deliverables — each with ``list`` / ``get`` /
+``create --data`` / ``update --data`` / ``delete`` (``files`` lacks
+create/update; ``people`` adds ``flip <id>``), plus a top-level ``search``.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+def default_api_url() -> str:
+    """Mirror the old CLI: derive from $PORT, else fall back to :3000."""
+    port = os.environ.get("PORT")
+    if port and port.isdigit():
+        return f"http://localhost:{port}"
+    return "http://localhost:3000"
+
+
+# ---------------------------------------------------------------------------
+# HTTP helpers (30s timeout, non-2xx → stderr + exit 1)
+# ---------------------------------------------------------------------------
+def _request(method: str, url: str, body: str | None = None) -> str:
+    data = None
+    headers: dict[str, str] = {}
+    if body is not None:
+        data = body.encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        sys.stderr.write(f"CLI error: {exc.code}\n")
+        sys.exit(1)
+    except urllib.error.URLError as exc:
+        sys.stderr.write(f"CLI error: {getattr(exc, 'reason', exc)}\n")
+        sys.exit(1)
+
+
+def get(url: str) -> str:
+    return _request("GET", url)
+
+
+def post(url: str, body: str | None = None) -> str:
+    return _request("POST", url, body)
+
+
+def put(url: str, body: str) -> str:
+    return _request("PUT", url, body)
+
+
+def delete(url: str) -> str:
+    _request("DELETE", url)
+    return json.dumps({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# Output (JSON pretty-print, or a minimal table renderer)
+# ---------------------------------------------------------------------------
+def _cell(value) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _trunc(text: str, width: int) -> str:
+    if len(text) > width:
+        return text[: max(0, width - 1)] + "…"
+    return text
+
+
+def _format_table(val) -> str:
+    if not isinstance(val, list):
+        return json.dumps(val, indent=2, ensure_ascii=False)
+    if not val:
+        return "[]\n"
+    first = val[0]
+    if not isinstance(first, dict):
+        return json.dumps(val, indent=2, ensure_ascii=False)
+    keys = list(first.keys())
+    widths = []
+    for key in keys:
+        max_val = max((len(_cell(item.get(key))) for item in val), default=0)
+        widths.append(min(max(len(key), max_val), 40))
+    header = " │ ".join(
+        _trunc(key, w).ljust(w) for key, w in zip(keys, widths)
+    )
+    sep = "─┼─".join("─" * w for w in widths)
+    rows = "\n".join(
+        " │ ".join(
+            _trunc(_cell(item.get(key)), w).ljust(w)
+            for key, w in zip(keys, widths)
+        )
+        for item in val
+    )
+    return f"{header}\n{sep}\n{rows}\n{len(val)} items\n"
+
+
+def format_output(text: str, fmt: str) -> str:
+    try:
+        val = json.loads(text)
+    except json.JSONDecodeError:
+        return text
+    if fmt == "table":
+        return _format_table(val)
+    return json.dumps(val, indent=2, ensure_ascii=False)
+
+
+# ---------------------------------------------------------------------------
+# Dispatch — turns parsed args into an HTTP call. Endpoint knowledge lives here.
+# ---------------------------------------------------------------------------
+# Resources whose list/create are project-scoped with a REQUIRED --project-id.
+SCOPED = {"phases", "tasks", "assets", "deliverables", "people"}
+
+
+def dispatch(api: str, resource: str, args) -> str:
+    sub = args.subcmd
+
+    if sub == "list":
+        # projects: optional --client-id filter
+        if resource == "projects" and getattr(args, "client_id", None):
+            cid = urllib.parse.quote(args.client_id)
+            return get(f"{api}/api/projects?client_id={cid}")
+        # project-scoped (required id)
+        if resource in SCOPED:
+            return get(f"{api}/api/projects/{args.project_id}/{resource}")
+        # communications: project-scoped OR recent
+        if resource == "communications":
+            pid = getattr(args, "project_id", None)
+            url = (
+                f"{api}/api/projects/{pid}/communications"
+                if pid
+                else f"{api}/api/communications/recent"
+            )
+            return get(url)
+        # files: project-scoped OR all
+        if resource == "files":
+            pid = getattr(args, "project_id", None)
+            url = (
+                f"{api}/api/projects/{pid}/files" if pid else f"{api}/api/files"
+            )
+            return get(url)
+        # clients / projects (no filter)
+        return get(f"{api}/api/{resource}")
+
+    if sub == "get":
+        return get(f"{api}/api/{resource}/{args.id}")
+
+    if sub == "create":
+        if resource in ("clients", "projects"):
+            return post(f"{api}/api/{resource}", args.data)
+        return post(f"{api}/api/projects/{args.project_id}/{resource}", args.data)
+
+    if sub == "update":
+        return put(f"{api}/api/{resource}/{args.id}", args.data)
+
+    if sub == "delete":
+        return delete(f"{api}/api/{resource}/{args.id}")
+
+    if sub == "flip":  # people only
+        return post(f"{api}/api/people/{args.id}/flip-side")
+
+    sys.exit(f"unknown subcommand: {sub}")
+
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+def _add_crud(sp, list_arg=None, create=True, update=True):
+    """Attach list/get[/create][/update]/delete subparsers to a resource.
+
+    list_arg:
+      None  — list takes no argument (clients)
+      'req' — list requires --project-id (phases, tasks, people, assets, deliverables)
+      'opt' — list takes optional --project-id (files, communications)
+    """
+    sub = sp.add_subparsers(dest="subcmd", required=True)
+
+    lp = sub.add_parser("list", help="list rows")
+    if list_arg == "req":
+        lp.add_argument("--project-id", required=True)
+    elif list_arg == "opt":
+        lp.add_argument("--project-id")
+
+    gp = sub.add_parser("get", help="get one row by id")
+    gp.add_argument("id")
+
+    if create:
+        cp = sub.add_parser("create", help="create a row (JSON body)")
+        if list_arg in ("req", "opt"):
+            cp.add_argument("--project-id", required=True)
+        cp.add_argument("--data", required=True, help="JSON body matching the Create DTO")
+
+    if update:
+        up = sub.add_parser("update", help="update a row (JSON body)")
+        up.add_argument("id")
+        up.add_argument("--data", required=True, help="JSON body matching the Update DTO")
+
+    dp = sub.add_parser("delete", help="delete a row by id")
+    dp.add_argument("id")
+
+    return sub
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="pm",
+        description="project-manage command-line client (manage resources over HTTP)",
+    )
+    p.add_argument(
+        "--api-url",
+        default=os.environ.get("PROJECT_MANAGE_URL") or default_api_url(),
+        help="API server base URL (default: http://localhost:3000 or $PROJECT_MANAGE_URL)",
+    )
+    p.add_argument(
+        "--format",
+        choices=["json", "table"],
+        default="json",
+        help="output format: json (default, AI-friendly) or table",
+    )
+    resources = p.add_subparsers(dest="command", required=True)
+
+    # clients — flat, list takes no arg
+    _add_crud(resources.add_parser("clients"), list_arg=None)
+
+    # projects — flat, list takes an optional --client-id filter
+    p_sp = resources.add_parser("projects")
+    p_sub = p_sp.add_subparsers(dest="subcmd", required=True)
+    p_lp = p_sub.add_parser("list", help="list projects, optionally filtered by client")
+    p_lp.add_argument("--client-id")
+    for op in ("get", "create", "update", "delete"):
+        ap = p_sub.add_parser(op)
+        if op in ("get", "update", "delete"):
+            ap.add_argument("id")
+        if op in ("create", "update"):
+            ap.add_argument("--data", required=True)
+
+    # project-scoped (required --project-id)
+    for name in ("phases", "tasks", "assets", "deliverables"):
+        _add_crud(resources.add_parser(name), list_arg="req")
+
+    # people — project-scoped + flip
+    people_sub = _add_crud(resources.add_parser("people"), list_arg="req")
+    fp = people_sub.add_parser("flip", help="move a person between team ↔ client")
+    fp.add_argument("id")
+
+    # communications — list optional --project-id (recent fallback), create scoped
+    _add_crud(resources.add_parser("communications"), list_arg="opt")
+
+    # files — list optional --project-id (all fallback), no create/update
+    _add_crud(resources.add_parser("files"), list_arg="opt", create=False, update=False)
+
+    # deliverables already added above
+
+    # search — global
+    sp_search = resources.add_parser("search", help="global cross-resource search")
+    sp_search.add_argument("query")
+
+    return p
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    api = args.api_url.rstrip("/")
+
+    if args.command == "search":
+        q = urllib.parse.quote(args.query)
+        text = get(f"{api}/api/search?q={q}")
+    else:
+        text = dispatch(api, args.command, args)
+
+    print(format_output(text, args.format))
+
+
+if __name__ == "__main__":
+    main()
