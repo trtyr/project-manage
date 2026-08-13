@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,\n                  client_id,\n                  name,\n                  status,\n                  phase,\n                  goals AS \"goals!: Vec<String>\",\n                  tech_approval,\n                  competitors,\n                  created_at,\n                  updated_at\n           FROM projects\n           ORDER BY created_at DESC",
+  "query": "SELECT id,\n                      client_id,\n                      name,\n                      status,\n                      phase,\n                      goals AS \"goals!: Vec<String>\",\n                      tech_approval,\n                      competitors,\n                      created_at,\n                      updated_at\n               FROM projects\n               ORDER BY created_at DESC",
   "describe": {
     "columns": [
       {
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "9763c802999f5623ae93eb7d9eb859680c24dc2d3c5c9e3ad78a26640ebfe0c0"
+  "hash": "3370c23a5191a9483c86e7a9e05c3c0858c54a604a52d55868d4eb4467f5b1f3"
 }

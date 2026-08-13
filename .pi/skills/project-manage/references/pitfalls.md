@@ -6,8 +6,7 @@ Every `pm` command is an HTTP call to the API server. If the server is down,
 you get a connection error:
 
 ```
-error: error sending request for url (http://localhost:3000/api/projects):
-  tcp connect error: Connection refused (os error 61)
+error: [Errno 61] Connection refused
 ```
 
 Fix: start the server first.
@@ -58,7 +57,7 @@ JSON
 # ✅ Correct
 python3 scripts/pm --api-url http://localhost:9999 projects list
 
-# ❌ Wrong — silently ignored
+# ❌ Wrong — argparse rejects it (exit 2)
 python3 scripts/pm projects list --api-url http://localhost:9999
 ```
 
@@ -91,13 +90,18 @@ curl -F "file=@local.pdf" \
      http://localhost:9999/api/projects/PID/files
 ```
 
-## PORT vs PROJECT_MANAGE_URL
+## PORT vs PROJECT_MANAGE_URL vs `--api-url`
 
-- `PORT` env var → controls what port the **server** listens on
-- `PROJECT_MANAGE_URL` env var → tells **`pm`** where the server is
+`pm` resolves its target URL in this order (first wins):
 
-They are independent. Setting `PORT=9999` when starting the server does NOT
-make `pm` connect to `:9999` — you still need `--api-url` or
+1. `--api-url` flag (per-command)
+2. `PROJECT_MANAGE_URL` env var
+3. `PORT` env var → `http://localhost:$PORT` (so `PORT=9999` **does** make `pm`
+   target `:9999` — handy when server and `pm` share a shell)
+4. fallback `http://localhost:3000`
+
+`PORT` is primarily the **server's** listen port, but `pm` reads it as a default
+too. To point `pm` at a different host/port than the server, use `--api-url` or
 `PROJECT_MANAGE_URL`.
 
 ## Delete is irreversible

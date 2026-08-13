@@ -28,8 +28,8 @@ python3 scripts/pm projects delete UUID                   # ⚠ CASCADE deletes 
 | `status` | string | — | `in_progress` | `in_progress` / `completed` / `paused` |
 | `phase` | string | — | null | Free-text phase label |
 | `goals` | string[] | — | `[]` | Array of goal strings |
-| `tech_approval` | string | — | null | `未接触` / `POC中` / `已认可` / `技术否决` |
-| `competitors` | string | — | null | Competitor notes |
+| `tech_approval` | string | — | `""` (empty) | `未接触` / `POC中` / `已认可` / `技术否决` |
+| `competitors` | string | — | `""` (empty) | Competitor notes |
 
 ### UpdateProject DTO
 

@@ -58,7 +58,18 @@ def _request(method: str, url: str, body: str | None = None) -> str:
         with urllib.request.urlopen(req, timeout=30) as resp:
             return resp.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
-        sys.stderr.write(f"error: {exc.code}\n")
+        detail = ""
+        try:
+            body = exc.read().decode("utf-8", errors="replace").strip()
+            if body:
+                try:
+                    msg = json.loads(body).get("message")
+                    detail = f": {msg}" if msg else f": {body[:200]}"
+                except json.JSONDecodeError:
+                    detail = f": {body[:200]}"
+        except Exception:
+            pass
+        sys.stderr.write(f"error: {exc.code}{detail}\n")
         sys.exit(1)
     except urllib.error.URLError as exc:
         sys.stderr.write(f"error: {getattr(exc, 'reason', exc)}\n")

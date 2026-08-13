@@ -108,10 +108,12 @@ python3 scripts/pm tasks create --help   # create flags
 
 ## Error responses
 
-When the API returns an error, `pm` prints the HTTP status and exits 1:
+When the API returns an error, `pm` prints the HTTP status **plus the backend's
+message** and exits 1:
 
 ```text
-error: 404 Not Found
+error: 400: invalid status '乱来值', must be one of ["in_progress", "completed", "paused"]
+error: 404: project f1c2... not found
 ```
 
 Common causes:
@@ -119,4 +121,4 @@ Common causes:
 - **Server not running**: connection refused
 - **Wrong `--api-url`**: 404 on everything
 - **Wrong `--project-id`**: 404 on project-scoped resources
-- **Invalid `--data` JSON**: 400 Bad Request or 422 Unprocessable Entity
+- **Invalid `--data` JSON / bad enum value**: 400 with the backend's explanation

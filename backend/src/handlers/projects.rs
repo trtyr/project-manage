@@ -1,7 +1,7 @@
 //! Project (项目) HTTP handlers.
 //!
 //! Routes:
-//! - `GET    /api/projects`        → list all
+//! - `GET    /api/projects`        → list all (optional `?client_id=` filter)
 //! - `POST   /api/projects`        → create
 //! - `GET    /api/projects/:id`    → read one
 //! - `PUT    /api/projects/:id`    → partial update
@@ -11,12 +11,13 @@
 //! wired into the router from `main.rs`.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::get,
     Json, Router,
 };
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -30,25 +31,54 @@ pub fn projects_router() -> Router<AppState> {
         .route("/projects/{id}", get(get_one).put(update).delete(remove))
 }
 
-/// `GET /api/projects`
-async fn list(State(pool): State<PgPool>) -> AppResult<Json<Vec<Project>>> {
-    let rows = sqlx::query_as!(
-        Project,
-        r#"SELECT id,
-                  client_id,
-                  name,
-                  status,
-                  phase,
-                  goals AS "goals!: Vec<String>",
-                  tech_approval,
-                  competitors,
-                  created_at,
-                  updated_at
-           FROM projects
-           ORDER BY created_at DESC"#
-    )
-    .fetch_all(&pool)
-    .await?;
+#[derive(Debug, Deserialize)]
+struct ListQuery {
+    client_id: Option<Uuid>,
+}
+
+/// `GET /api/projects` (optional `?client_id=` filter)
+async fn list(
+    State(pool): State<PgPool>,
+    Query(q): Query<ListQuery>,
+) -> AppResult<Json<Vec<Project>>> {
+    let rows = match q.client_id {
+        Some(client_id) => sqlx::query_as!(
+            Project,
+            r#"SELECT id,
+                      client_id,
+                      name,
+                      status,
+                      phase,
+                      goals AS "goals!: Vec<String>",
+                      tech_approval,
+                      competitors,
+                      created_at,
+                      updated_at
+               FROM projects
+               WHERE client_id = $1
+               ORDER BY created_at DESC"#,
+            client_id
+        )
+        .fetch_all(&pool)
+        .await?,
+        None => sqlx::query_as!(
+            Project,
+            r#"SELECT id,
+                      client_id,
+                      name,
+                      status,
+                      phase,
+                      goals AS "goals!: Vec<String>",
+                      tech_approval,
+                      competitors,
+                      created_at,
+                      updated_at
+               FROM projects
+               ORDER BY created_at DESC"#
+        )
+        .fetch_all(&pool)
+        .await?,
+    };
     Ok(Json(rows))
 }
 
