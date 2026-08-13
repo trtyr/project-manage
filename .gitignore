@@ -26,3 +26,6 @@ Thumbs.db
 .codegraph/
 .impeccable/
 .pi-glla/
+
+# Database backups
+backups/

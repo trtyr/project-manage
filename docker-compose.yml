@@ -40,8 +40,7 @@ services:
     ports:
       - "${APP_PORT:-9999}:3000"
     volumes:
-      - uploads:/app/uploads
+      - ./backend/uploads:/app/uploads
 
 volumes:
   pgdata:
-  uploads:
