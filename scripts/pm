@@ -248,6 +248,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="json",
         help="output format: json (default, AI-friendly) or table",
     )
+    p.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 0.1.0",
+    )
     resources = p.add_subparsers(dest="command", required=True)
 
     # clients — flat, list takes no arg
