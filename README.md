@@ -122,4 +122,4 @@ just build-frontend      # 前端 production build
 
 ---
 
-⭐ 发现有用？给 [project-manage](https://github.com/trtyr/sec-tracker) 点个 star。
+⭐ 发现有用？给 [project-manage](https://github.com/trtyr/project-manage) 点个 star。
