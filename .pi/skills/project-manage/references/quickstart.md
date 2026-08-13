@@ -10,12 +10,12 @@ a running server over HTTP:
 python3 scripts/pm projects list             # run it directly, no build needed
 ```
 
-The CLI talks to the API server over HTTP — it does NOT access the database
+`pm` talks to the API server over HTTP — it does NOT access the database
 directly, and it does **not** need to run on the same machine as the server.
 
 ## Starting the server
 
-The CLI requires a running API server. Two options:
+`pm` requires a running API server. Two options:
 
 ```bash
 # Local dev — serves on :3000
@@ -108,10 +108,10 @@ python3 scripts/pm tasks create --help   # create flags
 
 ## Error responses
 
-When the API returns an error, the CLI prints the HTTP status and exits 1:
+When the API returns an error, `pm` prints the HTTP status and exits 1:
 
 ```text
-CLI error: 404 Not Found
+error: 404 Not Found
 ```
 
 Common causes:

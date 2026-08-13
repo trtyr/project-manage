@@ -287,7 +287,7 @@ python3 scripts/pm files get UUID
 python3 scripts/pm files delete UUID
 ```
 
-⚠ **File upload/update NOT available via CLI.** For multipart uploads:
+⚠ **File upload/update NOT available via `pm`.** For multipart uploads:
 
 ```bash
 curl -F "file=@local.pdf" \

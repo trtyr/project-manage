@@ -105,7 +105,7 @@ python3 scripts/pm communications list --project-id "$PID" \
 ## Add a file and link it to a deliverable
 
 ```bash
-# Step 1: Upload the file (curl, not CLI)
+# Step 1: Upload the file (curl, not `pm`)
 FILE_RESP=$(curl -s -F "file=@report.pdf" \
   -F "description=项目验收最终报告" \
   http://localhost:9999/api/projects/$PID/files)

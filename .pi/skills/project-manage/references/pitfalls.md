@@ -2,11 +2,11 @@
 
 ## Server must be running
 
-Every CLI command is an HTTP call to the API server. If the server is down,
+Every `pm` command is an HTTP call to the API server. If the server is down,
 you get a connection error:
 
 ```
-CLI error: error sending request for url (http://localhost:3000/api/projects):
+error: error sending request for url (http://localhost:3000/api/projects):
   tcp connect error: Connection refused (os error 61)
 ```
 
@@ -68,7 +68,7 @@ When in doubt, put everything before the resource name.
 
 Optional fields can be omitted — they get serde defaults. But WRONG field
 names are silently ignored (serde ignores unknown fields by default on the
-CLI side since we're constructing a generic `Value`):
+`pm` side since we're constructing a generic `Value`):
 
 ```bash
 # ❌ "nam" is a typo — it'll be silently ignored
@@ -78,10 +78,10 @@ python3 scripts/pm projects create --data '{"nam":"Test"}'
 
 Always double-check field names against the DTO tables in [resources](resources.md).
 
-## No file upload via CLI
+## No file upload via `pm`
 
 The `files create` and `files update` subcommands are intentionally absent.
-File upload uses multipart/form-data which the CLI doesn't wrap.
+File upload uses multipart/form-data which `pm` doesn't wrap.
 
 Use `curl` instead:
 
@@ -94,10 +94,10 @@ curl -F "file=@local.pdf" \
 ## PORT vs PROJECT_MANAGE_URL
 
 - `PORT` env var → controls what port the **server** listens on
-- `PROJECT_MANAGE_URL` env var → tells the **CLI** where the server is
+- `PROJECT_MANAGE_URL` env var → tells **`pm`** where the server is
 
 They are independent. Setting `PORT=9999` when starting the server does NOT
-make the CLI connect to `:9999` — you still need `--api-url` or
+make `pm` connect to `:9999` — you still need `--api-url` or
 `PROJECT_MANAGE_URL`.
 
 ## Delete is irreversible
@@ -106,7 +106,7 @@ make the CLI connect to `:9999` — you still need `--api-url` or
   deliverables, assets, files metadata, people, communications. File data
   on disk (`./uploads/{project_id}/`) is NOT cleaned up automatically.
 - **Client delete**: restricted if the client has projects.
-- **No confirmation prompt**: the CLI does not ask "are you sure?".
+- **No confirmation prompt**: `pm` does not ask "are you sure?".
 
 ## Project-scoped resources need `--project-id`
 

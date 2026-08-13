@@ -1,6 +1,6 @@
 # JSON and jq recipes
 
-All CLI output is pretty-printed JSON by default. Use `jq` to filter,
+All `pm` output is pretty-printed JSON by default. Use `jq` to filter,
 transform, and extract exactly what you need.
 
 ## Basic extraction
