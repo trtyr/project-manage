@@ -118,9 +118,6 @@ python3 scripts/pm deliverables update "$DELIV_ID" --data \
   "{\"linked_file_id\":\"$FILE_ID\",\"status\":\"delivered\"}"
 ```
 
-> ⚠ **已知限制**：后端 multipart 上传有时会返回 `original_name` / `file_size` 为 `null`
-> （后端 multipart 解析问题，不是 `pm` 的问题）。文件本身上传成功，`id` 仍可用于关联。
-
 ## Safety: use variables, never hardcode IDs
 
 Always extract UUIDs from queries — never copy-paste IDs from a previous run:
