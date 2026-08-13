@@ -132,7 +132,7 @@ project-manage projects list                      # 列出所有项目
 project-manage projects list --client-id <uuid>   # 按客户过滤
 project-manage people flip <id>                   # 团队 ↔ 客户换边
 project-manage deliverables list --project-id <uuid>
-project-manage search "关键词" --format table      # 全局跨资源搜索
+project-manage --format table search "关键词"     # 全局跨资源搜索
 project-manage --api-url http://other:3000 clients list   # 指向远端实例
 ```
 

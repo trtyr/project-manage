@@ -426,8 +426,8 @@ Example:
 
 ```bash
 project-manage projects list --client-id <uuid>
-project-manage people flip <id> --api-url http://other:3000
-project-manage search "演练" --format table
+project-manage --api-url http://other:3000 people flip <id>
+project-manage --format table search "演练"
 ```
 
 ---
