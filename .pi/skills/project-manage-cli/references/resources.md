@@ -48,9 +48,9 @@ pm projects create --data '{
   "name":"门户网站开发",
   "status":"in_progress",
   "phase":"POC",
-  "goals":["实现自动化IT 运营","降低MTTR"],
+  "goals":["提升交付效率","缩短交付周期"],
   "tech_approval":"已认可",
-  "competitors":"示例厂商、示例厂商"
+  "competitors":"竞品 A、竞品 B"
 }'
 
 # Mark complete
@@ -78,21 +78,19 @@ pm clients delete UUID         # ⚠ restricted if client has projects
 | `contact_info` | string | — | null | Phone/email |
 | `notes` | string | — | null | Free-form notes |
 | `products` | string[] | — | `[]` | Products they own |
-| `security_concerns` | string[] | — | `[]` | Security concerns |
 | `background_info` | string | — | null | Background/context |
 
 ### UpdateClient DTO
 
 All fields optional: `name`, `contact_person`, `contact_info`, `notes`,
-`products`, `security_concerns`, `background_info`.
+`products`, `background_info`.
 
 ### Examples
 
 ```bash
 pm clients create --data '{
   "name":"示例客户",
-  "products":["监控系统","数据管理系统"],
-  "security_concerns":["数据泄露","勒索软件"]
+  "products":["CRM","门户"]
 }'
 ```
 
@@ -247,21 +245,21 @@ pm assets delete UUID
 | Field | Type | Required | Default | Notes |
 |---|---|---|---|---|
 | `name` | string | ✅ | — | Asset name |
-| `asset_type` | string | — | null | 监控系统 / 数据管理系统 / 日志系统 / 网关 / 防火墙 ... |
+| `asset_type` | string | — | null | 服务器 / 域名 / IP / 数据库 / 中间件 ... |
 | `value` | string | — | null | URL/IP/identifier |
 | `description` | string | — | null | Pure notes (no credentials here) |
-| `access_method` | string | — | null | 访问控制登录 / VPN / 直连 / 运维终端 ... |
+| `access_method` | string | — | null | VPN / 直连 / 内网 / 远程桌面 ... |
 | `credentials` | string | — | null | Account/password/API key (plaintext, masked in UI) |
-| `vendor` | string | — | null | 示例厂商 / 示例厂商 / 示例厂商 / 示例厂商 / 示例厂商 ... |
+| `vendor` | string | — | null | 示例厂商 / 示例厂商 A / 示例厂商 B / 示例厂商 C ... |
 
 ### Examples
 
 ```bash
-# 监控系统 asset
+# 服务器 asset
 pm assets create --project-id PID --data '{
-  "name":"示例厂商 监控系统",
-  "asset_type":"监控系统",
-  "access_method":"访问控制登录",
+  "name":"OA 服务器",
+  "asset_type":"服务器",
+  "access_method":"VPN",
   "vendor":"示例厂商",
   "value":"172.29.90.95"
 }'
@@ -270,7 +268,7 @@ pm assets create --project-id PID --data '{
 pm assets create --project-id PID --data '{
   "name":"NGTIP",
   "asset_type":"威胁情报",
-  "vendor":"示例厂商在线",
+  "vendor":"示例供应商",
   "credentials":"token:4c00a822c1234f57a006c75e60ae0ac2"
 }'
 
@@ -360,7 +358,7 @@ pm deliverables delete UUID
 ```bash
 # New deliverable
 pm deliverables create --project-id PID --data '{
-  "name":"安全评估报告",
+  "name":"项目验收报告",
   "status":"pending",
   "due_date":"2026-10-15"
 }'
@@ -397,8 +395,8 @@ ILIKE matching. Returns array of `SearchHit`:
 ```
 
 ```bash
-# Find everything related to "安全"
-pm search "安全"
+# Find everything related to "门户"
+pm search "门户"
 
 # Find a person by name
 pm search "赵俊宇"

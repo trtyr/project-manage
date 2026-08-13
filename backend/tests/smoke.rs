@@ -172,7 +172,7 @@ async fn test_health_check() {
 }
 
 // =========================================================================
-// 2. clients_crud — also exercises products[], security_concerns[], background_info
+// 2. clients_crud — also exercises products[], background_info
 // =========================================================================
 
 #[tokio::test]
@@ -312,7 +312,7 @@ async fn test_projects_crud() {
         .put(format!("{base_url}/api/projects/{project_id}"))
         .json(&json!({
             "tech_approval": "已认可",
-            "competitors": "示例厂商、示例厂商",
+            "competitors": "竞品 A、竞品 B",
         }))
         .send()
         .await
@@ -320,7 +320,7 @@ async fn test_projects_crud() {
     assert_eq!(resp.status(), StatusCode::OK);
     let updated: Value = resp.json().await.expect("update JSON");
     assert_eq!(updated["tech_approval"], "已认可");
-    assert_eq!(updated["competitors"], "示例厂商、示例厂商");
+    assert_eq!(updated["competitors"], "竞品 A、竞品 B");
 
     // 4. Read back to confirm persistence.
     let resp = http
@@ -331,7 +331,7 @@ async fn test_projects_crud() {
     assert_eq!(resp.status(), StatusCode::OK);
     let final_read: Value = resp.json().await.expect("final read JSON");
     assert_eq!(final_read["tech_approval"], "已认可");
-    assert_eq!(final_read["competitors"], "示例厂商、示例厂商");
+    assert_eq!(final_read["competitors"], "竞品 A、竞品 B");
 
     // 5. DELETE project + client.
     cleanup_project_and_client(&pool, project_id, client_id).await;
@@ -791,7 +791,7 @@ async fn test_people_crud() {
         .json(&json!({
             "side": "team",
             "name": "王工",
-            "role": "测试工程师",
+            "role": "项目负责人",
             "notes": "负责 POC"
         }))
         .send()
@@ -802,7 +802,7 @@ async fn test_people_crud() {
     let person_id = json_id(&created);
     assert_eq!(created["side"], "team");
     assert_eq!(created["name"], "王工");
-    assert_eq!(created["role"], "测试工程师");
+    assert_eq!(created["role"], "项目负责人");
 
     // Invalid side is rejected.
     let resp = http

@@ -27,7 +27,7 @@ Core workflow — captured in PRODUCT.md and enforced by the URL shape:
  │       │ paused         │ conclusion       │ todo
  │       │
  │       ├─ phase tree (nested, self-referencing parent_id)
- │       ├─ assets (IT / security devices)
+ │       ├─ assets (IT devices)
  │       ├─ files + links (linkable to comm and phase)
  │       ├─ people (team + client, unified)
  │       └─ deliverables (交付物 lifecycle)

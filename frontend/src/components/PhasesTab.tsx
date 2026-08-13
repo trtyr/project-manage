@@ -395,7 +395,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
           >
             添加阶段
           </Button>
-          <Tooltip title="一键导入示例公司标准售前七阶段模板">
+          <Tooltip title="一键导入标准七阶段模板">
             {(phases?.length ?? 0) > 0 ? (
               <Popconfirm
                 title="当前已有阶段，七阶段模板将追加在末尾，确认导入？"
@@ -456,7 +456,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             label="阶段名称"
             rules={[{ required: true, message: '请输入名称' }]}
           >
-            <Input placeholder="如：信息收集 / 漏洞利用" />
+            <Input placeholder="如：需求分析 / 方案设计" />
           </Form.Item>
           <Form.Item name="parent_id" label="父阶段" extra="不选则为顶级阶段">
             <Select

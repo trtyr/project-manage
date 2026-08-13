@@ -1,4 +1,4 @@
-//! Project (项目) — see `docs/plantree/baseline/storage-and-state.md`.
+//! Project (项目).
 //!
 //! A project always belongs to a single client (`client_id`, NOT NULL).
 //! On the wire we accept and emit `Project`, but for nested contexts

@@ -1,4 +1,4 @@
-//! Asset (资产) — client IT assets and security devices.
+//! Asset (资产) — client IT assets and devices.
 //!
 //! Flexible: asset_type is free TEXT. The frontend offers common options
 //! (server, web_app, domain, ip, firewall, waf, ids, etc.) but users can

@@ -1,4 +1,4 @@
-//! Task (任务) — see `docs/plantree/baseline/storage-and-state.md`.
+//! Task (任务).
 //!
 //! Tasks live under a project. Status is one of:
 //! - `current` — actively being worked on

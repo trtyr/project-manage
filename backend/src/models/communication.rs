@@ -1,4 +1,4 @@
-//! Communication (沟通记录) — see `docs/plantree/baseline/runtime-flows.md`.
+//! Communication (沟通记录).
 //!
 //! Communications are project-scoped event records. The MVP exposes them
 //! via `/api/projects/:id/communications` (nested) and we additionally

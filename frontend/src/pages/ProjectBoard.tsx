@@ -557,7 +557,7 @@ export default function ProjectBoard() {
             label="项目名称"
             rules={[{ required: true, message: '请输入项目名称' }]}
           >
-            <Input placeholder="如：Web 应用软件测试" />
+            <Input placeholder="如：Web 应用开发" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="in_progress">
             <Select
@@ -574,7 +574,7 @@ export default function ProjectBoard() {
           <Form.Item name="goals" label="项目目标" extra="每行一个目标">
             <Input.TextArea
               rows={3}
-              placeholder={'如：发现安全漏洞\n提供修复建议'}
+              placeholder={'如：完成需求分析\n提供修复建议'}
             />
           </Form.Item>
         </Form>

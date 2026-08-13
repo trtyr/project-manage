@@ -214,7 +214,7 @@ export default function DeliverablesTab({ projectId }: Props) {
             label="交付物名称"
             rules={[{ required: true, message: '请输入名称' }]}
           >
-            <Input placeholder="如：软件测试报告 v1" />
+            <Input placeholder="如：验收报告 v1" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="pending">
             <Select options={STATUS_OPTIONS} />

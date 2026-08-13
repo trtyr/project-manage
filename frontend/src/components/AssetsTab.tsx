@@ -51,9 +51,9 @@ const ASSET_TYPE_SUGGESTIONS = [
   'IDS/IPS',
   '威胁情报',
   '暴露面检测',
-  '访问控制',
+  '应用',
   'VPN',
-  '运维终端',
+  '数据库',
   '服务器',
   '域名',
   '数据库',
@@ -65,7 +65,7 @@ const ASSET_TYPE_COLOR: Record<string, string> = {
   数据管理系统: 'purple',
   威胁情报: 'cyan',
   暴露面检测: 'orange',
-  访问控制: 'green',
+  应用: 'green',
   防火墙: 'red',
   网关: 'volcano',
   日志系统: 'geekblue',
@@ -73,18 +73,11 @@ const ASSET_TYPE_COLOR: Record<string, string> = {
   NDR: 'gold',
 }
 
-const ACCESS_METHODS = ['访问控制登录', 'VPN', '直连', '运维终端', '拨号', '内网']
+const ACCESS_METHODS = ['VPN', '直连', '拨号', '内网', '远程桌面']
 
-const VENDORS = [
-  '示例厂商',
-  '示例厂商',
-  '示例厂商',
-  '示例厂商',
-  '示例厂商',
-  '示例厂商',
-  '示例厂商',
-  '示例公司',
-]
+// Vendor is free-form. Keep no hardcoded vendor list — avoids leaking any
+// real vendor names into a public repo.
+const VENDORS: string[] = []
 
 function assetTypeColor(t: string | null | undefined): string {
   return (t && ASSET_TYPE_COLOR[t]) || 'default'
@@ -498,7 +491,7 @@ export default function AssetsTab({ projectId }: Props) {
             label="名称"
             rules={[{ required: true, message: '请输入名称' }]}
           >
-            <Input placeholder="如：示例厂商 监控系统 / OA 服务器" />
+            <Input placeholder="如：OA 服务器 / 数据库" />
           </Form.Item>
           <Form.Item name="asset_type" label="类型">
             <AssetTypeSelect />

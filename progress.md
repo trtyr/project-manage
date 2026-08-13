@@ -21,7 +21,7 @@ one. All security framing and the security-named field were removed.
 - [x] Docs: security framing stripped from README / AGENTS / PRODUCT /
   architecture / tech-stack; `security_concerns` references removed from
   api / database / domain / architecture; migration counts bumped 18 → 19.
-- [x] Removed `docs/methodology.md` (示例公司项目交付方法论) and the unused
+- [x] Removed `docs/methodology.md` (售前工作方法论) and the unused
   `frontend/src/assets/hero.png`.
 
 Verified: clippy `-D warnings` clean; `cargo test` 40 passed (29 ts-rs + 11

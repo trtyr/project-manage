@@ -219,7 +219,7 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `client_id` | `Uuid` | ✅ **required** | optional | DB enforces `NOT NULL REFERENCES clients`. Required on create so an orphan project can never exist by construction. |
 | `name` | `String` | ✅ required | optional | Non-empty after `trim()` else `400` |
 | `status` | `Option<String>` | optional (default `"in_progress"`) | optional | Must be one of `ProjectStatus::ALL = ["in_progress", "completed", "paused"]` |
-| `phase` | `Option<String>` | optional | optional | Free-form label (e.g. "软件测试") |
+| `phase` | `Option<String>` | optional | optional | Free-form label (e.g. "需求分析") |
 | `goals` | `Vec<String>` | optional (default `[]`) | optional (full replace) | |
 | `tech_approval` | `Option<String>` | optional (default `""` empty) | optional | `TechApprovalStatus::ALL = ["未接触", "POC中", "已认可", "技术否决"]` (migration 012). `"未接触"` is a valid value, not the default |
 | `competitors` | `Option<String>` | optional (default `""`) | optional | Competitor context, free TEXT (migration 012) |
@@ -468,7 +468,7 @@ curl -X POST http://localhost:3000/api/projects \
         "client_id": "11111111-1111-1111-1111-111111111111",
         "name": "ACME pen-test 2025H2",
         "status": "in_progress",
-        "goals": ["发现Web漏洞", "完成等保测评"]
+        "goals": ["完成需求分析", "交付里程碑"]
       }'
 # → 201
 # { "id": "...", "client_id": "...", "name": "...", "status": "in_progress",
@@ -480,7 +480,7 @@ await projectsApi.create({
   client_id: '11111111-1111-1111-1111-111111111111',
   name: 'ACME pen-test 2025H2',
   status: 'in_progress',
-  goals: ['发现Web漏洞', '完成等保测评'],
+  goals: ['完成需求分析', '交付里程碑'],
 })
 ```
 

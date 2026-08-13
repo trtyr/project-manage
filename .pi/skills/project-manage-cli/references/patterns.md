@@ -19,7 +19,7 @@ done
 pm people create --project-id "$PID" --data \
   '{"side":"team","name":"项目经理","role":"项目经理"}'
 pm people create --project-id "$PID" --data \
-  '{"side":"team","name":"工程师","role":"测试工程师"}'
+  '{"side":"team","name":"张工","role":"项目负责人"}'
 
 # 4. Add client contacts
 pm people create --project-id "$PID" --data \
@@ -39,7 +39,7 @@ Find a resource by name, extract its ID, then update:
 ```bash
 # Find and deliver a deliverable
 DID=$(pm deliverables list --project-id "$PID" \
-  | jq -r '.[] | select(.name=="安全评估报告") | .id')
+  | jq -r '.[] | select(.name=="项目验收报告") | .id')
 pm deliverables update "$DID" --data '{"status":"delivered"}'
 
 # Find a person and change their role
@@ -107,13 +107,13 @@ pm communications list --project-id "$PID" \
 ```bash
 # Step 1: Upload the file (curl, not CLI)
 FILE_RESP=$(curl -s -F "file=@report.pdf" \
-  -F "description=安全评估最终报告" \
+  -F "description=项目验收最终报告" \
   http://localhost:9999/api/projects/$PID/files)
 FILE_ID=$(echo "$FILE_RESP" | jq -r '.id')
 
 # Step 2: Link it to an existing deliverable
 DELIV_ID=$(pm deliverables list --project-id "$PID" \
-  | jq -r '.[] | select(.name=="安全评估报告") | .id')
+  | jq -r '.[] | select(.name=="项目验收报告") | .id')
 pm deliverables update "$DELIV_ID" --data \
   "{\"linked_file_id\":\"$FILE_ID\",\"status\":\"delivered\"}"
 ```

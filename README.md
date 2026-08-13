@@ -54,6 +54,7 @@
 
 - **前端**：Vite 开发服务器（`:5173`）提供 React SPA，通过 React Query 管理服务端状态，Axios 发请求，`/api` 在开发期代理到后端
 - **后端**：Axum 挂载扁平路由和项目作用域路由（客户、项目、沟通、任务、资产、文件、阶段、人员、交付物、搜索），启动时运行迁移、重试连接、设置请求超时、tracing、CORS、上传体积限制
+- **CLI（`pm`）**：独立命令行客户端（`cli/` crate），通过 HTTP 调 `/api` 管理资源，供 AI 或脚本编程使用
 - **数据库**：SQLx 连接 PostgreSQL 16，编译期检查查询 + 运行时迁移
 
 > 完整架构细节见 [架构文档](docs/context/architecture.md)。
@@ -161,6 +162,8 @@ pm --api-url http://localhost:9999 clients list  # 指向远端实例（如 Dock
 ## 🧭 Agent 上下文
 
 [AGENTS.md](AGENTS.md) 是 AI 编程助手的项目入口路由——包含项目类型、快速参考、命令速查和 Danger Zone（修改前必读的业务不变量）。搭配 `docs/context/` 深度文档一起使用。
+
+此外 `pm` CLI 已注册为 Pi 技能（`project-manage-cli`，位于 `.pi/skills/project-manage-cli/`），AI 助手可直接加载它来管理项目数据。
 
 ---
 

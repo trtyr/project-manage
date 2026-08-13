@@ -1,4 +1,4 @@
-//! Client (客户) — see `docs/plantree/baseline/storage-and-state.md`.
+//! Client (客户).
 //!
 //! A client record carries:
 //! - basic info (name, contact person, contact info, notes)

@@ -308,10 +308,6 @@ layer. Evidence:
 
 - `backend/README.md:3` — "Rust + Axum + sqlx + PostgreSQL. Single user,
   internal-tool MVP."
-- `docs/plantree/plans/project-manage/decisions/001-initial-tech-stack.md:24` —
-  decision **D4**: "单用户模式，无登录系统".
-- `docs/plantree/plans/project-manage/README.md:19-20` — 单用户，无登录系统 and
-  单公司内部部署.
 - `backend/src/main.rs` middleware stack has no auth layer; only body limit
   → trace → timeout → CORS.
 - Pool sized for single user: `max_connections = 10` in

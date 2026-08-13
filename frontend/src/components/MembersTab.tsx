@@ -45,10 +45,10 @@ const { Title, Text } = Typography
 // across sides carries `role` verbatim, no conversion.
 const ROLE_SUGGESTIONS = [
   '项目经理',
-  '测试工程师',
+  '项目负责人',
   '架构师',
   '运维工程师',
-  '售前工程师',
+  '项目工程师',
   '决策者',
   '技术评估人',
   '影响者',

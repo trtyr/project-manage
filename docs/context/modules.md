@@ -59,7 +59,7 @@ Each handler module exports one or more `*_router()` functions that `app::build_
 
 | Field | Value |
 |---|---|
-| Responsibility | Per-project IT/security inventory (servers, domains, IPs, etc.). |
+| Responsibility | Per-project IT inventory (servers, domains, IPs, etc.). |
 | Routers exported | `project_assets_router()`, `assets_router()` |
 | Project-scoped routes | `GET /projects/{project_id}/assets`, `POST /projects/{project_id}/assets`, `PUT /projects/{project_id}/assets/reorder` (body `{asset_ids: [...]}`, rewrites `sort_order`) |
 | Flat-by-id routes | `GET /assets/{id}`, `PUT /assets/{id}`, `DELETE /assets/{id}` |
@@ -427,7 +427,7 @@ Example:
 ```bash
 pm projects list --client-id <uuid>
 pm --api-url http://localhost:9999 people flip <id>
-pm --format table search "演练"
+pm --format table search "门户"
 ```
 
 ---
