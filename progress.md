@@ -5,6 +5,21 @@ migrations / files it touched, and how it was verified. For migration-level
 detail see [docs/context/database.md](docs/context/database.md); for the
 running module set see [docs/context/modules.md](docs/context/modules.md).
 
+## 2026-08-13 — Drop CI + standalone CLI crate
+
+Removed the GitHub Actions CI workflow and the standalone Rust CLI crate
+(`cli/`, binary `pm`). Programmatic access moves to Python scripts. No schema
+or behavior change; the server (`project-manage-backend`) is unaffected.
+
+- [x] Deleted `.github/workflows/ci.yml` (quality gate; local `just check` /
+  `just smoke` remain for manual verification).
+- [x] Deleted `cli/` crate + the `project-manage-cli` Pi skill (repo + global).
+- [x] Docs: removed CLI sections (README §CLI 用法, modules §G, tech-stack CLI
+  row) and CI-gate references (AGENTS, deploy §6/§7). Local test/lint commands kept.
+- [x] `main.rs` arg-guard no longer points at the deleted `pm` CLI.
+
+Verified: backend `cargo build` OK after `cli/` removal (decoupled crates).
+
 ## 2026-08-13 — Reposition as a generic project-management tool
 
 The project is now a **generic** project tracker, not a security-services

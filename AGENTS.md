@@ -100,16 +100,14 @@ this section is the operating-contract summary an agent must hold the bar to.
   deliverables, global search, asset reorder, or task assignee/priority.
 - **Frontend**: `cd frontend && npm run test` — vitest (node env); the `classifyApiError`
   contract suite pins [conventions.md §6.1](docs/context/conventions.md).
-- **CI gate**: [.github/workflows/ci.yml](.github/workflows/ci.yml) runs clippy
-  `-D warnings` + backend tests + oxlint + tsc + vitest + build on every push/PR.
 - New behavior ships with a test that verifies it — not a vacuous one.
 
 ### Format & security
 
 - **Lint**: backend `cargo clippy -D warnings` (via `just check`); frontend `oxlint`.
 - **Format**: [backend/rustfmt.toml](backend/rustfmt.toml) +
-  [frontend/.prettierrc.json](frontend/.prettierrc.json); code is formatter-adopted and CI
-  runs `cargo fmt --check` + `prettier --check` on every push/PR. `just fmt` reformats.
+  [frontend/.prettierrc.json](frontend/.prettierrc.json); code is formatter-adopted;
+  `just fmt` reformats and `cargo fmt --check` + `prettier --check` verify.
 - **Audit**: [docs/context/security-baseline.md](docs/context/security-baseline.md) — frontend
   0 vulnerabilities (react-router CSRF + transitive fixed); backend 1 (`rsa`, no upstream fix).
 

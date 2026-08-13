@@ -216,12 +216,10 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() {
-    // The server takes no arguments. If any are passed (e.g. `--help` from
-    // the pre-decoupling dual-mode binary), print usage and exit rather than
-    // silently trying to bind an occupied port.
+    // The server takes no arguments. If any are passed, print usage and exit
+    // rather than silently trying to bind an occupied port.
     if std::env::args().nth(1).is_some() {
         eprintln!("usage: project-manage-backend  (the server takes no arguments)");
-        eprintln!("       manage resources via the standalone `pm` CLI (cli/).");
         std::process::exit(2);
     }
 

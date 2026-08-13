@@ -18,7 +18,7 @@ Related docs in this folder: `conventions.md` (code patterns),
 
 | Requirement | Version | Why |
 |---|---|---|
-| Rust toolchain | **1.85+ (edition 2024)** | `backend/Cargo.toml` uses `edition = "2024"`, which stabilized in Rust 1.85. There is no `rust-toolchain.toml` floor; CI runs `dtolnay/rust-toolchain@stable` and the Docker image pins `rust:1.97`. |
+| Rust toolchain | **1.85+ (edition 2024)** | `backend/Cargo.toml` uses `edition = "2024"`, which stabilized in Rust 1.85. There is no `rust-toolchain.toml` floor; the Docker image pins `rust:1.97`. |
 | Node.js | **20 or newer** | `frontend/package.json` requires Vite 8 (`^8.1.1`), which only runs on Node 20+. |
 | PostgreSQL | **16** | Matches the schema features used by the 19 migrations (`gen_random_uuid()` via `pgcrypto`-equivalent, `TEXT[]`, `TIMESTAMPTZ`, self-referential phases). |
 
@@ -67,7 +67,7 @@ just status
 just dev
 ```
 
-### 2.1 Manual equivalents (for CI / scripting)
+### 2.1 Manual equivalents (for scripting)
 
 ```bash
 just build-backend       # cargo build --release --manifest-path backend/Cargo.toml
@@ -230,7 +230,6 @@ the runtime `.env` (or orchestrator env) is authoritative.
 | `MAX_BODY_SIZE_MB` | `100` | Cap for request bodies, expressed in MiB. Wired to `DefaultBodyLimit::max(max_body_size_mb * 1024 * 1024)`, so this is what actually governs multipart uploads. Set higher if you intend to receive files over 100 MB. |
 | `CORS_ALLOWED_ORIGINS` | Any (permissive) | Comma-separated list of allowed origins. Semantics: unset or empty → `Any` (development default); exactly `*` → `Any`; otherwise only the listed origins. Malformed entries are dropped with a `warn` rather than blocking boot. |
 | `STATIC_DIR` | `./static` | Directory served as the production SPA (with an `index.html` fallback for client-side routing). The Docker image sets `/app/static`. A missing dir is logged at `warn`; the API still works, only frontend assets are unavailable. |
-| `PROJECT_MANAGE_URL` | `http://localhost:{PORT}` | Base URL the standalone **`pm` CLI** talks to (see `cli/`). Falls back to `http://localhost:3000`; overridable per-invocation with `--api-url`. Relevant only to the CLI, not the server. |
 
 ## 7. Deploy shape
 
@@ -242,10 +241,6 @@ are supported; pick one:
 - **Bare metal via `just`** — `just prod` builds the frontend, copies it
   into `backend/static/`, and runs the release binary. Topology in §7.1.
 - **Dev** — two terminals: backend `cargo run` + frontend `npm run dev`.
-
-CI is wired (`.github/workflows/ci.yml`) and gates every push/PR with
-clippy + rustfmt + backend tests + oxlint + tsc + vitest + build; it does
-**not** deploy.
 
 ### 7.1 Process topology
 
@@ -280,7 +275,6 @@ Provided by the repo:
 
 - **Containerized deploy** — `Dockerfile` (3-stage) + `docker-compose.yml`.
   Full instructions in §8.
-- **CI** — `.github/workflows/ci.yml` (quality gate, not a deployer).
 - **DB backup** — `scripts/db-backup.sh` (§9).
 
 Deliberately **not** provided (bring your own):

@@ -405,33 +405,6 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 
 ---
 
-## G. CLI client (`cli/src/main.rs`)
-
-`pm` is a **standalone** CLI binary in the `cli/` crate, decoupled from the
-server. It does not ship in the Docker image — it runs wherever the AI or
-operator is (host, CI, another machine) and reaches the server over HTTP via
-`--api-url` / `$PROJECT_MANAGE_URL`.
-
-| Field | Value |
-|---|---|
-| Entry | `#[tokio::main] async fn main()` — parses `Cli`, then dispatches to the per-resource handler. |
-| Top-level flags | `--api-url <url>` (default `http://localhost:{PORT}`, else `:3000`; or `$PROJECT_MANAGE_URL`), `--format json\|table` (json is default and AI-friendly; table is a minimal human renderer). |
-| Resource subcommands | `clients`, `projects`, `phases`, `tasks`, `people`, `assets`, `files`, `communications`, `deliverables` — each with `list` / `get` / `create --data '<json>'` / `update --data '<json>'` / `delete` (files lack `create`/`update`; people add `flip <id>`). |
-| Other subcommands | `search <query>` (global cross-resource search). |
-| HTTP details | One `reqwest::Client` with a 30 s timeout. Writes are `POST`/`PUT`/`DELETE` over JSON; a non-2xx status becomes `Err(<status>)` and the process exits 1. |
-| Output | JSON bodies are pretty-printed; arrays in `table` mode render a header + aligned columns (cell cap 40 chars). |
-| Internal deps | `clap` (derive), `reqwest`, `serde_json`, `tokio`. Its own `cli/` crate — no dependency on the backend. Talks to the server purely over `/api` — no direct DB access. |
-
-Example:
-
-```bash
-pm projects list --client-id <uuid>
-pm --api-url http://localhost:9999 people flip <id>
-pm --format table search "门户"
-```
-
----
-
 ## Cross-reference: who calls what
 
 | Backend handler | Models used | Calls `ensure_project_exists` | Side effects outside DB |
