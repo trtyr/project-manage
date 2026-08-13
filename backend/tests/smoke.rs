@@ -192,7 +192,6 @@ async fn test_clients_crud() {
             "contact_info": "zhang@example.com",
             "notes": "initial notes",
             "products": ["网关", "日志系统"],
-            "security_concerns": ["数据泄露", "合规审计"],
             "background_info": "重点行业客户",
         }))
         .send()
@@ -206,8 +205,6 @@ async fn test_clients_crud() {
     assert_eq!(created["contact_person"], "张经理");
     assert_eq!(created["products"][0], "网关");
     assert_eq!(created["products"][1], "日志系统");
-    assert_eq!(created["security_concerns"][0], "数据泄露");
-    assert_eq!(created["security_concerns"][1], "合规审计");
     assert_eq!(created["background_info"], "重点行业客户");
 
     // 2. READ — verify all fields persist.
@@ -220,15 +217,13 @@ async fn test_clients_crud() {
     let fetched: Value = resp.json().await.expect("read JSON");
     assert_eq!(fetched["id"], created["id"]);
     assert_eq!(fetched["products"][0], "网关");
-    assert_eq!(fetched["security_concerns"][1], "合规审计");
 
-    // 3. UPDATE — patch notes, products[], security_concerns[] simultaneously.
+    // 3. UPDATE — patch notes, products[] simultaneously.
     let resp = http
         .put(format!("{base_url}/api/clients/{client_id}"))
         .json(&json!({
             "notes": "smoke test note",
             "products": ["网关", "日志系统", "监控系统"],
-            "security_concerns": ["合规审计"],
         }))
         .send()
         .await
@@ -237,7 +232,6 @@ async fn test_clients_crud() {
     let updated: Value = resp.json().await.expect("update JSON");
     assert_eq!(updated["notes"], "smoke test note");
     assert_eq!(updated["products"].as_array().unwrap().len(), 3);
-    assert_eq!(updated["security_concerns"].as_array().unwrap().len(), 1);
     // Untouched fields still round-trip
     assert_eq!(updated["background_info"], "重点行业客户");
 

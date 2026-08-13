@@ -6,4 +6,4 @@
  * callers who want to clear `name` would have to use a dedicated endpoint
  * (not in MVP scope).
  */
-export type UpdateClient = { name?: string, contact_person?: string, contact_info?: string, notes?: string, products?: Array<string>, security_concerns?: Array<string>, background_info?: string, };
+export type UpdateClient = { name?: string, contact_person?: string, contact_info?: string, notes?: string, products?: Array<string>, background_info?: string, };

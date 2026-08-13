@@ -1,11 +1,13 @@
 # project-manage — API Reference
 
-Complete HTTP surface mounted under `/api` in `backend/src/main.rs`.
+Complete HTTP surface mounted under `/api` in `backend/src/app.rs::build_app`
+(wired from `main.rs`).
 Every endpoint below has been verified against `backend/src/handlers/*.rs`
 and the DTOs in `backend/src/models/*.rs`. Response shapes match the
 return types of each handler (`T`, `Vec<T>`, `(StatusCode, Json<T>)`,
-or `StatusCode`). Defaults come from `backend/src/main.rs:46` (30 s
-request timeout) and `backend/src/main.rs:305` (`MAX_BODY_SIZE_MB=100`).
+or `StatusCode`). Defaults come from `backend/src/main.rs` — the
+`REQUEST_TIMEOUT_SECS` const (30 s) and the `MAX_BODY_SIZE_MB` env read
+(default 100).
 
 ---
 
@@ -13,7 +15,7 @@ request timeout) and `backend/src/main.rs:305` (`MAX_BODY_SIZE_MB=100`).
 
 | Aspect | Rule | Source |
 |---|---|---|
-| URL prefix | All routes under `/api` | `main.rs:339-354` (`.nest("/api", …)`) |
+| URL prefix | All routes under `/api` | `app.rs::build_app` (17 `.nest("/api", …)` calls) |
 | List endpoint | `200 OK` + JSON array | every `list*` handler |
 | Single read | `200 OK` + JSON object | every `get_one` handler |
 | Create | `201 Created` + JSON object | every `create*` handler returns `(StatusCode::CREATED, Json(row))` |
@@ -23,8 +25,8 @@ request timeout) and `backend/src/main.rs:305` (`MAX_BODY_SIZE_MB=100`).
 | 5xx detail | Generic message to client; full error logged via `tracing::error!` | `error.rs:101-103` |
 | IDs | `Uuid` v4 (path param `:id` / `:project_id` for nested) | `models/*.rs` |
 | Timestamps | RFC 3339 UTC (`"2025-07-14T03:11:09.123456Z"`) | `chrono::{DateTime, Utc}` |
-| Request timeout | 30 s server-wide → `408 request_timeout` | `main.rs:46`, `main.rs:202-208` |
-| Body size cap | `MAX_BODY_SIZE_MB × 1024²` (default 100 MiB) | `main.rs:305-306, 362` |
+| Request timeout | 30 s server-wide → `408 request_timeout` | `main.rs` (`REQUEST_TIMEOUT_SECS`); enforced via `TimeoutLayer` in `app.rs` |
+| Body size cap | `MAX_BODY_SIZE_MB × 1024²` (default 100 MiB) | read in `main.rs`; enforced via `DefaultBodyLimit` in `app.rs` |
 
 ---
 
@@ -36,7 +38,7 @@ request timeout) and `backend/src/main.rs:305` (`MAX_BODY_SIZE_MB=100`).
 |---|---|---|---|---|---|
 | GET | `/api/health` | Liveness probe; returns package version | — | — | `200` + `{ "status": "ok", "version": "<CARGO_PKG_VERSION>" }` |
 
-Implemented at `main.rs:255-268` as `HealthResponse`.
+Implemented in `app.rs` (`health()` + `HealthResponse`).
 
 ### 2.2 Clients (`backend/src/handlers/clients.rs`)
 
@@ -101,6 +103,7 @@ Validation: `title` non-empty; `status ∈ TaskStatus::ALL =
 |---|---|---|---|---|---|
 | GET    | `/api/projects/{project_id}/assets` | List for a project, `ORDER BY created_at DESC` | `project_id` | — | `200` + `Asset[]` |
 | POST   | `/api/projects/{project_id}/assets` | Create asset (default `asset_type = "other"`) | `project_id` | `CreateAsset` | `201` + `Asset` |
+| PUT    | `/api/projects/{project_id}/assets/reorder` | Rewrite the project's asset `sort_order` to the given order | `project_id` | `{ asset_ids: Uuid[] }` | `204` |
 | GET    | `/api/assets/{id}` | Read one asset | `id` | — | `200` + `Asset` |
 | PUT    | `/api/assets/{id}` | Partial update | `id` | `UpdateAsset` | `200` + `Asset` |
 | DELETE | `/api/assets/{id}` | Remove | `id` | — | `204` |
@@ -140,29 +143,55 @@ Nesting: `parent_id NULL` = top-level; `parent_id = <other phase.id>`
 = sub-phase. Validated: `name` non-empty. No sort-order collision check
 in MVP — `sort_order` is whatever you pass (default `0`).
 
-### 2.9 Members (`backend/src/handlers/members.rs`)
+### 2.9 People (`backend/src/handlers/people.rs`)
+
+Unified roster of everyone associated with a project — both our team and the
+client side, distinguished by `side` (`team` | `client`). Replaces the former
+`members` + `contacts` resources (migration 014).
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
-| GET    | `/api/projects/{project_id}/members` | List our-side team members | `project_id` | — | `200` + `Member[]` |
-| POST   | `/api/projects/{project_id}/members` | Create member | `project_id` | `CreateMember` | `201` + `Member` |
-| GET    | `/api/members/{id}` | Read one | `id` | — | `200` + `Member` |
-| PUT    | `/api/members/{id}` | Partial update | `id` | `UpdateMember` | `200` + `Member` |
-| DELETE | `/api/members/{id}` | Remove | `id` | — | `204` |
+| GET    | `/api/projects/{project_id}/people` | List people for a project, `ORDER BY side, sort_order, created_at` | `project_id` | — | `200` + `Person[]` |
+| POST   | `/api/projects/{project_id}/people` | Create person (appends to end of its side) | `project_id` | `CreatePerson` (§3.9) | `201` + `Person` |
+| PUT    | `/api/projects/{project_id}/people/reorder` | Rewrite one side's `sort_order` to the given order | `project_id` | `{ side: "team"|"client", ids: Uuid[] }` | `204` |
+| GET    | `/api/people/{id}` | Read one | `id` | — | `200` + `Person` |
+| PUT    | `/api/people/{id}` | Partial update | `id` | `UpdatePerson` (§3.9) | `200` + `Person` |
+| DELETE | `/api/people/{id}` | Remove | `id` | — | `204` |
+| POST   | `/api/people/{id}/flip-side` | Move team ↔ client (role unchanged; `sort_order` resets) | `id` | — | `200` + `Person` |
 
-Validation: `name` non-empty. `role` and `notes` are free-form text.
+Validation: `name` non-empty; `side` must be one of `PersonSide::ALL =
+["team", "client"]` (else `400`). `role`/`notes` are free-form text.
 
-### 2.10 Client Contacts (`backend/src/handlers/contacts.rs`)
+### 2.10 Deliverables (`backend/src/handlers/deliverables.rs`)
+
+Structured交付物 tracking with a status lifecycle and an optional link to a
+project file.
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
-| GET    | `/api/projects/{project_id}/contacts` | List client-side contacts | `project_id` | — | `200` + `ClientContact[]` |
-| POST   | `/api/projects/{project_id}/contacts` | Create contact            | `project_id` | `CreateClientContact` | `201` + `ClientContact` |
-| GET    | `/api/contacts/{id}` | Read one | `id` | — | `200` + `ClientContact` |
-| PUT    | `/api/contacts/{id}` | Partial update | `id` | `UpdateClientContact` | `200` + `ClientContact` |
-| DELETE | `/api/contacts/{id}` | Remove | `id` | — | `204` |
+| GET    | `/api/projects/{project_id}/deliverables` | List for a project, `ORDER BY sort_order, created_at` | `project_id` | — | `200` + `Deliverable[]` |
+| POST   | `/api/projects/{project_id}/deliverables` | Create deliverable (appends to end) | `project_id` | `CreateDeliverable` (§3.10) | `201` + `Deliverable` |
+| GET    | `/api/deliverables/{id}` | Read one | `id` | — | `200` + `Deliverable` |
+| PUT    | `/api/deliverables/{id}` | Partial update | `id` | `UpdateDeliverable` (§3.10) | `200` + `Deliverable` |
+| DELETE | `/api/deliverables/{id}` | Remove | `id` | — | `204` |
 
-Validation: `name` non-empty; `notes` optional.
+Validation: `name` non-empty; `status` must be one of
+`DeliverableStatus::ALL = ["pending", "delivered", "accepted"]` (default
+`pending`). `due_date` is `YYYY-MM-DD`; `linked_file_id` optionally ties to a
+`project_files` row (SET NULL if that file is deleted).
+
+### 2.11 Search (`backend/src/handlers/search.rs`)
+
+| Method | Path | Purpose | Query | Body | Response |
+|---|---|---|---|---|---|
+| GET | `/api/search?q=…` | Cross-resource keyword search (`ILIKE %q%`, `LIMIT 10` per resource) | `q` (required) | — | `200` + `SearchHit[]` |
+
+Searches **projects** (`name`/`phase`/`competitors`), **clients**
+(`name`/`contact_person`), **communications** (`content`/`participants`, 80-char
+preview), **tasks** (`title`), and **people** (`name`/`role`). Each hit is
+`{ resource, id, title, subtitle?, project_id? }`. Not project-scoped — no
+`ensure_project_exists`; per-resource query failures are swallowed so one bad
+hit doesn't blank the result.
 
 ---
 
@@ -181,7 +210,6 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `contact_info` | `Option<String>` | optional | optional | |
 | `notes` | `Option<String>` | optional | optional | |
 | `products` | `Vec<String>` | optional (default `[]`) | optional (full replace) | Postgres `TEXT[]` |
-| `security_concerns` | `Vec<String>` | optional (default `[]`) | optional (full replace) | |
 | `background_info` | `Option<String>` | optional | optional | |
 
 ### 3.2 `CreateProject` / `UpdateProject`
@@ -193,6 +221,8 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `status` | `Option<String>` | optional (default `"in_progress"`) | optional | Must be one of `ProjectStatus::ALL = ["in_progress", "completed", "paused"]` |
 | `phase` | `Option<String>` | optional | optional | Free-form label (e.g. "软件测试") |
 | `goals` | `Vec<String>` | optional (default `[]`) | optional (full replace) | |
+| `tech_approval` | `Option<String>` | optional (default `""` empty) | optional | `TechApprovalStatus::ALL = ["未接触", "POC中", "已认可", "技术否决"]` (migration 012). `"未接触"` is a valid value, not the default |
+| `competitors` | `Option<String>` | optional (default `""`) | optional | Competitor context, free TEXT (migration 012) |
 
 ### 3.3 `CreateCommunication` / `UpdateCommunication`
 
@@ -210,6 +240,8 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `title` | `String` | ✅ required | optional | Non-empty else `400` |
 | `status` | `Option<String>` | optional (default `"todo"`) | optional | Must be one of `TaskStatus::ALL = ["current", "next", "todo"]` |
 | `planned_date` | `Option<NaiveDate>` | optional | optional | `YYYY-MM-DD` |
+| `assignee_id` | `Option<Uuid>` | optional | optional | FK → `people.id` (`SET NULL`); migration 017 |
+| `priority` | `Option<String>` | optional (default `"normal"`) | optional | `TaskPriority::ALL = ["urgent", "high", "normal", "low"]`; migration 017 |
 
 ### 3.5 `CreateAsset` / `UpdateAsset`
 
@@ -219,6 +251,9 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `asset_type` | `Option<String>` | optional (default `"other"`) | optional | Free-form |
 | `value` | `Option<String>` | optional | optional | Could be IP, domain, hostname, etc. |
 | `description` | `Option<String>` | optional | optional | |
+| `access_method` | `Option<String>` | optional | optional | How the asset is reached (migration 015) |
+| `credentials` | `Option<String>` | optional | optional | Access creds (migration 015) |
+| `vendor` | `Option<String>` | optional | optional | Vendor/manufacturer (migration 015) |
 
 ### 3.6 `CreateLink` (no `UpdateLink` — use `PUT /files/{id}`)
 
@@ -250,20 +285,23 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `actual_end` | — | — | optional | Update-only |
 | `status` | `Option<String>` | optional (default `"pending"`) | optional | |
 
-### 3.9 `CreateMember` / `UpdateMember`
+### 3.9 `CreatePerson` / `UpdatePerson`
+
+| Field | Type | Create | Update | Notes |
+|---|---|:---:|:---:|---|
+| `side` | `String` | ✅ required | — | `PersonSide::ALL = ["team", "client"]` (validated, else `400`). Create-only — switch sides via `POST /people/{id}/flip-side`. |
+| `name` | `String` | ✅ required | optional | Non-empty else `400` |
+| `role` | `Option<String>` | optional | optional | Shared across both sides |
+| `notes` | `Option<String>` | optional | optional | |
+
+### 3.10 `CreateDeliverable` / `UpdateDeliverable`
 
 | Field | Type | Create | Update | Notes |
 |---|---|:---:|:---:|---|
 | `name` | `String` | ✅ required | optional | Non-empty else `400` |
-| `role` | `Option<String>` | optional | optional | e.g. "lead", "engineer" |
-| `notes` | `Option<String>` | optional | optional | |
-
-### 3.10 `CreateClientContact` / `UpdateClientContact`
-
-| Field | Type | Create | Update | Notes |
-|---|---|:---:|:---:|---|
-| `name` | `String` | ✅ required | optional | Non-empty else `400` |
-| `notes` | `Option<String>` | optional | optional | |
+| `status` | `Option<String>` | optional (default `"pending"`) | optional | `DeliverableStatus::ALL = ["pending", "delivered", "accepted"]` |
+| `due_date` | `Option<NaiveDate>` | optional | optional | `YYYY-MM-DD` |
+| `linked_file_id` | `Option<Uuid>` | optional | optional | Ties to `project_files.id` (`SET NULL` if that file is deleted) |
 
 ### 3.11 Link DTOs (request-only, defined in `handlers/files.rs:298-328`)
 
@@ -360,7 +398,7 @@ instance per resource, all sharing `baseURL: '/api'`, `timeout: 30000`).
 React Query keys are first-seen in `useQuery({ queryKey })` and then
 invalidated on mutations. They appear in `App.tsx`,
 `pages/{ProjectBoard,ProjectDetail,FileLibrary,CommunicationDetail}.tsx`
-and `components/{PhasesTab,MembersTab}.tsx`.
+and `components/{PhasesTab,MembersTab,DeliverablesTab,TimelineTab}.tsx`.
 
 | Backend resource group | HTTP prefix (mounted at `/api`) | Frontend `*Api` object | React Query keys |
 |---|---|---|---|
@@ -373,8 +411,9 @@ and `components/{PhasesTab,MembersTab}.tsx`.
 | Assets        | `/projects/{id}/assets`, `/assets/{id}`       | `assetsApi`            | `['assets', id]` (`ProjectDetail.tsx:133`) |
 | Files / Links | `/projects/{id}/files`, `/projects/{id}/links`, `/files`, `/files/{id}`, `/files/{id}/{download,preview,link,link-phase}` | `filesApi` | `['files', id]` (project detail + phases tab + comm detail), `['files-all']` (`FileLibrary.tsx:34`) |
 | Phases        | `/projects/{id}/phases`, `/phases/{id}`       | `phasesApi`            | `['phases', projectId]` (`PhasesTab.tsx:70`), `['phases', id]` (`ProjectDetail.tsx:145`) |
-| Members       | `/projects/{id}/members`, `/members/{id}`     | `membersApi`           | `['members', projectId]` (`MembersTab.tsx:36`) |
-| Contacts      | `/projects/{id}/contacts`, `/contacts/{id}`   | `contactsApi`          | `['contacts', projectId]` (`MembersTab.tsx:41`) |
+| People        | `/projects/{id}/people`, `/people/{id}`, `/projects/{id}/people/reorder`, `/people/{id}/flip-side` | `peopleApi`            | `['people', projectId]` (`MembersTab.tsx`) |
+| Deliverables  | `/projects/{id}/deliverables`, `/deliverables/{id}` | `deliverablesApi` | `['deliverables', projectId]` (`DeliverablesTab.tsx`) |
+| Search        | `/search`                                     | `searchApi`            | `['search', q]` (`ProjectBoard.tsx` global search) |
 
 Two error helpers are also exported from the same file and used
 across pages:

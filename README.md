@@ -6,19 +6,28 @@
 
 # project-manage
 
-**为项目交付团队打造的项目跟踪管理系统。** 把散落在 Excel / 微信 / 邮件里的客户信息、项目进度、沟通记录、任务规划集中到一处，让项目状态一目了然。基于 Rust/Axum + React/TypeScript + PostgreSQL 构建，编译期类型安全的 SQL 查询，前后端分离架构。
+**项目跟踪管理系统。** 把散落在 Excel / 微信 / 邮件里的客户信息、项目进度、沟通记录、任务规划集中到一处，让项目状态一目了然。基于 Rust/Axum + React/TypeScript + PostgreSQL 构建，编译期类型安全的 SQL 查询，前后端分离架构。
 
-[🔧 快速开始](#-快速开始) · [🏗️ 架构](#-架构) · [✨ 核心能力](#-核心能力) · [📋 参考文档](#-参考文档) · [🧭 Agent 上下文](#-agent-上下文)
+[🔧 快速开始](#-快速开始) · [🏗️ 架构](#-架构) · [✨ 核心能力](#-核心能力) · [💻 CLI 用法](#-cli-用法) · [📋 参考文档](#-参考文档) · [🧭 Agent 上下文](#-agent-上下文)
 
 ---
 
 ## ✨ 核心能力
 
+**业务能力**
+
 - **客户 → 项目 → 沟通 → 任务** 一条主线贯穿，项目状态一目了然
-- 项目下挂阶段树（自引用嵌套）、资产设备、文件链接、团队成员、客户联系人
-- Markdown 渲染沟通记录，支持 GitHub-flavored 语法（表格、任务列表等）
+- 项目下挂阶段树（自引用嵌套）、资产设备、文件链接、**人员（团队 + 客户统一）**、**交付物（生命周期跟踪）**
+- **全局搜索**：跨项目 / 客户 / 沟通 / 任务 / 人员一键检索
+- **仪表盘 + 时间线**：项目全景与事件流
+- 拖拽排序（人员、资产）；Markdown 渲染沟通记录（GitHub-flavored：表格、任务列表等）
+
+**工程特性**
+
+- **双模式 CLI**：同一个二进制既能 `serve` 启动服务，也能当 HTTP 客户端管理资源（见下方 [CLI 用法](#-cli-用法)）
 - 编译期类型检查的 SQL（`sqlx::query!`），拼写错误在编译阶段就暴露
-- 运行时迁移（非编译期宏），SQL 文件保持可读、可 diff
+- 运行时迁移（非编译期宏），SQL 文件保持可读、可 diff；启动自动重试 + 就绪自检
+- 前后端类型同步：ts-rs 在测试期把后端 DTO 生成成 TypeScript
 - 精致的 OKLCH 设计系统——氧化青主色 + 暖琥珀点缀，明暗双主题
 
 ## 🏗️ 架构
@@ -33,18 +42,18 @@
  │       │ 已完成/暂停     │ 结论
  │       │
  │       ├─ 阶段树（嵌套，自引用 parent_id）
- │       ├─ 资产（IT / 安全设备）
+ │       ├─ 资产（IT 设备）
  │       ├─ 文件 + 链接（可关联沟通和阶段）
- │       ├─ 成员（内部团队）
- │       └─ 联系人（客户方人员）
+ │       ├─ 人员（团队 + 客户，统一 side）
+ │       └─ 交付物（交付生命周期）
  │
- └─ 产品[], 安全关注点[], 背景信息
+ └─ 产品[], 背景信息
 ```
 
 技术分层：
 
 - **前端**：Vite 开发服务器（`:5173`）提供 React SPA，通过 React Query 管理服务端状态，Axios 发请求，`/api` 在开发期代理到后端
-- **后端**：Axum 挂载扁平路由和项目作用域路由（客户、项目、沟通、任务、资产、文件、阶段、成员、联系人），启动时运行迁移、重试连接、设置请求超时、tracing、CORS、上传体积限制
+- **后端**：Axum 挂载扁平路由和项目作用域路由（客户、项目、沟通、任务、资产、文件、阶段、人员、交付物、搜索），启动时运行迁移、重试连接、设置请求超时、tracing、CORS、上传体积限制
 - **数据库**：SQLx 连接 PostgreSQL 16，编译期检查查询 + 运行时迁移
 
 > 完整架构细节见 [架构文档](docs/context/architecture.md)。
@@ -85,10 +94,24 @@ just status
 just stop
 ```
 
+### 容器部署（Docker）
+
+仓库自带三阶段 `Dockerfile` + `docker-compose.yml`（postgres:16 sidecar），
+干净主机上无需本地 Rust/Node 工具链：
+
+```bash
+docker compose up -d --build      # 构建镜像 + 启动 db + app（默认 :9999 → 容器 :3000）
+docker compose logs -f app        # 看日志，等「✅ 就绪检查通过」
+./scripts/db-backup.sh           # 备份数据库到 backups/
+docker compose down               # 停止（保留数据卷）
+```
+
+完整拓扑、备份/恢复流程见 [部署指南](docs/context/deploy.md) §8–§9。
+
 ### 测试与检查
 
 ```bash
-# 冒烟测试（10 个模块全 CRUD + CRM 字段验证）
+# 冒烟测试（11 个：全模块 CRUD + CRM 字段 + people 排序/换边）
 just smoke
 
 # 全量检查（clippy + 后端测试 + 冒烟测试 + 前端 tsc）
@@ -98,6 +121,22 @@ just check
 just build-backend       # 后端 release
 just build-frontend      # 前端 production build
 ```
+
+## 💻 CLI 用法
+
+同一个 `project-manage-backend` 二进制是**双模式**的：无参数（或 `serve`）启动 HTTP 服务器；带子命令则当 HTTP 客户端，直接对 `/api` 增删改查，输出 JSON（默认，AI 友好）或表格。
+
+```bash
+project-manage                                    # 启动服务器（等同 serve）
+project-manage projects list                      # 列出所有项目
+project-manage projects list --client-id <uuid>   # 按客户过滤
+project-manage people flip <id>                   # 团队 ↔ 客户换边
+project-manage deliverables list --project-id <uuid>
+project-manage search "关键词" --format table      # 全局跨资源搜索
+project-manage --api-url http://other:3000 clients list   # 指向远端实例
+```
+
+支持的资源子命令：`clients` / `projects` / `phases` / `tasks` / `people` / `assets` / `files` / `communications` / `deliverables`，每个都有 `list` / `get` / `create --data '<json>'` / `update` / `delete`（`people` 额外有 `flip`），外加顶层的 `search`。默认连 `http://localhost:{PORT}`，可用 `--api-url` 或环境变量 `$PROJECT_MANAGE_URL` 覆盖。详见 [modules.md §G](docs/context/modules.md)。
 
 ## 📋 参考文档
 
@@ -112,7 +151,7 @@ just build-frontend      # 前端 production build
 | [api.md](docs/context/api.md) | `/api` 端点参考 |
 | [domain.md](docs/context/domain.md) | 领域模型与业务不变量 |
 | [conventions.md](docs/context/conventions.md) | 代码与接口约定 |
-| [methodology.md](docs/methodology.md) | 售前工作方法论：七阶段详解、核心工作链、自检清单 |
+| [deploy.md](docs/context/deploy.md) | 部署拓扑、启动序列、Docker/Compose、备份恢复 |
 | [DESIGN.md](DESIGN.md) | 设计系统：OKLCH 色彩、Ant Design 主题、明暗双主题 |
 | [AGENTS.md](AGENTS.md) | AI 编程助手的项目入口路由 |
 

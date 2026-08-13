@@ -82,15 +82,11 @@ export type ProjectFile = FileMeta
 
 // --- Create DTOs (override Vec<String> + status fields) ---
 
-// `products` / `security_concerns` are `Vec<String>` with `#[serde(default)]`
-// in Rust, so they may be omitted in JSON. ts-rs would emit them as a
-// required `Array<string>`; flatten that back to optional `string[]`.
-export type CreateClient = Omit<
-  GeneratedCreateClient,
-  'products' | 'security_concerns'
-> & {
+// `products` is `Vec<String>` with `#[serde(default)]` in Rust, so it may be
+// omitted in JSON. ts-rs would emit it as a required `Array<string>`; flatten
+// that back to optional `string[]`.
+export type CreateClient = Omit<GeneratedCreateClient, 'products'> & {
   products?: string[]
-  security_concerns?: string[]
 }
 
 // `goals` is `Vec<String>` with `#[serde(default)]`; status fields are

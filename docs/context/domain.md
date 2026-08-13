@@ -11,7 +11,11 @@ excerpts are kept short and verbatim.
 
 Three independent status fields live in the database as plain `TEXT`. Validation
 is enforced in Rust, not in Postgres, so adding a new value is a code-only
-change (no migration).
+change (no migration). Four more columns follow the same pattern:
+`people.side` (`team`|`client`, `PersonSide`), `deliverables.status`,
+`tasks.priority` (`TaskPriority`), and `projects.tech_approval`
+(`TechApprovalStatus`)
+(`pending`|`delivered`|`accepted`, `DeliverableStatus`).
 
 ### 1.1 `projects.status`
 
@@ -133,8 +137,8 @@ All seven project-scoped tables cascade on project delete:
 | `assets`          | `project_id` | `005_assets.sql:5`                 |
 | `project_files`   | `project_id` | `006_project_files.sql:5`          |
 | `phases`          | `project_id` | `007_phases.sql:5`                 |
-| `members`         | `project_id` | `008_members.sql:4`                |
-| `client_contacts` | `project_id` | `009_client_contacts.sql:4`        |
+| `people`          | `project_id` | `014_unify_people.sql` (replaces `members`/`client_contacts`) |
+| `deliverables`    | `project_id` | `018_deliverables.sql`             |
 
 `phases` also cascades on its own `parent_id` self-reference
 (`007_phases.sql:6`), so deleting a parent phase removes its children too.
@@ -181,18 +185,18 @@ pub async fn ensure_project_exists(pool: &PgPool, project_id: Uuid) -> AppResult
 }
 ```
 
-Per `progress.md` (2026-07-15) this helper is reused by seven project-level
-handler modules (15 call sites total):
+This helper is reused by every project-scoped handler module (the seven
+listed below):
 
 | Handler module              | Call sites    |
 |-----------------------------|---------------|
-| `handlers/assets.rs`        | 39, 58        |
-| `handlers/communications.rs`| 57, 87        |
-| `handlers/contacts.rs`      | 34, 53        |
-| `handlers/files.rs`         | 50, 67, 180   |
-| `handlers/members.rs`       | 33, 52        |
-| `handlers/phases.rs`        | 39, 60        |
-| `handlers/tasks.rs`         | 47, 89        |
+| `handlers/assets.rs`        | list, create (+ reorder) |
+| `handlers/communications.rs`| list, create             |
+| `handlers/deliverables.rs`  | list, create             |
+| `handlers/files.rs`         | list, upload, link       |
+| `handlers/people.rs`        | list, create, reorder    |
+| `handlers/phases.rs`        | list, create             |
+| `handlers/tasks.rs`         | list, create             |
 
 Missing project → 404 `not_found` *before* the FK violation would have fired
 on insert, so the error code is stable for the UI.
@@ -231,7 +235,7 @@ let res = sqlx::query!("DELETE FROM projects WHERE id = $1", id).execute(&pool).
 ```
 
 The DB cascade removes all child rows (communications, tasks, assets, files,
-phases, members, contacts). The on-disk `./uploads/{project_id}/` directory
+phases, people, deliverables). The on-disk `./uploads/{project_id}/` directory
 is removed best-effort; failure is logged at WARN level but does not abort
 the request. The `file_paths` query is fetched only to populate the WARN
 log's `file_count` — the cleanup itself uses `remove_dir_all`, not per-file
@@ -289,7 +293,7 @@ Two rules are checked in the handler before any DB call:
 | Rule                                      | Handlers (excerpt)                                                                                                                                  |
 |-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
 | Empty/whitespace `name` (or `title`, `content`) | `projects.rs:58, 125-129`; `tasks.rs:77, 132-136`; `phases.rs:57`; `communications.rs:84, 133-137`; `clients.rs` create/update.                |
-| Unknown `status` against the const list   | `projects.rs:63-68, 130-137`; `tasks.rs:82-87, 137-144`. Both return `AppError::BadRequest` with message `"invalid status '<x>', must be one of [...]"`. |
+| Unknown enum value against a const list | `projects.rs` (status, tech_approval); `tasks.rs` (status, priority); `people.rs` (side); `deliverables.rs` (status). Each returns `AppError::BadRequest` with `"… must be one of […]"`. |
 
 Phase `status` is not validated (see §1.3). Description/tags and other
 free-form fields are stored as-is. The empty-string check uses
@@ -330,17 +334,16 @@ plus an auth extractor — there is no soft hook today.
 deferral of normalization:
 
 ```sql
--- `products`, `security_concerns` are stored as TEXT[] to keep the MVP
--- flat; upgrade to a normalized relation only when filtering/search by
--- those fields becomes a real requirement.
+-- `products` is stored as TEXT[] to keep the MVP flat; upgrade to a
+-- normalized relation only when filtering/search by that field becomes a
+-- real requirement.
 ```
 
-Four columns are kept as `TEXT[] NOT NULL DEFAULT '{}'` today:
+Three columns are kept as `TEXT[] NOT NULL DEFAULT '{}'` today:
 
 | Column              | Table           | Source                              |
 |---------------------|-----------------|-------------------------------------|
 | `products`          | `clients`       | `001_init_clients.sql:15`           |
-| `security_concerns` | `clients`       | `001_init_clients.sql:16`           |
 | `goals`             | `projects`      | `...0002_init_projects.sql:15`      |
 | `tags`              | `project_files` | `006_project_files.sql:12`          |
 

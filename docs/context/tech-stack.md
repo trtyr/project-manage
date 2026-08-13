@@ -3,7 +3,7 @@
 ## Purpose and verification scope
 
 This document records the technology choices used by **project-manage**, an
-internal project-tracking system for security services teams. It is organized
+internal project-tracking system for service delivery teams. It is organized
 by purpose so runtime, build, database, and design decisions can be located
 without reading the whole repository.
 
@@ -171,7 +171,7 @@ The package scripts are also build-tooling contracts:
 | Database server | PostgreSQL `16` | Primary relational database and SQL dialect |
 | Client layer | SQLx `0.8` with `"postgres"` | Async PostgreSQL pool and query execution |
 | TLS/runtime | `"runtime-tokio"`, `"tls-rustls"` | Tokio execution with Rustls support |
-| Schema format | 11 first-party `*.sql` migrations | Readable, diffable PostgreSQL schema history |
+| Schema format | 19 first-party `*.sql` migrations | Readable, diffable PostgreSQL schema history |
 | Build-time URL | `DATABASE_URL = { value = "postgres://localhost:5432/project_manage", force = false }` | Cargo development default; an explicit shell value wins |
 
 Migrations use **sqlx-migrate at runtime, not compile-time macros**. The
@@ -238,12 +238,12 @@ modals, and tabs. `App.tsx` selects `lightTheme` or `darkTheme` through
 
 ## 7. First-party source inventory
 
-The repository’s approximate first-party source count is **53 files**:
+The repository’s approximate first-party source count is **101 files**:
 
 | Bucket | Count | Scope |
 |---|---:|---|
-| Rust | ~26 `.rs` | `backend/src/**/*.rs` |
-| SQL | 11 `.sql` | `backend/migrations/` |
-| TypeScript | 4 `.ts` | `frontend/src/**/*.ts` |
-| TSX | 12 `.tsx` | `frontend/src/**/*.tsx` |
-| **Total** | **~53** | Excludes dependencies and generated output |
+| Rust | 30 `.rs` | `backend/src/**/*.rs` |
+| SQL | 18 `.sql` | `backend/migrations/` |
+| TypeScript | 34 `.ts` | `frontend/src/**/*.ts` (incl. ts-rs `generated/`) |
+| TSX | 19 `.tsx` | `frontend/src/**/*.tsx` |
+| **Total** | **101** | Excludes dependencies; includes generated TS bindings |

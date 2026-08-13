@@ -3,4 +3,4 @@
 /**
  * Payload for `POST /api/clients`. The DB fills id/timestamps.
  */
-export type CreateClient = { name: string, contact_person?: string, contact_info?: string, notes?: string, products: Array<string>, security_concerns: Array<string>, background_info?: string, };
+export type CreateClient = { name: string, contact_person?: string, contact_info?: string, notes?: string, products: Array<string>, background_info?: string, };

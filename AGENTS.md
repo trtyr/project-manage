@@ -1,6 +1,6 @@
 # project-manage
 
-> Fullstack tracker for security-services clients, projects, and delivery work.
+> Fullstack tracker for clients, projects, and delivery work.
 
 ## Project Type
 
@@ -20,7 +20,7 @@ for verified versions and development topology.
 
 ## Overview
 
-project-manage centralizes security-services client and project work that would
+project-manage centralizes client and project work that would
 otherwise be spread across spreadsheets, chat, and email. The React SPA
 communicates with the Axum backend over `/api`, while SQLx manages a
 PostgreSQL-backed project domain. See the [architecture overview](docs/context/architecture.md)
@@ -32,7 +32,7 @@ The system is a layered fullstack application: the Vite-served React SPA uses
 React Query and Axios, proxies `/api` requests to Axum during development, and
 the backend persists resource data through SQLx to PostgreSQL. Axum mounts flat
 and project-scoped routers for clients, projects, communications, tasks, assets,
-files, phases, members, and contacts. Runtime migrations, bounded startup
+files, phases, people, deliverables, and search. Runtime migrations, bounded startup
 retries, request timeouts, tracing, CORS, and upload body limits are wired in
 `backend/src/main.rs`. Read the full [architecture document](docs/context/architecture.md)
 before changing cross-layer flows; consult the [database document](docs/context/database.md)
@@ -70,7 +70,8 @@ this section is the operating-contract summary an agent must hold the bar to.
 
 - **Module map**: one Rust file per resource across `backend/src/handlers/<r>.rs` +
   `backend/src/models/<r>.rs` (fixed set: clients, projects, communications, tasks,
-  assets, files, phases, members, contacts). Frontend mirrors it: `frontend/src/api/index.ts`
+  assets, files, phases, people, deliverables; plus a flat-only `search` handler with
+  no row model). Frontend mirrors it: `frontend/src/api/index.ts`
   (one `<r>Api` each) + `frontend/src/types/` (hand-written + ts-rs `generated/`).
 - **Dependency direction**: handlers → models → db (no cross-resource handler imports);
   frontend pages/components → api → types. Deep modules — do not widen a file into a grab-bag.
@@ -91,8 +92,12 @@ this section is the operating-contract summary an agent must hold the bar to.
 
 ### Tests
 
-- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 29 ts-rs export-binding
-  unit tests + 10 CRUD smoke tests (one per module, against a live migrated DB).
+- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 40 tests total:
+  ts-rs TypeScript export bindings (regenerate `frontend/src/types/generated/`)
+  + an 11-case CRUD smoke suite (clients, projects incl. CRM fields,
+  communications, tasks, phases, assets, files, people incl. reorder/
+  flip-side) against a live migrated DB. No dedicated smoke test yet for
+  deliverables, global search, asset reorder, or task assignee/priority.
 - **Frontend**: `cd frontend && npm run test` — vitest (node env); the `classifyApiError`
   contract suite pins [conventions.md §6.1](docs/context/conventions.md).
 - **CI gate**: [.github/workflows/ci.yml](.github/workflows/ci.yml) runs clippy

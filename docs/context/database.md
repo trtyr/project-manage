@@ -45,13 +45,13 @@ and operational notes.
 
 ## 2. Migration inventory
 
-Eleven SQL files in `backend/migrations/`, applied in lexicographic order.
+Nineteen SQL files in `backend/migrations/`, applied in lexicographic order.
 Each row below lists the table created (or altered), key columns, foreign
 keys, ON DELETE behavior, and indexes.
 
 | # | File | Table (ALTER) | Key columns | FKs (ON DELETE) | Indexes / triggers |
 |---|------|---------------|-------------|-----------------|--------------------|
-| 001 | `…00001_init_clients.sql` | `clients` | `name`, `contact_person`, `contact_info`, `notes`, `products TEXT[]`, `security_concerns TEXT[]`, `background_info`, `created_at`, `updated_at` | — | `trg_clients_updated_at` |
+| 001 | `…00001_init_clients.sql` | `clients` | `name`, `contact_person`, `contact_info`, `notes`, `products TEXT[]`, `background_info`, `created_at`, `updated_at` | — | `trg_clients_updated_at` |
 | 002 | `…00002_init_projects.sql` | `projects` | `client_id`, `name`, `status TEXT DEFAULT 'in_progress'`, `phase`, `goals TEXT[]` | `client_id REFERENCES clients(id) ON DELETE RESTRICT` | `idx_projects_client_id`; `trg_projects_updated_at` |
 | 003 | `…00003_init_communications.sql` | `communications` | `project_id`, `content`, `occurred_at TIMESTAMPTZ`, `participants`, `conclusion`, `created_at` | `project_id REFERENCES projects(id) ON DELETE CASCADE` | `idx_communications_project_id`; `idx_communications_occurred_at (DESC)` |
 | 004 | `…00004_init_tasks.sql` | `tasks` | `project_id`, `title`, `status TEXT DEFAULT 'todo'`, `planned_date DATE`, `created_at`, `updated_at` | `project_id REFERENCES projects(id) ON DELETE CASCADE` | `idx_tasks_project_id`, `idx_tasks_status`; `trg_tasks_updated_at` |
@@ -62,13 +62,21 @@ keys, ON DELETE behavior, and indexes.
 | 009 | `009_client_contacts.sql` | `client_contacts` | `project_id`, `name`, `notes`, `created_at` | `project_id ... CASCADE` | `client_contacts_project_id_idx` |
 | 010 | `010_project_files_phase_id.sql` | alter `project_files` | adds `phase_id UUID` | `phase_id REFERENCES phases(id) ON DELETE SET NULL` | `idx_project_files_phase_id` |
 | 011 | `011_project_files_source_type.sql` | alter `project_files` | adds `source_type TEXT DEFAULT 'file'`, `url TEXT` | — | — |
+| 012 | `012_add_crm_fields.sql` | alter `projects` + `client_contacts` | `projects.tech_approval TEXT DEFAULT ''`, `projects.competitors TEXT DEFAULT ''`, `client_contacts.role_type TEXT DEFAULT ''` | — | — |
+| 013 | `013_members_contacts_sort_order.sql` | alter `members` + `client_contacts` | adds `sort_order INTEGER DEFAULT 0` to both | — | — |
+| 014 | `014_unify_people.sql` | **creates `people`** | `project_id`, `side TEXT`, `name`, `role`, `notes`, `sort_order`, `created_at` | `project_id ... CASCADE` | `people_project_id_idx`, `people_project_side_idx`. **Drops `members` + `client_contacts` after migrating their rows** (`role_type` → `role`). **Not idempotent** — relies on sqlx per-migration transactions + retry. |
+| 015 | `015_asset_fields.sql` | alter `assets` | adds `access_method`, `credentials`, `vendor` (all nullable) | — | — |
+| 016 | `016_asset_sort_order.sql` | alter `assets` | adds `sort_order INTEGER DEFAULT 0` | — | — |
+| 017 | `017_task_fields.sql` | alter `tasks` | adds `assignee_id UUID`, `priority TEXT DEFAULT 'normal'` | `assignee_id REFERENCES people(id) ON DELETE SET NULL` | — |
+| 018 | `018_deliverables.sql` | **creates `deliverables`** | `project_id`, `name`, `status TEXT DEFAULT 'pending'`, `due_date DATE`, `linked_file_id UUID`, `sort_order`, `created_at`, `updated_at` | `project_id ... CASCADE`; `linked_file_id REFERENCES project_files(id) ON DELETE SET NULL` | `deliverables_project_id_idx`; `trg_deliverables_updated_at` |
+| 019 | `019_drop_client_security_concerns.sql` | alter `clients` | **drops `security_concerns TEXT[]`** (project repositioned as generic PM, not security-services) | — | — |
 
 ### Highlights
 
 - **001 — `clients` and the shared trigger.** Migration 001 creates
   `clients` and installs the `set_updated_at()` PL/pgSQL function that every
   subsequent table with an `updated_at` column can reuse. `clients` is the
-  only table with `products`, `security_concerns`, `background_info`.
+  only table with `products`, `background_info`.
 - **002 — `projects`** is the only FK relationship that does NOT cascade.
   `client_id ... ON DELETE RESTRICT` blocks accidental orphaning: a client
   cannot be removed while projects point at it.
@@ -77,9 +85,11 @@ keys, ON DELETE behavior, and indexes.
   `(occurred_at DESC)` for time-ordered listings.
 - **004 — `tasks`** gets a small extra index on `status` for filtering the
   kanban-style columns `current | next | todo`.
-- **005–009** are uniformly `project_id ... ON DELETE CASCADE`: deleting a
-  project removes its tasks, assets, files, phases, members, and contacts
-  in one stroke.
+- **005–009** were uniformly `project_id ... ON DELETE CASCADE` (the
+  `members` + `client_contacts` tables from 008/009 were merged into the
+  single `people` table by migration 014 — see below). Deleting a project
+  still cascades through every project-scoped table, now including `people`
+  and `deliverables`.
 - **006 — `project_files`** is the first table with an *optional* FK:
   `communication_id ... ON DELETE SET NULL` lets files survive the comm
   they were attached to.
@@ -94,6 +104,26 @@ keys, ON DELETE behavior, and indexes.
   `source_type='link'`, empty `stored_name`, `mime_type='text/uri-list'`,
   `file_size=0`, `file_path=''`, and the URL stored in `url`. File rows
   and link rows are unified through one `project_files` table.
+- **012–013 — CRM + reorder prep.** `tech_approval` / `competitors` on
+  `projects`, `role_type` on `client_contacts`, and `sort_order` on
+  `members` / `client_contacts` — the last three are absorbed into `people`
+  by 014.
+- **014 — unify `people`.** Merges `members` (team) + `client_contacts`
+  (client) into one `people` table keyed by `side` (`team` | `client`).
+  `role` is shared, so flipping sides needs no field conversion. **Drops the
+  source tables** — the only non-idempotent migration in the set; safe
+  because sqlx wraps each migration in a transaction and the retry re-runs
+  it whole.
+- **015–016 — asset enrichment.** `access_method` / `credentials` /
+  `vendor` pull structured detail out of the overloaded `description`;
+  `sort_order` enables drag-and-drop.
+- **017 — task PM fields.** `assignee_id` (nullable FK to `people`,
+  `SET NULL`) + `priority` (default `'normal'`, free TEXT, not yet
+  validated by an enum).
+- **018 — `deliverables`.** Structured 交付物 tracking with a `status`
+  lifecycle (`pending` / `delivered` / `accepted`), optional
+  `linked_file_id` → `project_files` (`SET NULL`), and its own
+  `set_updated_at()` trigger.
 
 ## 3. Schema conventions
 
@@ -102,13 +132,13 @@ keys, ON DELETE behavior, and indexes.
   anywhere — IDs stay portable and client-generable.
 - **Timestamps:** `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` on every
   table. `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` is present on
-  `clients`, `projects`, `tasks`, `assets`, `phases`. The
+  `clients`, `projects`, `tasks`, `assets`, `phases`, `deliverables`. The
   `set_updated_at()` trigger created in migration 001 is explicitly
   attached in 001, 002, and 004 (the other tables with `updated_at`
   historically had it maintained by the application layer — keep this in
   mind if you add a BEFORE-UPDATE trigger later).
 - **Tables without `updated_at`:** `communications`, `project_files`,
-  `members`, `client_contacts`. Each is append-mostly or log-shaped, so
+  `people`. Each is append-mostly or log-shaped, so
   the trigger would be redundant. `communications` omits `updated_at` by
   design — its temporal key is `occurred_at`, not `updated_at`.
 - **Status columns are `TEXT`, not `ENUM`.** `projects.status`,
@@ -122,12 +152,12 @@ keys, ON DELETE behavior, and indexes.
   - `TaskStatus::ALL = ["current", "next", "todo"]` (`models/task.rs`).
   - Handlers reject unrecognised statuses with `AppError::BadRequest`.
 - **Arrays:** `TEXT[]` is used for `clients.products`,
-  `clients.security_concerns`, `projects.goals`, `project_files.tags`.
+  `projects.goals`, `project_files.tags`.
   Migration 001 fixes the upgrade path inline:
 
-  > "`products`, `security_concerns` are stored as TEXT[] to keep the MVP
-  > flat; upgrade to a normalized relation only when filtering/search
-  > by those fields becomes a real requirement."
+  > "`products` is stored as TEXT[] to keep the MVP flat; upgrade to a
+  > normalized relation only when filtering/search by that field becomes a
+  > real requirement."
 
   Treat this as a deliberate, ongoing trade-off — do not normalise
   pre-emptively.
@@ -144,15 +174,14 @@ keys, ON DELETE behavior, and indexes.
               ┌─────────────┴─────────────┐
               │                           │
           RESTRICT                     products TEXT[]
-              │ N                       security_concerns TEXT[]
-              ▼                           background_info
+              │ N                       background_info
           projects
               │ 1
    ┌──────────┼──────────┬──────────┬──────────┬──────────┬──────────┐
    │ N        │ N        │ N        │ N        │ N        │ N        │ N
    ▼          ▼          ▼          ▼          ▼          ▼          ▼
- communi-    tasks      assets   project_    phases    members   client_
- cations                                       (self)               contacts
+ communi-    tasks      assets   project_    phases    people   deliver-
+ cations                                       (self-ref)        ables
   CASCADE    CASCADE    CASCADE   CASCADE     CASCADE   CASCADE   CASCADE
               ▲                       ▲    ▲
               │                       │    │
@@ -165,17 +194,21 @@ keys, ON DELETE behavior, and indexes.
 ASCII summary lines:
 
 ```text
-clients  ──<  projects   (ON DELETE RESTRICT)
+clients  ──<  projects                      (ON DELETE RESTRICT)
 projects ──<  communications                (ON DELETE CASCADE)
 projects ──<  tasks                         (ON DELETE CASCADE)
 projects ──<  assets                        (ON DELETE CASCADE)
 projects ──<  project_files                 (ON DELETE CASCADE)
 projects ──<  phases                        (ON DELETE CASCADE)
-projects ──<  members                       (ON DELETE CASCADE)
-projects ──<  client_contacts               (ON DELETE CASCADE)
+projects ──<  people                        (ON DELETE CASCADE)
+projects ──<  deliverables                  (ON DELETE CASCADE)
 phases    ──<  phases  (parent_id, ON DELETE CASCADE)
-communications >── project_files.communication_id (nullable, SET NULL)
-phases          >── project_files.phase_id         (nullable, SET NULL)
+
+Cross-table optional FKs (all ON DELETE SET NULL):
+  communications.id  ◄── project_files.communication_id
+  phases.id          ◄── project_files.phase_id
+  people.id          ◄── tasks.assignee_id         (migration 017)
+  project_files.id   ◄── deliverables.linked_file_id (migration 018)
 ```
 
 Every project-scoped resource is `N:1` under `projects`. Only `phases` is
@@ -198,7 +231,7 @@ Two flavours of query coexist in `backend/src/handlers/*`:
   `query_as!` would complain, or when the row struct references types
   the macro cannot resolve. Examples: `files.rs` (most queries,
   including the dynamic UPDATE that uses `COALESCE` for `description` and
-  `tags`), `assets.rs`, `contacts.rs`, `members.rs`, `phases.rs`, and
+  `tags`), `assets.rs`, `people.rs`, `deliverables.rs`, `phases.rs`, and
   the `CommunicationWithProject` joins in `communications.rs`.
 
 The non-`!` form is also used for `db/helpers.rs::ensure_project_exists`,
@@ -220,8 +253,8 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
 | `communications.rs` | `query_as!` for project-scoped CRUD; `query_as::<_, CommunicationWithProject>` for `list_all` and similar joins | projection differs from the row type |
 | `tasks.rs` | `query_as!` | all four endpoints |
 | `assets.rs` | `query_as::<_, Asset>` | multi-line `\`-joined SQL |
-| `contacts.rs` | `query_as::<_, ClientContact>` | same shape |
-| `members.rs` | `query_as::<_, Member>` | same shape |
+| `people.rs` | `query_as::<_, Person>` | same shape; dynamic `PERSON_COLUMNS` const |
+| `deliverables.rs` | `query_as::<_, Deliverable>` | same shape; dynamic `COLS` const |
 | `phases.rs` | `query_as::<_, Phase>` | same shape, including self-FK parent reads |
 | `files.rs` | `query_as::<_, ProjectFile>` / `query_as::<_, FileWithProject>` | almost every query is multi-line; the `UPDATE` with `COALESCE` cannot be a macro literal |
 
@@ -243,13 +276,12 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
   does not blow up. Subsequent migrations should follow the same
   pattern when they introduce re-creatable objects (functions, types,
   triggers).
-- New migrations follow `NNN_short_name.sql` (existing scheme:
-  `005_…`, `006_…`, … `011_…`) and are discovered by lexicographic order
-  at boot.
+- New migrations follow `NNN_short_name.sql` (existing scheme runs
+  `005_…` through `018_…`) and are discovered by lexicographic order at boot.
 
 ### Authoring checklist for a new migration
 
-1. Pick a number one higher than the current max (`012_…`) and a
+1. Pick a number one higher than the current max (`019_…`) and a
    snake_case filename that matches the table or alter.
 2. Use `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` for
    new objects so re-running on a stale DB is harmless.
@@ -292,7 +324,7 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
   TRIGGER trg_<table>_updated_at BEFORE UPDATE ON <table> FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();` pattern.
 - **`TEXT[]` is a deliberate trade-off.** `clients.products`,
-  `clients.security_concerns`, `projects.goals`, `project_files.tags`
+  `projects.goals`, `project_files.tags`
   are stored as `TEXT[] NOT NULL DEFAULT '{}'`. Migration 001's comment
   locks the upgrade path: **normalise into a join table only when
   filtering or search across those fields becomes a real requirement.**
@@ -317,7 +349,7 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
   see `progress.md` 2026-07-15 entry).
 - **`ensure_project_exists(pool, project_id)`** in `db/helpers.rs` is
   called at the top of every project-scoped handler (communications,
-  tasks, assets, files, phases, members, contacts). It runs a
+  tasks, assets, files, phases, people, deliverables). It runs a
   one-column `SELECT id FROM projects WHERE id = $1` so 404s are
   returned before any child query runs.
 - **Pool sizing** (`max_connections=10`) plus `acquire_timeout=5s` is

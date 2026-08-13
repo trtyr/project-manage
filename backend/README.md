@@ -6,36 +6,42 @@ Rust + Axum + sqlx + PostgreSQL. Single user, internal-tool MVP.
 
 ```text
 src/
-├── main.rs           ← entrypoint, router wiring, migration runner, CORS
-├── error.rs          ← AppError → unified JSON error response
-├── state.rs          ← AppState (PgPool) + FromRef for axum
+├── main.rs           ← entrypoint: CLI dispatch → dotenvy → tracing → pool+retry
+│                       → migrate+retry → env → build_app → serve → readiness check
+├── app.rs            ← build_app(): single source of truth for the Router —
+│                       17 `.nest("/api", …)` mounts + CORS/timeout/trace/body-limit
+├── cli.rs            ← dual-mode CLI: no args/`serve` → server; subcommand → HTTP
+│                       client over /api (projects/clients/.../deliverables/search)
+├── error.rs          ← AppError (4 variants) → unified JSON { error, message }
+├── state.rs          ← AppState { pool } + FromRef for axum
 ├── db/
 │   ├── mod.rs        ← re-export
-│   └── pool.rs       ← build_pool() — DATABASE_URL → PgPool
-├── models/           ← plain Rust structs + DTOs, no DB logic
+│   ├── pool.rs       ← build_pool() — DATABASE_URL → PgPool
+│   └── helpers.rs    ← ensure_project_exists() guard
+├── models/           ← row structs + Create/Update DTOs + *Status/*Side const-modules
 │   ├── mod.rs
-│   ├── client.rs
-│   ├── project.rs    ← status module: IN_PROGRESS / COMPLETED / PAUSED
-│   ├── communication.rs
-│   └── task.rs       ← status module: CURRENT / NEXT / TODO
+│   ├── client.rs · project.rs (+TechApprovalStatus) · communication.rs
+│   ├── task.rs (+TaskPriority) · asset.rs · project_file.rs · phase.rs
+│   └── person.rs (+PersonSide) · deliverable.rs (+DeliverableStatus)
 └── handlers/         ← axum handlers, one module per resource
     ├── mod.rs        ← re-export router builders
-    ├── clients.rs        GET|POST /clients,    GET|PUT|DELETE /clients/{id}
-    ├── projects.rs       GET|POST /projects,   GET|PUT|DELETE /projects/{id}
-    ├── communications.rs (nested) /projects/{project_id}/communications
-    │                      (flat)   GET|PUT|DELETE /communications/{id}
-    └── tasks.rs          (nested) /projects/{project_id}/tasks
-                           (flat)   GET|PUT|DELETE /tasks/{id}
+    ├── clients.rs · projects.rs        top-level CRUD
+    ├── communications.rs · tasks.rs    project-scoped + flat
+    ├── assets.rs · files.rs            (+ multipart upload / links)
+    ├── phases.rs · people.rs           (+ reorder / flip-side)
+    ├── deliverables.rs                 project-scoped + flat
+    └── search.rs                       flat-only global cross-resource search
 ```
 
-All resource routes are mounted under `/api` via `Router::nest` in `main.rs`.
-The legacy `/api/health` endpoint from Phase 0 is preserved unchanged.
+All resource routes are mounted under `/api` via `Router::nest` in
+`app.rs::build_app` (called from `main.rs`). The legacy `/api/health` endpoint
+is preserved unchanged.
 
 ## Build & run
 
 ### Prereqs
 
-- Rust 1.93 (matches `edition = "2024"` in `Cargo.toml`).
+- Rust 1.85+ (`edition = "2024"` in `Cargo.toml`; the Docker image pins `rust:1.97`).
 - PostgreSQL 16 reachable at `postgres://localhost:5432/project_manage`.
   The credentials use the OS user via peer/trust auth (matches local brew install).
 - A `.env` file at the repo root with `DATABASE_URL=...` (defaults already provided).
@@ -54,12 +60,17 @@ cargo build
 cargo run
 ```
 
-On boot the binary:
+On boot the binary (`main.rs`):
 
-1. Loads `.env` via `dotenvy`.
-2. Connects to Postgres.
-3. Applies any pending migrations from `./migrations/` (sqlx::migrate).
-4. Starts listening on `0.0.0.0:3000`.
+0. **CLI dispatch** — if a subcommand other than `serve` is given, run as an
+   HTTP client over `/api` and exit (see `cli.rs`). Otherwise fall through.
+1. Loads `.env` via `dotenvy` (missing file tolerated).
+2. Builds the Postgres pool (1 + 5 retries, 1/2/4/8/16 s backoff).
+3. Applies any pending migrations from `./migrations/` (sqlx::Migrator, retried).
+4. Reads env (`PORT`, `MAX_BODY_SIZE_MB`, `STATIC_DIR`, `CORS_ALLOWED_ORIGINS`).
+5. Builds the router (`app::build_app`) and binds `0.0.0.0:{PORT}`.
+6. Runs a startup readiness self-check (`GET /api/health`), then serves with
+   graceful shutdown on SIGINT/SIGTERM.
 
 ### Smoke test
 

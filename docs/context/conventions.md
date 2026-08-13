@@ -15,8 +15,8 @@ a more general rule on the wider web, this file wins for project-manage.
 
 - Handler files live in `backend/src/handlers/<resource>.rs`, one per resource.
   The set is fixed: `clients`, `projects`, `communications`, `tasks`, `assets`,
-  `files`, `phases`, `members`, `contacts`. All names are lowercase, singular,
-  no underscores.
+  `files`, `phases`, `people`, `deliverables`, `search`. All names are lowercase, singular,
+  no underscores. (`search` is flat-only — no row model.)
 - Model files live in `backend/src/models/<resource>.rs`, one per resource,
   and each module exposes three re-exports:
   - `Row` — DB-shape struct, `#[derive(sqlx::FromRow)]` with `pub` fields
@@ -26,14 +26,14 @@ a more general rule on the wider web, this file wins for project-manage.
   - `UpdateRow` — payload for `PUT`; every field is `Option<T>` with
     `#[serde(default)]` so partial updates work.
   Wire examples: `Client`, `Project`, `Communication`, `Task`, `Asset`,
-  `Member`, `Phase`, `ProjectFile`, `ClientContact`. Singular noun, PascalCase.
+  `Person`, `Phase`, `ProjectFile`, `Deliverable`. Singular noun, PascalCase.
 - Re-export pattern in `backend/src/models/mod.rs`:
   `pub use <resource>::{Row, CreateRow, UpdateRow};` so handlers import via
   `crate::models::…`. Do not add unlisted extras without updating `mod.rs`.
 - Handler modules expose `pub fn <resource>_router() -> Router<AppState>`
   (and `pub fn project_<resource>_router()` for the nested `/projects/:id/...`
   form). `backend/src/handlers/mod.rs` re-exports every router; mounting lives
-  in `main.rs` as `.nest("/api", <router>())`.
+  in `app.rs::build_app` as `.nest("/api", <router>())` (called from `main.rs`).
 - File names: lowercase, snake-free for resources (`projects.rs`, not
   `project.rs` … actually `handlers/projects.rs` but `models/project.rs` is
   the existing convention — follow what is already there for that folder
@@ -58,8 +58,11 @@ pub mod ProjectStatus {
 }
 ```
 
-- Currently two: `ProjectStatus` (`in_progress` / `completed` / `paused`)
-  and `TaskStatus` (`current` / `next` / `todo`).
+- Currently six: `ProjectStatus` (`in_progress` / `completed` / `paused`),
+  `TaskStatus` (`current` / `next` / `todo`), `TaskPriority`
+  (`urgent` / `high` / `normal` / `low`), `TechApprovalStatus`
+  (`未接触` / `POC中` / `已认可` / `技术否决`), `PersonSide` (`team` / `client`),
+  and `DeliverableStatus` (`pending` / `delivered` / `accepted`).
 - Every status module MUST expose `pub const ALL: &[&str]` and
   `pub fn is_valid(input: &str) -> bool`. Handlers build their own error
   message referencing `ALL`; the type itself stays data-only.
@@ -78,7 +81,7 @@ pub mod ProjectStatus {
 - `frontend/src/api/index.ts` exposes one axios-based object per resource,
   named exactly `<resource>Api` (camelCase, no separator): `clientsApi`,
   `projectsApi`, `communicationsApi`, `tasksApi`, `assetsApi`, `filesApi`,
-  `phasesApi`, `membersApi`, `contactsApi`, `healthApi`.
+  `phasesApi`, `peopleApi`, `deliverablesApi`, `searchApi`, `healthApi`.
 - API methods return the unwrapped body: `http.get<X>(...).then(r => r.data)`.
   Every method takes an explicit `string` id where applicable; no opaque
   type wrappers.
@@ -140,7 +143,7 @@ if the project is missing, so the cascade is `404 → 400 → ...` instead of
 `500 → 400 → ...` on FK violations.
 
 The 7 handlers that share this guard today:
-`communications`, `tasks`, `assets`, `files`, `phases`, `members`, `contacts`.
+`communications`, `tasks`, `assets`, `files`, `phases`, `people`, `deliverables`.
 
 If you add a new project-scoped resource, add the call here too — do not
 rely on the FK to do it.
@@ -188,7 +191,7 @@ application-side timestamps.
 ### 5.2 Migration conventions
 
 - Naming: uniform `<timestamp>_<name>.sql` using UTC seconds
-  (`20250714000001_init_clients.sql` … `20250714000012_add_crm_fields.sql`).
+  (`20250714000001_init_clients.sql` … `20250714000018_deliverables.sql`).
   sqlx applies migrations sorted by the numeric version parsed from the prefix,
   so the timestamp MUST stay monotonic with dependency order — base tables
   (clients / projects / communications / tasks) before the tables that reference

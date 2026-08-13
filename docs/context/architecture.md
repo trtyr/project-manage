@@ -9,12 +9,12 @@ in each section.
 
 ## 1. System overview
 
-**project-manage** is an internal project tracking system for a network-security
-services team. Product managers and security engineers use it in an office
+**project-manage** is an internal project tracking system for service
+delivery teams. Project managers and team members use it in an office
 setting (mixed light, multiple tools open) to centralise work that previously
 lived in Excel / WeChat / email: client accounts, project status,
 communication logs, task tracking, file and link library, phased milestones,
-team rosters, and client-side contacts (`PRODUCT.md` lines 7–13).
+team + client people (unified), and deliverables (`PRODUCT.md`).
 
 Core workflow — captured in PRODUCT.md and enforced by the URL shape:
 
@@ -29,15 +29,16 @@ Core workflow — captured in PRODUCT.md and enforced by the URL shape:
  │       ├─ phase tree (nested, self-referencing parent_id)
  │       ├─ assets (IT / security devices)
  │       ├─ files + links (linkable to comm and phase)
- │       ├─ members (internal team)
- │       └─ contacts (client-side people)
+ │       ├─ people (team + client, unified)
+ │       └─ deliverables (交付物 lifecycle)
  │
- └─ products[], security_concerns[], background_info
+ └─ products[], background_info
 ```
 
 `clients (1) ──< (N) projects (1) ──< (N) {communications, tasks, assets,`
-`project_files, phases, members, client_contacts}`
-(`backend/migrations/001`–`011`, recon profile §Domain model).
+`project_files, phases, people, deliverables}`
+(`backend/migrations/001`–`018`; `people` unifies the former `members` +
+`client_contacts` tables — migration 014).
 
 ---
 
@@ -60,12 +61,12 @@ Vite dev proxy in the middle.
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Axum backend (Rust, edition 2024)                                       │
 │   Router::new().nest("/api", …)  ─► handler fn ─► sqlx::query           │
-│   middleware stack (main.rs:355-362):                                   │
+│   middleware stack (app.rs (build_app)):                                   │
 │     .layer(cors) → HandleErrorLayer→TimeoutLayer → TraceLayer          │
 │     → DefaultBodyLimit → with_state(AppState { pool })                  │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ PostgreSQL 16  (sqlx 0.8, runtime-tokio, tls-rustls, macros)            │
-│ 11 SQL migrations → _sqlx_migrations bookkeeping table                  │
+│ 19 SQL migrations → _sqlx_migrations bookkeeping table                  │
 │ set_updated_at() trigger installed in migration 001, reused by all       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -78,18 +79,19 @@ Vite dev proxy in the middle.
 | Handlers    | `backend/src/handlers/*.rs`                  | one module per resource                   |
 | Models      | `backend/src/models/*.rs`                    | `sqlx::FromRow` row + Create/Update DTOs  |
 | DB pool     | `backend/src/db/pool.rs`, `helpers.rs`       | `sqlx::PgPoolOptions`                      |
-| Schema      | `backend/migrations/*.sql`                   | 11 files, all `TIMESTAMPTZ` + UUID PK      |
+| Schema      | `backend/migrations/*.sql`                   | 18 files, all `TIMESTAMPTZ` + UUID PK      |
 
 ---
 
 ## 3. Module dependency graph
 
-### 3.1 Backend — 16 routers wired into `/api`
+### 3.1 Backend — 17 routers wired into `/api`
 
-Verified by `grep "\.nest(\"/api\"" backend/src/main.rs` (16 hits, lines
-339–354) and `codefind(structural, callees, depth=2)` on `main`. The recon
-profile and the task brief both said "14"; the actual count is **16**: 9
-flat resource routers + 7 project-scoped routers.
+Verified by counting `.nest("/api", …)` calls in
+`backend/src/app.rs::build_app` (17 hits). The breakdown: **10 flat** resource
+routers (clients, projects, communications, tasks, assets, files, phases,
+people, deliverables, search) + **7 project-scoped** routers
+(communications, tasks, assets, files, phases, people, deliverables).
 
 | # | Router (`*_router()`)        | Source                              | Mounted path prefix                                       |
 |---|------------------------------|-------------------------------------|-----------------------------------------------------------|
@@ -105,10 +107,11 @@ flat resource routers + 7 project-scoped routers.
 | 10| `files_router`               | `handlers/files.rs:36`              | `/files`, `/files/{id}`, `/download`, `/preview`, `/link`, `/link-phase` |
 | 11| `project_phases_router`      | `handlers/phases.rs`                | `/projects/{id}/phases`                                   |
 | 12| `phases_router`              |                                     | `/phases/{id}`                                            |
-| 13| `project_members_router`     | `handlers/members.rs`               | `/projects/{id}/members`                                  |
-| 14| `members_router`             |                                     | `/members/{id}`                                           |
-| 15| `project_contacts_router`    | `handlers/contacts.rs`              | `/projects/{id}/contacts`                                 |
-| 16| `contacts_router`            |                                     | `/contacts/{id}`                                          |
+| 13| `project_people_router`      | `handlers/people.rs`                | `/projects/{id}/people`, `/projects/{id}/people/reorder`  |
+| 14| `people_router`              |                                     | `/people/{id}`, `/people/{id}/flip-side`                  |
+| 15| `project_deliverables_router`| `handlers/deliverables.rs`          | `/projects/{id}/deliverables`                             |
+| 16| `deliverables_router`        |                                     | `/deliverables/{id}`                                      |
+| 17| `search_router`              | `handlers/search.rs`                | `/search?q=…`                                             |
 
 Plus `GET /api/health` mounted as a route (not a nest) at `main.rs:335`.
 See §5.5 for why flat + scoped are split into two routers per resource.
@@ -133,9 +136,10 @@ button that calls `window.location.reload()`.
 main.rs ── mod db, mod error, mod handlers, mod models, mod state
    │
    ├── handlers/{clients,projects,communications,tasks,assets,files,
-   │             phases,members,contacts}.rs   (one *_router() each)
+   │             phases,people,deliverables,search}.rs   (one *_router() each,
+   │                                                       except search = flat only)
    ├── models/   {client,project,communication,task,asset,project_file,
-   │              phase,member,client_contact}.rs
+   │              phase,person,deliverable}.rs
    ├── db/       pool.rs (PgPoolOptions) + helpers.rs (ensure_project_exists)
    ├── error.rs  AppError + IntoResponse  ──► { error, message } envelope
    └── state.rs  AppState { pool }   (cloneable, cheap to share)
@@ -168,18 +172,19 @@ URL → `/projects/:id` → React Router matches `App.tsx:200` →
 `*` Enabled only after `project.client_id` resolves — a `react-query`
 chained query.
 
-When the user opens the Members tab, `components/MembersTab.tsx:35-46`
-fetches two more: `GET /api/projects/{id}/members` and
-`GET /api/projects/{id}/contacts`.
+When the user opens the People tab (`components/MembersTab.tsx` — filename
+kept for history), it fetches one more: `GET /api/projects/{id}/people`
+(the unified team + client roster). Deliverables and Timeline have their own
+tabs (`DeliverablesTab.tsx`, `TimelineTab.tsx`).
 
 Wire path per call: axios (`/api`, 30 s timeout, `api/index.ts:33-36`) → Vite
 dev proxy (`/api/*` → `:3000`) → Axum handler →
 `ensure_project_exists(...).await?` → `sqlx::query_as!(…)` → `Json(row)` →
 react-query caches by key → component re-renders.
 
-Note: ProjectDetail itself owns 5 of those queries plus project + client.
-Members and contacts are owned by `MembersTab.tsx:35-46`, fired only when
-the user opens that tab.
+Note: ProjectDetail itself owns those queries plus project + client.
+People, deliverables, and timeline are owned by their own tab components,
+fired only when the user opens each tab.
 
 ### 4.2 Uploading a file via the Files tab
 
@@ -254,7 +259,7 @@ process panics — survives transient DB outages at startup.
 ### 5.4 Per-request 30 s timeout → 408, and the JSON error envelope
 
 `main.rs:46`: `const REQUEST_TIMEOUT_SECS: u64 = 30;`. The middleware stack
-(`main.rs:355-360`) wraps `TimeoutLayer(30s)` in `HandleErrorLayer` so
+(`app.rs::build_app`) wraps `TimeoutLayer(30s)` in `HandleErrorLayer` so
 `tower::timeout::error::Elapsed` is translated into the same error shape as
 handler errors. `handle_layer_error` matches `Elapsed` →
 `AppError::Timeout(…)` → `error.rs:48` maps to 408 `request_timeout`.
@@ -332,8 +337,8 @@ handler keeps a clean extractor signature (`Path<Uuid>` for `id` vs
 | Backend entrypoint  | `backend/src/main.rs:271-393`                                      |
 | AppError envelope   | `backend/src/error.rs:90-110`                                      |
 | Pool + helpers      | `backend/src/db/pool.rs`, `backend/src/db/helpers.rs`              |
-| Resource handlers   | `backend/src/handlers/{clients,projects,communications,tasks,assets,files,phases,members,contacts}.rs` |
-| Migrations          | `backend/migrations/2025071400000{1..4}_*.sql`, `005_*.sql`–`011_*.sql` |
+| Resource handlers   | `backend/src/handlers/{clients,projects,communications,tasks,assets,files,phases,people,deliverables,search}.rs` |
+| Migrations          | `backend/migrations/20250714000001_*.sql` … `…00018_*.sql` (18 files) |
 | Frontend entrypoint | `frontend/src/main.tsx`, `frontend/src/App.tsx`                    |
 | Routing             | `frontend/src/App.tsx:197-205`                                     |
 | API client          | `frontend/src/api/index.ts`                                        |

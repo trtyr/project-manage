@@ -3,7 +3,6 @@
 //! A client record carries:
 //! - basic info (name, contact person, contact info, notes)
 //! - the products they own (Postgres `TEXT[]`)
-//! - the security concerns they care about (`TEXT[]`)
 //! - free-form background info / links to other records
 //!
 //! The row struct uses `Vec<String>` directly — sqlx 0.8's
@@ -24,7 +23,6 @@ pub struct Client {
     pub contact_info: Option<String>,
     pub notes: Option<String>,
     pub products: Vec<String>,
-    pub security_concerns: Vec<String>,
     pub background_info: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -46,8 +44,6 @@ pub struct CreateClient {
     pub notes: Option<String>,
     #[serde(default)]
     pub products: Vec<String>,
-    #[serde(default)]
-    pub security_concerns: Vec<String>,
     #[serde(default)]
     #[ts(optional)]
     pub background_info: Option<String>,
@@ -75,9 +71,6 @@ pub struct UpdateClient {
     #[serde(default)]
     #[ts(optional)]
     pub products: Option<Vec<String>>,
-    #[serde(default)]
-    #[ts(optional)]
-    pub security_concerns: Option<Vec<String>>,
     #[serde(default)]
     #[ts(optional)]
     pub background_info: Option<String>,

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO clients (\n               name, contact_person, contact_info, notes,\n               products, security_concerns, background_info\n           )\n           VALUES ($1, $2, $3, $4, $5, $6, $7)\n           RETURNING id,\n                     name,\n                     contact_person,\n                     contact_info,\n                     notes,\n                     products       AS \"products!: Vec<String>\",\n                     security_concerns AS \"security_concerns!: Vec<String>\",\n                     background_info,\n                     created_at,\n                     updated_at",
+  "query": "INSERT INTO clients (\n               name, contact_person, contact_info, notes,\n               products, background_info\n           )\n           VALUES ($1, $2, $3, $4, $5, $6)\n           RETURNING id,\n                     name,\n                     contact_person,\n                     contact_info,\n                     notes,\n                     products       AS \"products!: Vec<String>\",\n                     background_info,\n                     created_at,\n                     updated_at",
   "describe": {
     "columns": [
       {
@@ -35,21 +35,16 @@
       },
       {
         "ordinal": 6,
-        "name": "security_concerns!: Vec<String>",
-        "type_info": "TextArray"
-      },
-      {
-        "ordinal": 7,
         "name": "background_info",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -61,7 +56,6 @@
         "Text",
         "Text",
         "TextArray",
-        "TextArray",
         "Text"
       ]
     },
@@ -72,11 +66,10 @@
       true,
       true,
       false,
-      false,
       true,
       false,
       false
     ]
   },
-  "hash": "eb1047672545a758ba3303292ad2b48a152f74d5080d458a10b5be9c8b174889"
+  "hash": "ccb9bce2f00062e70edf8e0d9960fe1ab701f1a91a941a55dafa7c252dee4ef5"
 }

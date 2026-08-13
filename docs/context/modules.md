@@ -6,7 +6,7 @@ Every feature module in the codebase: file path, one-sentence responsibility, pu
 
 ## A. Backend handlers (`backend/src/handlers/`)
 
-Each handler module exports one or more `*_router()` functions that `main.rs` mounts under `/api`. Routes below are relative to `/api`. `ensure_project_exists` is the guard from `db::helpers` called by every project-scoped handler.
+Each handler module exports one or more `*_router()` functions that `app::build_app` (in `backend/src/app.rs`) mounts under `/api`. Routes below are relative to `/api`. `ensure_project_exists` is the guard from `db::helpers` called by every project-scoped handler.
 
 ### A.1 `clients` — `backend/src/handlers/clients.rs`
 
@@ -61,10 +61,10 @@ Each handler module exports one or more `*_router()` functions that `main.rs` mo
 |---|---|
 | Responsibility | Per-project IT/security inventory (servers, domains, IPs, etc.). |
 | Routers exported | `project_assets_router()`, `assets_router()` |
-| Project-scoped routes | `GET /projects/{project_id}/assets`, `POST /projects/{project_id}/assets` |
+| Project-scoped routes | `GET /projects/{project_id}/assets`, `POST /projects/{project_id}/assets`, `PUT /projects/{project_id}/assets/reorder` (body `{asset_ids: [...]}`, rewrites `sort_order`) |
 | Flat-by-id routes | `GET /assets/{id}`, `PUT /assets/{id}`, `DELETE /assets/{id}` |
 | Calls `ensure_project_exists` | **Yes** — both nested handlers. |
-| Non-trivial behaviour | `asset_type` defaults to `"other"` if omitted. No status enum — `asset_type` is free-form text. `name` non-empty guard on create. |
+| Non-trivial behaviour | `asset_type` defaults to `"other"` if omitted. No status enum — `asset_type` is free-form text. `name` non-empty guard on create. `sort_order` (migration 016) supports drag-and-drop reorder via the project-scoped `PUT .../assets/reorder`. |
 | Internal deps | `crate::models::{Asset, CreateAsset, UpdateAsset}`. |
 
 ### A.6 `files` — `backend/src/handlers/files.rs`
@@ -76,7 +76,7 @@ Each handler module exports one or more `*_router()` functions that `main.rs` mo
 | Project-scoped routes | `GET /projects/{project_id}/files`, `POST /projects/{project_id}/files` (multipart), `POST /projects/{project_id}/links` (URL link entry) |
 | Flat-by-id routes | `GET /files`, `GET /files/{id}`, `PUT /files/{id}`, `DELETE /files/{id}`, `GET /files/{id}/download`, `GET /files/{id}/preview`, `PUT /files/{id}/link` (comm), `PUT /files/{id}/link-phase` |
 | Calls `ensure_project_exists` | **Yes** — `list_by_project`, `upload_file`, `create_link`. |
-| Non-trivial behaviour | **`upload_file` writes the body to `./uploads/{project_id}/{uuid}{ext}` AFTER inserting the DB row (no, actually before — stored_name is computed first, dir is `create_dir_all`'d, then file is written, then DB INSERT; if the INSERT fails, the on-disk file is removed and a `tracing::warn!` is logged).** `delete` fetches `file_path` first, deletes the DB row, then `tokio::fs::remove_file` (best-effort, warns on failure). `download_file` returns `attachment; filename=...` headers; `preview_file` returns `inline; filename=...`. `tags` come in as a comma-separated multipart field. |
+| Non-trivial behaviour | **`upload_file` writes the body to disk `./uploads/{project_id}/{uuid}{ext}` BEFORE the DB INSERT** (`stored_name` is computed, the dir is `create_dir_all`'d, the file is written, then the row is inserted); if the INSERT fails the on-disk file is removed and a `tracing::warn!` is logged. `delete` fetches `file_path` first, deletes the DB row, then `tokio::fs::remove_file` (best-effort, warns on failure). `download_file` returns `attachment; filename=...` headers; `preview_file` returns `inline; filename=...`. `tags` come in as a comma-separated multipart field. |
 | Internal deps | `crate::models::{CreateLink, FileMeta, FileWithProject, ProjectFile, UpdateFile}`, `axum::body::Body`, `axum::extract::Multipart`, `tokio::fs`. |
 
 ### A.7 `phases` — `backend/src/handlers/phases.rs`
@@ -91,29 +91,40 @@ Each handler module exports one or more `*_router()` functions that `main.rs` mo
 | Non-trivial behaviour | `parent_id` makes phases a tree; DB cascade-delete handles child cleanup. `create` defaults `status` to `"pending"`, `sort_order` to `0`. `update` is the only handler that also updates `actual_start`/`actual_end`. `list_by_project` orders by `sort_order, created_at`. |
 | Internal deps | `crate::models::{CreatePhase, Phase, UpdatePhase}`. |
 
-### A.8 `members` — `backend/src/handlers/members.rs`
+### A.8 `people` — `backend/src/handlers/people.rs`
 
 | Field | Value |
 |---|---|
-| Responsibility | Per-project team-member roster (our side). |
-| Routers exported | `project_members_router()`, `members_router()` |
-| Project-scoped routes | `GET /projects/{project_id}/members`, `POST /projects/{project_id}/members` |
-| Flat-by-id routes | `GET /members/{id}`, `PUT /members/{id}`, `DELETE /members/{id}` |
-| Calls `ensure_project_exists` | **Yes** — both nested handlers. |
-| Non-trivial behaviour | `name` non-empty guard on create. No status field. `list_by_project` orders by `created_at`. Note: `Member` row has no `updated_at` column. |
-| Internal deps | `crate::models::{CreateMember, Member, UpdateMember}`. |
+| Responsibility | Unified roster of everyone associated with a project — **both** our team and the client side — in one table. Replaces the former split `members` (team) + `client_contacts` (client); the `side` column distinguishes them, and `role` is shared so moving a person across sides needs no field conversion (migration `014_unify_people`). |
+| Routers exported | `project_people_router()`, `people_router()` |
+| Project-scoped routes | `GET /projects/{project_id}/people`, `POST /projects/{project_id}/people`, `PUT /projects/{project_id}/people/reorder` |
+| Flat-by-id routes | `GET /people/{id}`, `PUT /people/{id}`, `DELETE /people/{id}`, `POST /people/{id}/flip-side` |
+| Calls `ensure_project_exists` | **Yes** — `list_by_project`, `create_for_project`, `reorder`. |
+| Non-trivial behaviour | `create` validates `name` non-empty **and** `side` via `PersonSide::is_valid` (`team` / `client`), then appends at the end of that side's `sort_order` (`MAX+1`). `list_by_project` orders by `side, sort_order, created_at`. **`reorder`** takes `{side, ids: [...]}` (full desired order of one side) and rewrites `sort_order` to index in a transaction; ids from the wrong side/project are silently skipped. **`flip-side`** moves a person team↔client within the same project — `role` is unchanged, `side` flips and `sort_order` resets to the end of the destination side. `Person` has no `updated_at`. |
+| Internal deps | `crate::db::helpers::ensure_project_exists`, `crate::models::{CreatePerson, Person, PersonSide, UpdatePerson}`. |
 
-### A.9 `contacts` — `backend/src/handlers/contacts.rs`
+### A.9 `deliverables` — `backend/src/handlers/deliverables.rs`
 
 | Field | Value |
 |---|---|
-| Responsibility | Per-project client-side contact list (people on the customer side). |
-| Routers exported | `project_contacts_router()`, `contacts_router()` |
-| Project-scoped routes | `GET /projects/{project_id}/contacts`, `POST /projects/{project_id}/contacts` |
-| Flat-by-id routes | `GET /contacts/{id}`, `PUT /contacts/{id}`, `DELETE /contacts/{id}` |
-| Calls `ensure_project_exists` | **Yes** — both nested handlers. |
-| Non-trivial behaviour | `name` non-empty guard on create. Smallest model: only `name` + optional `notes`. No status field. |
-| Internal deps | `crate::models::{ClientContact, CreateClientContact, UpdateClientContact}`. |
+| Responsibility | Structured project deliverable (交付物) tracking — name, status, due date, optional link to a project file. |
+| Routers exported | `project_deliverables_router()`, `deliverables_router()` |
+| Project-scoped routes | `GET /projects/{project_id}/deliverables`, `POST /projects/{project_id}/deliverables` |
+| Flat-by-id routes | `GET /deliverables/{id}`, `PUT /deliverables/{id}`, `DELETE /deliverables/{id}` |
+| Calls `ensure_project_exists` | **Yes** — `list_by_project`, `create_for_project`. |
+| Non-trivial behaviour | `create` validates `name` non-empty and `status` via `DeliverableStatus::is_valid` (defaults to `pending`); appends at end of `sort_order`. `linked_file_id` optionally ties a deliverable to a row in `project_files`. `list_by_project` orders by `sort_order, created_at`. `update` sets `updated_at = NOW()`. |
+| Internal deps | `crate::db::helpers::ensure_project_exists`, `crate::models::{CreateDeliverable, Deliverable, DeliverableStatus, UpdateDeliverable}`. |
+
+### A.10 `search` — `backend/src/handlers/search.rs`
+
+| Field | Value |
+|---|---|
+| Responsibility | Cross-resource keyword search (global, not project-scoped). |
+| Router exported | `search_router()` |
+| Routes | `GET /search?q=...` |
+| Calls `ensure_project_exists` | **No** — reads across the whole DB. |
+| Non-trivial behaviour | Runs `ILIKE %q%` against five resources, `LIMIT 10` each: **projects** (`name`/`phase`/`competitors`), **clients** (`name`/`contact_person`), **communications** (`content`/`participants`, returns an 80-char preview), **tasks** (`title`), **people** (`name`/`role`). Returns `SearchHit { resource, id, title, subtitle, project_id }`. Per-resource query failures are swallowed (`.unwrap_or_default()`) so one bad hit doesn't blank the result. |
+| Internal deps | `crate::state::AppState`, `sqlx`; serializes `SearchHit` (defined inline). |
 
 ---
 
@@ -132,8 +143,8 @@ One module per row struct + `Create`/`Update` DTO pair. All row structs derive `
 | `asset.rs` | `Asset` | `CreateAsset` | `UpdateAsset` | — |
 | `project_file.rs` | `ProjectFile` | (no file-upload DTO; multipart) | `UpdateFile` | `FileMeta` (Serialize, hides `file_path` + `stored_name`), `FileWithProject` (joined view), `CreateLink` |
 | `phase.rs` | `Phase` | `CreatePhase` | `UpdatePhase` | — |
-| `member.rs` | `Member` | `CreateMember` | `UpdateMember` | — |
-| `client_contact.rs` | `ClientContact` | `CreateClientContact` | `UpdateClientContact` | — |
+| `person.rs` | `Person` | `CreatePerson` | `UpdatePerson` | **`PersonSide` const-module** (see B.4); `side: String` |
+| `deliverable.rs` | `Deliverable` | `CreateDeliverable` | `UpdateDeliverable` | **`DeliverableStatus` const-module** (see B.5); `due_date: Option<NaiveDate>`, `linked_file_id: Option<Uuid>` |
 
 Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `updated_at: DateTime<Utc>` (maintained by DB trigger `set_updated_at()` from migration 001). `Create` DTOs omit id/timestamps; `Update` DTOs mark every field `Option` + `#[serde(default)]` for partial updates.
 
@@ -161,6 +172,28 @@ Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `update
 
 > **Note:** the literal `TaskStatus::TODO` constant is the status value `"todo"`, not a tech-debt marker.
 
+### B.4 `models::person::PersonSide` — enum-style side
+
+| Field | Value |
+|---|---|
+| File | `backend/src/models/person.rs` |
+| Purpose | Allowed values for `people.side` — distinguishes our team from the client side in the unified people table. |
+| Constants | `TEAM = "team"`, `CLIENT = "client"` |
+| Aggregate | `pub const ALL: &[&str] = &[TEAM, CLIENT]` |
+| Validator | `pub fn is_valid(input: &str) -> bool` via `matches!` |
+| Used by | `handlers::people::{create_for_project, reorder}` validate `side`; `flip_side` flips between the two. |
+
+### B.5 `models::deliverable::DeliverableStatus` — enum-style status
+
+| Field | Value |
+|---|---|
+| File | `backend/src/models/deliverable.rs` |
+| Purpose | Allowed values for `deliverables.status`. |
+| Constants | `PENDING = "pending"`, `DELIVERED = "delivered"`, `ACCEPTED = "accepted"` |
+| Aggregate | `pub const ALL: &[&str] = &[PENDING, DELIVERED, ACCEPTED]` |
+| Validator | `pub fn is_valid(input: &str) -> bool` via `matches!` |
+| Used by | `handlers::deliverables::{create_for_project, update}` validate and default to `PENDING`. |
+
 ---
 
 ## C. Backend DB layer (`backend/src/db/`)
@@ -182,7 +215,7 @@ Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `update
 | Responsibility | Shared DB helpers used by every project-scoped handler. |
 | Export | `pub async fn ensure_project_exists(pool: &PgPool, project_id: Uuid) -> AppResult<()>` |
 | Behaviour | `SELECT id FROM projects WHERE id = $1`; returns `AppError::NotFound("project {id} not found")` if no row. |
-| Callers | `handlers::{communications, tasks, assets, files, phases, members, contacts}::{list_by_project, create_for_project/upload_file/create_link}` — every project-scoped path. |
+| Callers | `handlers::{communications, tasks, assets, files, phases, people, deliverables}::{list_by_project, create_for_project/upload_file/create_link}` — every project-scoped path. |
 
 ---
 
@@ -206,11 +239,11 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Field | Value |
 |---|---|
 | Route | `/projects/:id` |
-| Responsibility | Heavy tabbed detail page for one project (communications / tasks / assets / files / phases / members tabs); also handles project-level edit and file upload + link creation. |
+| Responsibility | Heavy tabbed detail page for one project (communications / tasks / assets / files / phases / **people** / **deliverables** / timeline tabs); also handles project-level edit and file upload + link creation. |
 | Public API (TS) | `export default function ProjectDetail(): JSX.Element` |
 | State | Many: `commForm`, `taskForm`, `assetForm`, `projectForm`, `fileOpen`, `editingAsset`, `selectedFile`, plus modal-open flags. |
 | Calls | `projectsApi.get`, `communicationsApi.{listByProject, create}`, `tasksApi.{listByProject, create, update}`, `assetsApi.{listByProject, create, update, delete}`, `filesApi.{upload, createLink, listByProject, download, update, delete}`, `phasesApi.listByProject`, `clientsApi.list`. |
-| Internal deps | `FilePreview`, `PhasesTab`, `MembersTab`, `CommunicationList`, `ParticipantsInput` from `../components`; `formatSize` from `../utils/format`. |
+| Internal deps | `FilePreview`, `PhasesTab`, `MembersTab` (the people UI — name kept for history, calls `peopleApi`), `DeliverablesTab`, `TimelineTab`, `CommunicationList`, `ParticipantsInput` from `../components`; `formatSize` from `../utils/format`. |
 
 ### D.3 `FileLibrary` — `frontend/src/pages/FileLibrary.tsx`
 
@@ -251,10 +284,10 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 
 | Field | Value |
 |---|---|
-| Responsibility | Combined UI for project team members + client contacts side-by-side (separate forms, shared CRUD pattern). |
+| Responsibility | People UI for a project — team + client side-by-side (the component kept its historical `MembersTab` name, but the data model is the unified `people` table). Add / edit / delete people, drag-and-drop reorder within a side, and flip a person team↔client. |
 | Public API (TS) | `export default function MembersTab({ projectId }: Props): JSX.Element` |
-| Calls | `membersApi.{listByProject, create, update, delete}`, `contactsApi.{listByProject, create, update, delete}`. |
-| Internal deps | `membersApi`, `contactsApi`; types `Member`, `ClientContact`. |
+| Calls | `peopleApi.{listByProject, create, update, delete, reorder, flipSide}`. |
+| Internal deps | `peopleApi`; type `Person` (and `CreatePerson`/`UpdatePerson`). |
 
 ### E.3 `FilePreview` — `frontend/src/components/FilePreview.tsx`
 
@@ -319,7 +352,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Field | Value |
 |---|---|
 | Responsibility | Single axios instance (`baseURL: '/api'`, `timeout: 30000`) + one API object per resource + error classifier. |
-| Exports (10 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `assetsApi`, `filesApi`, `phasesApi`, `membersApi`, `contactsApi`, `healthApi` |
+| Exports (11 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `assetsApi` (incl. `reorder`), `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `searchApi`, `healthApi` |
 | Extra exports | `ApiErrorKind` type (`'offline' \| 'server' \| 'validation' \| 'conflict' \| 'unknown'`), `ApiErrorInfo` interface, `classifyApiError(err: unknown): ApiErrorInfo` |
 | Behaviour | `classifyApiError`: no `response` → `offline`; 5xx → `server`; 400/422 → `validation`; 409 → `conflict`; else `unknown`. |
 | Internal deps | `axios`; every `*Api` consumes a typed interface from `../types`. |
@@ -329,7 +362,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Field | Value |
 |---|---|
 | Responsibility | TS mirrors of every backend row struct + Create/Update DTO; aliases `UUID`, `ISODateTime`, `ISODate`. |
-| Public API (TS) | Interfaces: `Client`, `Project`, `ProjectStatus`, `Communication`, `CommunicationWithProject`, `Task`, `TaskStatus`, `Asset`, `ProjectFile`, `FileWithProject`, `Phase`, `Member`, `ClientContact` + matching `Create*`/`Update*` interfaces + `ApiError`. |
+| Public API (TS) | Interfaces: `Client`, `Project`, `ProjectStatus`, `Communication`, `CommunicationWithProject`, `Task`, `TaskStatus`, `Asset`, `ProjectFile`, `FileWithProject`, `Phase`, `Person` (+ `PersonSide`), `Deliverable` (+ `DeliverableStatus`) + matching `Create*`/`Update*` interfaces + `SearchHit` + `ApiError`. (Backend DTOs are codegen'd into `types/generated/` by ts-rs at test time.) |
 | Notable | `ProjectStatus = 'in_progress' \| 'completed' \| 'paused'` (TS union mirrors `ProjectStatus` const-module on backend). `TaskStatus = 'current' \| 'next' \| 'todo'`. `ProjectFile.source_type: 'file' \| 'link'`. |
 | Internal deps | None. |
 
@@ -372,6 +405,33 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 
 ---
 
+## G. CLI client (`backend/src/cli.rs`)
+
+The `project-manage-backend` binary is **dual-mode**: with no args (or `serve`)
+it starts the HTTP server (see `main.rs` / §2.3 of `deploy.md`); with any other
+subcommand it acts as an HTTP **client** against the API and exits. The same
+binary ships in the Docker image — there is no separate CLI build.
+
+| Field | Value |
+|---|---|
+| Entry | `pub async fn run(cli: Cli)` — called from `main.rs` only when `cli.command` is `Some` and not `Serve`. |
+| Top-level flags | `--api-url <url>` (default `http://localhost:{PORT}`, else `:3000`; or `$PROJECT_MANAGE_URL`), `--format json\|table` (json is default and AI-friendly; table is a minimal human renderer). |
+| Resource subcommands | `clients`, `projects`, `phases`, `tasks`, `people`, `assets`, `files`, `communications`, `deliverables` — each with `list` / `get` / `create --data '<json>'` / `update --data '<json>'` / `delete` (files lack `create`/`update`; people add `flip <id>`). |
+| Other subcommands | `serve` (no-op — handled by the server entrypoint), `search <query>` (global cross-resource search). |
+| HTTP details | One `reqwest::Client` with a 30 s timeout. Writes are `POST`/`PUT`/`DELETE` over JSON; a non-2xx status becomes `Err(<status>)` and the process exits 1. |
+| Output | JSON bodies are pretty-printed; arrays in `table` mode render a header + aligned columns (cell cap 40 chars). |
+| Internal deps | `clap` (derive), `reqwest`, `serde_json`. Talks to the server purely over `/api` — no direct DB access. |
+
+Example:
+
+```bash
+project-manage projects list --client-id <uuid>
+project-manage people flip <id> --api-url http://other:3000
+project-manage search "演练" --format table
+```
+
+---
+
 ## Cross-reference: who calls what
 
 | Backend handler | Models used | Calls `ensure_project_exists` | Side effects outside DB |
@@ -383,5 +443,6 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | assets | Asset, CreateAsset, UpdateAsset | **yes** (nested) | — |
 | files | ProjectFile, FileMeta, FileWithProject, CreateLink, UpdateFile | **yes** (nested) | **writes to `./uploads/{project_id}/{uuid}{ext}` on upload; removes file on delete; removes dir on parent project delete (via projects::remove)** |
 | phases | Phase, CreatePhase, UpdatePhase | **yes** (nested) | — |
-| members | Member, CreateMember, UpdateMember | **yes** (nested) | — |
-| contacts | ClientContact, CreateClientContact, UpdateClientContact | **yes** (nested) | — |
+| people | Person, CreatePerson, UpdatePerson, PersonSide | **yes** (nested) | — |
+| deliverables | Deliverable, CreateDeliverable, UpdateDeliverable, DeliverableStatus | **yes** (nested) | — |
+| search | (none — inline `SearchHit`) | no | — |

@@ -3,4 +3,4 @@
 /**
  * A client row as stored in the `clients` table.
  */
-export type Client = { id: string, name: string, contact_person: string | null, contact_info: string | null, notes: string | null, products: Array<string>, security_concerns: Array<string>, background_info: string | null, created_at: string, updated_at: string, };
+export type Client = { id: string, name: string, contact_person: string | null, contact_info: string | null, notes: string | null, products: Array<string>, background_info: string | null, created_at: string, updated_at: string, };

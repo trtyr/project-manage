@@ -37,7 +37,6 @@ async fn list(State(pool): State<PgPool>) -> AppResult<Json<Vec<Client>>> {
                   contact_info,
                   notes,
                   products       AS "products!: Vec<String>",
-                  security_concerns AS "security_concerns!: Vec<String>",
                   background_info,
                   created_at,
                   updated_at
@@ -62,16 +61,15 @@ async fn create(
         Client,
         r#"INSERT INTO clients (
                name, contact_person, contact_info, notes,
-               products, security_concerns, background_info
+               products, background_info
            )
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id,
                      name,
                      contact_person,
                      contact_info,
                      notes,
                      products       AS "products!: Vec<String>",
-                     security_concerns AS "security_concerns!: Vec<String>",
                      background_info,
                      created_at,
                      updated_at"#,
@@ -80,7 +78,6 @@ async fn create(
         input.contact_info,
         input.notes,
         input.products.as_slice(),
-        input.security_concerns.as_slice(),
         input.background_info,
     )
     .fetch_one(&pool)
@@ -99,7 +96,6 @@ async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<
                   contact_info,
                   notes,
                   products       AS "products!: Vec<String>",
-                  security_concerns AS "security_concerns!: Vec<String>",
                   background_info,
                   created_at,
                   updated_at
@@ -136,8 +132,7 @@ async fn update(
                contact_info     = COALESCE($4, contact_info),
                notes            = COALESCE($5, notes),
                products         = COALESCE($6, products),
-               security_concerns = COALESCE($7, security_concerns),
-               background_info  = COALESCE($8, background_info)
+               background_info  = COALESCE($7, background_info)
            WHERE id = $1
            RETURNING id,
                      name,
@@ -145,7 +140,6 @@ async fn update(
                      contact_info,
                      notes,
                      products       AS "products!: Vec<String>",
-                     security_concerns AS "security_concerns!: Vec<String>",
                      background_info,
                      created_at,
                      updated_at"#,
@@ -155,7 +149,6 @@ async fn update(
         input.contact_info,
         input.notes,
         input.products.as_deref(),
-        input.security_concerns.as_deref(),
         input.background_info,
     )
     .fetch_optional(&pool)
