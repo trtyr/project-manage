@@ -11,12 +11,12 @@ Legend: 🏠 = flat resource (list doesn't need project), 📋 = project-scoped.
 ## 🏠 Projects
 
 ```bash
-python3 scripts/pm projects list                          # all projects
-python3 scripts/pm projects list --client-id UUID         # filter by client
-python3 scripts/pm projects get UUID
-python3 scripts/pm projects create --data '{...}'
-python3 scripts/pm projects update UUID --data '{...}'
-python3 scripts/pm projects delete UUID                   # ⚠ CASCADE deletes child rows
+python3 ~/.pi/agent/skills/public/project-manage/pm projects list                          # all projects
+python3 ~/.pi/agent/skills/public/project-manage/pm projects list --client-id UUID         # filter by client
+python3 ~/.pi/agent/skills/public/project-manage/pm projects get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects delete UUID                   # ⚠ CASCADE deletes child rows
 ```
 
 ### CreateProject DTO
@@ -40,10 +40,10 @@ All fields optional: `name`, `client_id`, `status`, `phase`, `goals`,
 
 ```bash
 # Minimal project
-python3 scripts/pm projects create --data '{"client_id":"e37e...","name":"测试项目"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data '{"client_id":"e37e...","name":"测试项目"}'
 
 # Full project
-python3 scripts/pm projects create --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data '{
   "client_id":"e37e0c75-4921-4414-907c-2feb6d7af6d6",
   "name":"门户网站开发",
   "status":"in_progress",
@@ -54,7 +54,7 @@ python3 scripts/pm projects create --data '{
 }'
 
 # Mark complete
-python3 scripts/pm projects update UUID --data '{"status":"completed"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects update UUID --data '{"status":"completed"}'
 ```
 
 ---
@@ -62,11 +62,11 @@ python3 scripts/pm projects update UUID --data '{"status":"completed"}'
 ## 🏠 Clients
 
 ```bash
-python3 scripts/pm clients list
-python3 scripts/pm clients get UUID
-python3 scripts/pm clients create --data '{...}'
-python3 scripts/pm clients update UUID --data '{...}'
-python3 scripts/pm clients delete UUID         # ⚠ restricted if client has projects
+python3 ~/.pi/agent/skills/public/project-manage/pm clients list
+python3 ~/.pi/agent/skills/public/project-manage/pm clients get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm clients create --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm clients update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm clients delete UUID         # ⚠ restricted if client has projects
 ```
 
 ### CreateClient DTO
@@ -88,7 +88,7 @@ All fields optional: `name`, `contact_person`, `contact_info`, `notes`,
 ### Examples
 
 ```bash
-python3 scripts/pm clients create --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm clients create --data '{
   "name":"示例客户",
   "products":["CRM","门户"]
 }'
@@ -99,11 +99,11 @@ python3 scripts/pm clients create --data '{
 ## 📋 Phases
 
 ```bash
-python3 scripts/pm phases list --project-id PID
-python3 scripts/pm phases get UUID
-python3 scripts/pm phases create --project-id PID --data '{...}'
-python3 scripts/pm phases update UUID --data '{...}'
-python3 scripts/pm phases delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm phases list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm phases get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm phases create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm phases update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm phases delete UUID
 ```
 
 ### CreatePhase DTO
@@ -122,10 +122,10 @@ python3 scripts/pm phases delete UUID
 
 ```bash
 # Simple phase
-python3 scripts/pm phases create --project-id PID --data '{"name":"需求挖掘","status":"pending"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm phases create --project-id PID --data '{"name":"需求挖掘","status":"pending"}'
 
 # Phase with dates
-python3 scripts/pm phases create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm phases create --project-id PID --data '{
   "name":"POC测试",
   "status":"in_progress",
   "planned_start":"2026-09-01T00:00:00Z",
@@ -134,7 +134,7 @@ python3 scripts/pm phases create --project-id PID --data '{
 
 # Import standard 7-phase template
 for phase in "需求挖掘" "技术预研" "方案论证" "立项审批" "启动采购" "商务招标" "签单冲刺"; do
-  python3 scripts/pm phases create --project-id $PID --data "{\"name\":\"$phase\",\"status\":\"pending\"}"
+  python3 ~/.pi/agent/skills/public/project-manage/pm phases create --project-id $PID --data "{\"name\":\"$phase\",\"status\":\"pending\"}"
 done
 ```
 
@@ -143,11 +143,11 @@ done
 ## 📋 Tasks
 
 ```bash
-python3 scripts/pm tasks list --project-id PID
-python3 scripts/pm tasks get UUID
-python3 scripts/pm tasks create --project-id PID --data '{...}'
-python3 scripts/pm tasks update UUID --data '{...}'
-python3 scripts/pm tasks delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks delete UUID
 ```
 
 ### CreateTask DTO
@@ -164,7 +164,7 @@ python3 scripts/pm tasks delete UUID
 
 ```bash
 # Urgent task with assignee
-python3 scripts/pm tasks create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks create --project-id PID --data '{
   "title":"梳理Agent架构",
   "priority":"urgent",
   "status":"current",
@@ -172,10 +172,10 @@ python3 scripts/pm tasks create --project-id PID --data '{
 }'
 
 # Simple todo
-python3 scripts/pm tasks create --project-id PID --data '{"title":"更新接口文档"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks create --project-id PID --data '{"title":"更新接口文档"}'
 
 # Move to next
-python3 scripts/pm tasks update UUID --data '{"status":"next"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks update UUID --data '{"status":"next"}'
 ```
 
 ---
@@ -183,12 +183,12 @@ python3 scripts/pm tasks update UUID --data '{"status":"next"}'
 ## 📋 People
 
 ```bash
-python3 scripts/pm people list --project-id PID
-python3 scripts/pm people get UUID
-python3 scripts/pm people create --project-id PID --data '{...}'
-python3 scripts/pm people update UUID --data '{...}'
-python3 scripts/pm people delete UUID
-python3 scripts/pm people flip UUID             # move team↔client
+python3 ~/.pi/agent/skills/public/project-manage/pm people list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm people get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm people create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm people update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm people delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm people flip UUID             # move team↔client
 ```
 
 ### CreatePerson DTO
@@ -208,24 +208,24 @@ All fields optional: `name`, `role`, `notes`.
 
 ```bash
 # Team member
-python3 scripts/pm people create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm people create --project-id PID --data '{
   "side":"team",
   "name":"赵俊宇",
   "role":"项目经理"
 }'
 
 # Client-side contact
-python3 scripts/pm people create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm people create --project-id PID --data '{
   "side":"client",
   "name":"黄嘉骏",
   "role":"领导"
 }'
 
 # Change role
-python3 scripts/pm people update UUID --data '{"role":"技术负责人"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm people update UUID --data '{"role":"技术负责人"}'
 
 # Move to other side
-python3 scripts/pm people flip UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm people flip UUID
 ```
 
 ---
@@ -233,11 +233,11 @@ python3 scripts/pm people flip UUID
 ## 📋 Assets
 
 ```bash
-python3 scripts/pm assets list --project-id PID
-python3 scripts/pm assets get UUID
-python3 scripts/pm assets create --project-id PID --data '{...}'
-python3 scripts/pm assets update UUID --data '{...}'
-python3 scripts/pm assets delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm assets list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm assets get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm assets create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm assets update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm assets delete UUID
 ```
 
 ### CreateAsset DTO
@@ -256,7 +256,7 @@ python3 scripts/pm assets delete UUID
 
 ```bash
 # 服务器 asset
-python3 scripts/pm assets create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm assets create --project-id PID --data '{
   "name":"OA 服务器",
   "asset_type":"服务器",
   "access_method":"VPN",
@@ -265,7 +265,7 @@ python3 scripts/pm assets create --project-id PID --data '{
 }'
 
 # Threat intelligence
-python3 scripts/pm assets create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm assets create --project-id PID --data '{
   "name":"NGTIP",
   "asset_type":"威胁情报",
   "vendor":"示例供应商",
@@ -273,7 +273,7 @@ python3 scripts/pm assets create --project-id PID --data '{
 }'
 
 # Update credentials only
-python3 scripts/pm assets update UUID --data '{"credentials":"new-token-value"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm assets update UUID --data '{"credentials":"new-token-value"}'
 ```
 
 ---
@@ -281,10 +281,10 @@ python3 scripts/pm assets update UUID --data '{"credentials":"new-token-value"}'
 ## 🏠 Files
 
 ```bash
-python3 scripts/pm files list                          # all files across projects
-python3 scripts/pm files list --project-id PID         # per-project
-python3 scripts/pm files get UUID
-python3 scripts/pm files delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm files list                          # all files across projects
+python3 ~/.pi/agent/skills/public/project-manage/pm files list --project-id PID         # per-project
+python3 ~/.pi/agent/skills/public/project-manage/pm files get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm files delete UUID
 ```
 
 ⚠ **File upload/update NOT available via `pm`.** For multipart uploads:
@@ -300,12 +300,12 @@ curl -F "file=@local.pdf" \
 ## 📋 Communications
 
 ```bash
-python3 scripts/pm communications list                    # recent across all projects
-python3 scripts/pm communications list --project-id PID   # per-project
-python3 scripts/pm communications get UUID
-python3 scripts/pm communications create --project-id PID --data '{...}'
-python3 scripts/pm communications update UUID --data '{...}'
-python3 scripts/pm communications delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm communications list                    # recent across all projects
+python3 ~/.pi/agent/skills/public/project-manage/pm communications list --project-id PID   # per-project
+python3 ~/.pi/agent/skills/public/project-manage/pm communications get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm communications create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm communications update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm communications delete UUID
 ```
 
 ### CreateCommunication DTO
@@ -324,7 +324,7 @@ All fields optional: `content`, `occurred_at`, `participants`, `conclusion`.
 ### Examples
 
 ```bash
-python3 scripts/pm communications create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm communications create --project-id PID --data '{
   "content":"与客户确认POC测试范围和时间节点",
   "occurred_at":"2026-09-01T10:00:00Z",
   "participants":"赵俊宇、黄嘉骏",
@@ -337,11 +337,11 @@ python3 scripts/pm communications create --project-id PID --data '{
 ## 📋 Deliverables
 
 ```bash
-python3 scripts/pm deliverables list --project-id PID
-python3 scripts/pm deliverables get UUID
-python3 scripts/pm deliverables create --project-id PID --data '{...}'
-python3 scripts/pm deliverables update UUID --data '{...}'
-python3 scripts/pm deliverables delete UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables delete UUID
 ```
 
 ### CreateDeliverable DTO
@@ -357,20 +357,20 @@ python3 scripts/pm deliverables delete UUID
 
 ```bash
 # New deliverable
-python3 scripts/pm deliverables create --project-id PID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables create --project-id PID --data '{
   "name":"项目验收报告",
   "status":"pending",
   "due_date":"2026-10-15"
 }'
 
 # Mark delivered with linked file
-python3 scripts/pm deliverables update UUID --data '{
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables update UUID --data '{
   "status":"delivered",
   "linked_file_id":"FILE_UUID"
 }'
 
 # Mark accepted
-python3 scripts/pm deliverables update UUID --data '{"status":"accepted"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm deliverables update UUID --data '{"status":"accepted"}'
 ```
 
 ---
@@ -378,7 +378,7 @@ python3 scripts/pm deliverables update UUID --data '{"status":"accepted"}'
 ## 🔍 Search
 
 ```bash
-python3 scripts/pm search "keyword"
+python3 ~/.pi/agent/skills/public/project-manage/pm search "keyword"
 ```
 
 Searches across projects, clients, communications, tasks, and people using
@@ -396,8 +396,8 @@ ILIKE matching. Returns array of `SearchHit`:
 
 ```bash
 # Find everything related to "门户"
-python3 scripts/pm search "门户"
+python3 ~/.pi/agent/skills/public/project-manage/pm search "门户"
 
 # Find a person by name
-python3 scripts/pm search "赵俊宇"
+python3 ~/.pi/agent/skills/public/project-manage/pm search "赵俊宇"
 ```

@@ -123,14 +123,14 @@ just build-frontend      # 前端 production build
 
 ## 💻 命令行 (`pm`)
 
-`scripts/pm` 是纯标准库 Python 写的命令行客户端（无需安装依赖），直接对 `/api` 增删改查，输出 JSON（默认）或表格。9 个资源（客户/项目/阶段/任务/人员/资产/文件/沟通/交付物）各有 `list`/`get`/`create`/`update`/`delete`，`people` 额外有 `flip`，外加顶层 `search`。
+`.pi/skills/project-manage/pm` 是纯标准库 Python 写的命令行客户端（无需安装依赖），直接对 `/api` 增删改查，输出 JSON（默认）或表格。9 个资源（客户/项目/阶段/任务/人员/资产/文件/沟通/交付物）各有 `list`/`get`/`create`/`update`/`delete`，`people` 额外有 `flip`，外加顶层 `search`。（已注册为全局 Pi 技能 `project-manage`，AI 从任意目录可调用 `python3 ~/.pi/agent/skills/public/project-manage/pm`。）
 
 ```bash
-python3 scripts/pm clients list                              # 列出客户
-python3 scripts/pm --api-url http://localhost:9999 projects list
-python3 scripts/pm people flip <id>                          # 团队 ↔ 客户换边
-python3 scripts/pm --format table search "关键词"            # 全局搜索
-python3 scripts/pm clients create --data '{"name":"新客户"}'   # 新建（JSON）
+python3 .pi/skills/project-manage/pm clients list                              # 列出客户
+python3 .pi/skills/project-manage/pm --api-url http://localhost:9999 projects list
+python3 .pi/skills/project-manage/pm people flip <id>                          # 团队 ↔ 客户换边
+python3 .pi/skills/project-manage/pm --format table search "关键词"            # 全局搜索
+python3 .pi/skills/project-manage/pm clients create --data '{"name":"新客户"}'   # 新建（JSON）
 ```
 
 默认连 `http://localhost:{PORT}`，可用 `--api-url` 或环境变量 `$PROJECT_MANAGE_URL` 指向远端实例。

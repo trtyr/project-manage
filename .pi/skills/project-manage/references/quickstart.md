@@ -2,12 +2,12 @@
 
 ## The script
 
-`pm` is a **stdlib-only Python script** at `scripts/pm` — no build step, no
+`pm` is a **stdlib-only Python script** bundled with this skill — no build step, no
 dependencies (just Python 3). It is decoupled from the server and only talks to
 a running server over HTTP:
 
 ```bash
-python3 scripts/pm projects list             # run it directly, no build needed
+python3 ~/.pi/agent/skills/public/project-manage/pm projects list             # run it directly, no build needed
 ```
 
 `pm` talks to the API server over HTTP — it does NOT access the database
@@ -43,7 +43,7 @@ Three ways — pick one:
 export PROJECT_MANAGE_URL=http://localhost:9999
 
 # 2. Per-command flag
-python3 scripts/pm --api-url http://localhost:9999 projects list
+python3 ~/.pi/agent/skills/public/project-manage/pm --api-url http://localhost:9999 projects list
 
 # 3. The default is http://localhost:3000 if nothing is set
 ```
@@ -61,10 +61,10 @@ python3 scripts/pm --api-url http://localhost:9999 projects list
 
 ```bash
 # ✅ Correct
-python3 scripts/pm --api-url http://localhost:9999 --format table projects list
+python3 ~/.pi/agent/skills/public/project-manage/pm --api-url http://localhost:9999 --format table projects list
 
 # ❌ Wrong — --api-url ignored
-python3 scripts/pm projects list --api-url http://localhost:9999
+python3 ~/.pi/agent/skills/public/project-manage/pm projects list --api-url http://localhost:9999
 ```
 
 ## Output formats
@@ -101,9 +101,9 @@ id                                   │ name               │ status
 Every command level supports `--help`:
 
 ```bash
-python3 scripts/pm --help                # top-level commands
-python3 scripts/pm projects --help       # project subcommands
-python3 scripts/pm tasks create --help   # create flags
+python3 ~/.pi/agent/skills/public/project-manage/pm --help                # top-level commands
+python3 ~/.pi/agent/skills/public/project-manage/pm projects --help       # project subcommands
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks create --help   # create flags
 ```
 
 ## Error responses

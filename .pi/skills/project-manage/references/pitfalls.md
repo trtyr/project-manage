@@ -24,23 +24,23 @@ Use single quotes for the shell wrapper and double quotes inside:
 
 ```bash
 # ✅ Correct
-python3 scripts/pm projects create --data '{"name":"My Project","status":"in_progress"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data '{"name":"My Project","status":"in_progress"}'
 
 # ❌ Wrong — shell variable expansion in double quotes
-python3 scripts/pm projects create --data "{"name":"$NAME"}"
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data "{"name":"$NAME"}"
 # Shell tries to expand $NAME and breaks JSON parsing
 ```
 
 For strings containing single quotes, use `'\''` escape:
 
 ```bash
-python3 scripts/pm projects create --data '{"name":"It'\''s a project"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data '{"name":"It'\''s a project"}'
 ```
 
 Or use a heredoc:
 
 ```bash
-python3 scripts/pm projects create --data "$(cat <<'JSON'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data "$(cat <<'JSON'
 {
   "name": "It's a project",
   "status": "in_progress"
@@ -55,10 +55,10 @@ JSON
 
 ```bash
 # ✅ Correct
-python3 scripts/pm --api-url http://localhost:9999 projects list
+python3 ~/.pi/agent/skills/public/project-manage/pm --api-url http://localhost:9999 projects list
 
 # ❌ Wrong — argparse rejects it (exit 2)
-python3 scripts/pm projects list --api-url http://localhost:9999
+python3 ~/.pi/agent/skills/public/project-manage/pm projects list --api-url http://localhost:9999
 ```
 
 When in doubt, put everything before the resource name.
@@ -71,7 +71,7 @@ names are silently ignored (serde ignores unknown fields by default on the
 
 ```bash
 # ❌ "nam" is a typo — it'll be silently ignored
-python3 scripts/pm projects create --data '{"nam":"Test"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm projects create --data '{"nam":"Test"}'
 # The API receives an empty body with no "name" field → returns 422
 ```
 
@@ -119,11 +119,11 @@ list and create:
 
 ```bash
 # ❌ Missing --project-id
-python3 scripts/pm tasks list
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks list
 # Error: argument '--project-id' is required
 
 # ✅
-python3 scripts/pm tasks list --project-id "$PID"
+python3 ~/.pi/agent/skills/public/project-manage/pm tasks list --project-id "$PID"
 ```
 
 ## Whitespace in shell loops
@@ -132,12 +132,12 @@ When iterating over names with spaces, use `while read` not `for`:
 
 ```bash
 # ❌ Breaks on names with spaces
-for name in $(python3 scripts/pm people list --project-id "$PID" | jq -r '.[].name'); do
+for name in $(python3 ~/.pi/agent/skills/public/project-manage/pm people list --project-id "$PID" | jq -r '.[].name'); do
   echo "$name"
 done
 
 # ✅ Works with any name
-python3 scripts/pm people list --project-id "$PID" | jq -r '.[].name' | while read -r name; do
+python3 ~/.pi/agent/skills/public/project-manage/pm people list --project-id "$PID" | jq -r '.[].name' | while read -r name; do
   echo "Found: $name"
 done
 ```

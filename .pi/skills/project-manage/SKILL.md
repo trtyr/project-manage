@@ -1,7 +1,7 @@
 ---
 name: project-manage
 description: >
-  Use `pm` (a stdlib-only Python script at `scripts/pm`) to manage
+  Use `pm` (a stdlib-only Python script bundled with this skill) to manage
   project-manage data (projects, clients,
   tasks, phases, people, assets, files, communications, deliverables) over HTTP.
   A thin HTTP client decoupled from the server — talks to any running
@@ -9,13 +9,13 @@ description: >
   wants to query/create/update/delete project-manage data programmatically or from
   the command line, without the web UI, or needs structured JSON output for
   further processing. TRIGGERS: pm 脚本, project-manage 命令行, 操控 project-manage,
-  python3 scripts/pm projects, python3 scripts/pm clients, python3 scripts/pm search, project-manage list/search/create/update.
+  python3 ~/.pi/agent/skills/public/project-manage/pm projects, python3 ~/.pi/agent/skills/public/project-manage/pm clients, python3 ~/.pi/agent/skills/public/project-manage/pm search, project-manage list/search/create/update.
 ---
 
 # pm
 
 `pm` is the project-manage control script — a **stdlib-only Python script**
-at `scripts/pm` (no build step, no dependencies). It manages projects, clients,
+bundled with this skill (no build step, no dependencies). It manages projects, clients,
 tasks, phases, people, assets, files, communications, and deliverables via HTTP
 API calls. It is decoupled from the server and only talks to a running server
 over HTTP.
@@ -36,9 +36,9 @@ cargo run --manifest-path backend/Cargo.toml
 # 2. Point `pm` at the server (Docker serves on :9999, local on :3000)
 export PROJECT_MANAGE_URL=http://localhost:9999
 
-# 3. Use it (no build step — scripts/pm is stdlib Python)
-python3 scripts/pm projects list
-python3 scripts/pm search "关键词"
+# 3. Use it (no build step — pm is stdlib Python)
+python3 ~/.pi/agent/skills/public/project-manage/pm projects list
+python3 ~/.pi/agent/skills/public/project-manage/pm search "关键词"
 ```
 
 **Global options** (`--api-url`, `--format table`) go BEFORE the subcommand.
