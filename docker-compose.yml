@@ -1,0 +1,44 @@
+# project-manage — docker-compose
+#
+#   docker compose up -d --build      # build + start
+#   docker compose logs -f app        # tail app logs
+#   docker compose down               # stop (keeps data volume)
+#   docker compose down -v            # stop + wipe database
+#
+# The app container runs the same binary in `serve` mode (no args), which
+# applies pending migrations from ./migrations on startup, then serves the
+# API + built frontend on :3000.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-project_manage}
+      POSTGRES_USER: ${POSTGRES_USER:-project_manage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-project_manage}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # SQLx runtime connection — the app waits/retries until db is ready,
+      # then applies migrations before serving.
+      DATABASE_URL: postgres://${POSTGRES_USER:-project_manage}:${POSTGRES_PASSWORD:-project_manage}@db:5432/${POSTGRES_DB:-project_manage}
+      PORT: "3000"
+      STATIC_DIR: /app/static
+    ports:
+      - "${APP_PORT:-9999}:3000"
+
+volumes:
+  pgdata:

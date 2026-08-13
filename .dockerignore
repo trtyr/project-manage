@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+.github
+
+# Rust build artifacts
+backend/target
+backend/.cargo/config.toml
+
+# Node
+frontend/node_modules
+frontend/dist
+
+# Runtime artifacts
+backend/static
+
+# Docs / tooling caches (not needed in image)
+docs
+.rumdl_cache
+.piro
+.pi-glla
+
+# Local env (never bake dev secrets into an image)
+backend/.env
+.env
+
+# Misc
+*.log
+.DS_Store
