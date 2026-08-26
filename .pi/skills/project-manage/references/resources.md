@@ -1,6 +1,6 @@
 # Resource commands
 
-All 9 resources follow the pattern: `list`, `get`, `create`, `update`,
+All 11 resources follow the pattern: `list`, `get`, `create`, `update`,
 `delete`. Project-scoped resources require `--project-id` for `list` and
 `create`.
 
@@ -375,18 +375,124 @@ python3 ~/.pi/agent/skills/public/project-manage/pm deliverables update UUID --d
 
 ---
 
+## 📋 Issues
+
+Customer concerns raised by the client (客户关切) — track what the client
+cares about and whether we've resolved it. Three-state lifecycle.
+
+```bash
+python3 ~/.pi/agent/skills/public/project-manage/pm issues list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm issues get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm issues create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm issues update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm issues delete UUID
+```
+
+### CreateIssue DTO
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `title` | string | ✅ | — | The concern |
+| `description` | string | — | null | Free-text detail |
+| `status` | string | — | `open` | `open` / `in_progress` / `resolved` |
+| `priority` | string | — | `normal` | `urgent` / `high` / `normal` / `low` |
+| `assignee_id` | UUID | — | null | FK to people (owner) |
+| `due_date` | date | — | null | YYYY-MM-DD format |
+| `communication_id` | UUID | — | null | Optional source comm — **must belong to the same project, else 400** |
+
+### UpdateIssue DTO
+
+All fields optional: `title`, `description`, `status`, `priority`,
+`assignee_id`, `due_date`, `communication_id`.
+
+### Examples
+
+```bash
+# Record a concern heard during a client visit
+python3 ~/.pi/agent/skills/public/project-manage/pm issues create --project-id PID --data '{
+  "title":"客户担心数据安全",
+  "description":"希望数据不出境",
+  "priority":"high"
+}'
+
+# Link it to the communication where it was raised
+python3 ~/.pi/agent/skills/public/project-manage/pm issues update UUID --data '{"communication_id":"COMM_UUID"}'
+
+# Progress it through the lifecycle
+python3 ~/.pi/agent/skills/public/project-manage/pm issues update UUID --data '{"status":"in_progress"}'
+python3 ~/.pi/agent/skills/public/project-manage/pm issues update UUID --data '{"status":"resolved"}'
+```
+
+---
+
+## 📋 Findings
+
+Product findings we observed (产品发现) — problems in the product the client
+is currently using (ours or a third-party vendor's). Light tracking: whether
+the finding has been fed back to the client.
+
+```bash
+python3 ~/.pi/agent/skills/public/project-manage/pm findings list --project-id PID
+python3 ~/.pi/agent/skills/public/project-manage/pm findings get UUID
+python3 ~/.pi/agent/skills/public/project-manage/pm findings create --project-id PID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm findings update UUID --data '{...}'
+python3 ~/.pi/agent/skills/public/project-manage/pm findings delete UUID
+```
+
+### CreateFinding DTO
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `title` | string | ✅ | — | The problem observed |
+| `product_source` | string | ✅ | — | `ours` / `third_party` (required, no default) |
+| `description` | string | — | null | Free-text detail |
+| `product` | string | — | null | Product name, e.g. `"对象存储 OSS"` |
+| `vendor` | string | — | null | Vendor when third-party, e.g. `"阿里云"` |
+| `observed_at` | ISO 8601 | — | now | When observed |
+| `feedback_status` | string | — | `unreported` | `unreported` / `reported` |
+| `communication_id` | UUID | — | null | Optional source comm — **must belong to the same project, else 400** |
+
+### UpdateFinding DTO
+
+All fields optional: `title`, `description`, `product`, `product_source`,
+`vendor`, `observed_at`, `feedback_status`, `communication_id`.
+
+### Examples
+
+```bash
+# Third-party product problem
+python3 ~/.pi/agent/skills/public/project-manage/pm findings create --project-id PID --data '{
+  "title":"对象存储偶发超时",
+  "product":"对象存储 OSS",
+  "product_source":"third_party",
+  "vendor":"阿里云"
+}'
+
+# Our own product problem
+python3 ~/.pi/agent/skills/public/project-manage/pm findings create --project-id PID --data '{
+  "title":"报表导出乱码",
+  "product_source":"ours"
+}'
+
+# Mark fed back to the client
+python3 ~/.pi/agent/skills/public/project-manage/pm findings update UUID --data '{"feedback_status":"reported"}'
+```
+
+---
+
 ## 🔍 Search
 
 ```bash
 python3 ~/.pi/agent/skills/public/project-manage/pm search "keyword"
 ```
 
-Searches across projects, clients, communications, tasks, and people using
-ILIKE matching. Returns array of `SearchHit`:
+Searches across projects, clients, communications, tasks, people, issues
+(title + description), and findings (title + description + product + vendor)
+using ILIKE matching. Returns array of `SearchHit`:
 
 ```json
 {
-  "resource": "project" | "client" | "communication" | "task" | "person",
+  "resource": "project" | "client" | "communication" | "task" | "person" | "issue" | "finding",
   "id": "UUID",
   "title": "匹配的标题/名称",
   "subtitle": "补充信息" | null,

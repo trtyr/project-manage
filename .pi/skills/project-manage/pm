@@ -18,7 +18,7 @@ Usage examples::
     pm --api-url http://localhost:9999 clients list
 
 Resources: clients, projects, phases, tasks, people, assets, files,
-communications, deliverables — each with ``list`` / ``get`` /
+communications, deliverables, issues, findings — each with ``list`` / ``get`` /
 ``create --data`` / ``update --data`` / ``delete`` (``files`` lacks
 create/update; ``people`` adds ``flip <id>``), plus a top-level ``search``.
 """
@@ -151,7 +151,7 @@ def format_output(text: str, fmt: str) -> str:
 # Dispatch — turns parsed args into an HTTP call. Endpoint knowledge lives here.
 # ---------------------------------------------------------------------------
 # Resources whose list/create are project-scoped with a REQUIRED --project-id.
-SCOPED = {"phases", "tasks", "assets", "deliverables", "people"}
+SCOPED = {"phases", "tasks", "assets", "deliverables", "people", "issues", "findings"}
 
 
 def dispatch(api: str, resource: str, args) -> str:
@@ -282,7 +282,7 @@ def build_parser() -> argparse.ArgumentParser:
             ap.add_argument("--data", required=True)
 
     # project-scoped (required --project-id)
-    for name in ("phases", "tasks", "assets", "deliverables"):
+    for name in ("phases", "tasks", "assets", "deliverables", "issues", "findings"):
         _add_crud(resources.add_parser(name), list_arg="req")
 
     # people — project-scoped + flip

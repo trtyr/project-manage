@@ -3,7 +3,8 @@ name: project-manage
 description: >
   Use `pm` (a stdlib-only Python script bundled with this skill) to manage
   project-manage data (projects, clients,
-  tasks, phases, people, assets, files, communications, deliverables) over HTTP.
+  tasks, phases, people, assets, files, communications, deliverables,
+  issues, findings) over HTTP.
   A thin HTTP client decoupled from the server — talks to any running
   project-manage server via --api-url or $PROJECT_MANAGE_URL. LOAD WHEN: the user
   wants to query/create/update/delete project-manage data programmatically or from
@@ -16,9 +17,9 @@ description: >
 
 `pm` is the project-manage control script — a **stdlib-only Python script**
 bundled with this skill (no build step, no dependencies). It manages projects, clients,
-tasks, phases, people, assets, files, communications, and deliverables via HTTP
-API calls. It is decoupled from the server and only talks to a running server
-over HTTP.
+tasks, phases, people, assets, files, communications, deliverables, issues, and
+findings via HTTP API calls. It is decoupled from the server and only talks to a
+running server over HTTP.
 
 ## When to use
 
@@ -48,7 +49,7 @@ python3 ~/.pi/agent/skills/public/project-manage/pm search "关键词"
 | File | What's in it |
 |---|---|
 | [quickstart](references/quickstart.md) | The script, startup, global options, output formats |
-| [resources](references/resources.md) | All 9 resources with CRUD examples and full DTO field tables |
+| [resources](references/resources.md) | All 11 resources with CRUD examples and full DTO field tables |
 | [patterns](references/patterns.md) | Common patterns: create project in one go, query-update, bulk ops |
 | [pitfalls](references/pitfalls.md) | Gotchas, error handling, server-must-be-running, JSON quoting |
 | [json-jq](references/json-jq.md) | jq recipes for filtering, extracting IDs, finding by name |
