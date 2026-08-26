@@ -977,3 +977,170 @@ async fn test_people_flip_side() {
 
     cleanup_project_and_client(&pool, project_id, client_id).await;
 }
+
+// =========================================================================
+// 14. issues_crud — customer concerns, three-state status
+// =========================================================================
+
+#[tokio::test]
+async fn test_issues_crud() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = reqwest::Client::new();
+    let suffix = Uuid::new_v4();
+
+    let client = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // 1. CREATE issue with defaults (open / normal).
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/issues"))
+        .json(&json!({
+            "title": "客户担心数据安全",
+            "description": "希望数据不出境",
+        }))
+        .send()
+        .await
+        .expect("POST issue");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let created: Value = resp.json().await.expect("create JSON");
+    let issue_id = json_id(&created);
+    assert_eq!(created["status"], "open");
+    assert_eq!(created["priority"], "normal");
+    assert_eq!(created["title"], "客户担心数据安全");
+
+    // 2. UPDATE status open → in_progress.
+    let resp = http
+        .put(format!("{base_url}/api/issues/{issue_id}"))
+        .json(&json!({ "status": "in_progress" }))
+        .send()
+        .await
+        .expect("PUT issue → in_progress");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let updated: Value = resp.json().await.expect("update JSON");
+    assert_eq!(updated["status"], "in_progress");
+
+    // 3. UPDATE status → resolved + priority → urgent.
+    let resp = http
+        .put(format!("{base_url}/api/issues/{issue_id}"))
+        .json(&json!({ "status": "resolved", "priority": "urgent" }))
+        .send()
+        .await
+        .expect("PUT issue → resolved");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let resolved: Value = resp.json().await.expect("update JSON");
+    assert_eq!(resolved["status"], "resolved");
+    assert_eq!(resolved["priority"], "urgent");
+
+    // 4. Invalid status is rejected with 400.
+    let resp = http
+        .put(format!("{base_url}/api/issues/{issue_id}"))
+        .json(&json!({ "status": "completed" }))
+        .send()
+        .await
+        .expect("PUT invalid status");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+    // 5. Invalid priority is rejected with 400.
+    let resp = http
+        .put(format!("{base_url}/api/issues/{issue_id}"))
+        .json(&json!({ "priority": "critical" }))
+        .send()
+        .await
+        .expect("PUT invalid priority");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+    // 6. DELETE issue.
+    let resp = http
+        .delete(format!("{base_url}/api/issues/{issue_id}"))
+        .send()
+        .await
+        .expect("DELETE issue");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+    // 7. CLEANUP.
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 15. findings_crud — product findings, light feedback tracking
+// =========================================================================
+
+#[tokio::test]
+async fn test_findings_crud() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = reqwest::Client::new();
+    let suffix = Uuid::new_v4();
+
+    let client = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // 1. CREATE finding (third-party product, default unreported).
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/findings"))
+        .json(&json!({
+            "title": "对象存储偶发超时",
+            "product": "对象存储 OSS",
+            "product_source": "third_party",
+            "vendor": "阿里云",
+        }))
+        .send()
+        .await
+        .expect("POST finding");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let created: Value = resp.json().await.expect("create JSON");
+    let finding_id = json_id(&created);
+    assert_eq!(created["feedback_status"], "unreported");
+    assert_eq!(created["product_source"], "third_party");
+    assert_eq!(created["vendor"], "阿里云");
+
+    // 2. UPDATE feedback_status unreported → reported.
+    let resp = http
+        .put(format!("{base_url}/api/findings/{finding_id}"))
+        .json(&json!({ "feedback_status": "reported" }))
+        .send()
+        .await
+        .expect("PUT finding → reported");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let reported: Value = resp.json().await.expect("update JSON");
+    assert_eq!(reported["feedback_status"], "reported");
+
+    // 3. UPDATE product_source third_party → ours.
+    let resp = http
+        .put(format!("{base_url}/api/findings/{finding_id}"))
+        .json(&json!({ "product_source": "ours" }))
+        .send()
+        .await
+        .expect("PUT finding → ours");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let ours: Value = resp.json().await.expect("update JSON");
+    assert_eq!(ours["product_source"], "ours");
+
+    // 4. CREATE with invalid product_source is rejected with 400.
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/findings"))
+        .json(&json!({
+            "title": "bad source",
+            "product_source": "competitor",
+        }))
+        .send()
+        .await
+        .expect("POST invalid product_source");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+    // 5. DELETE finding.
+    let resp = http
+        .delete(format!("{base_url}/api/findings/{finding_id}"))
+        .send()
+        .await
+        .expect("DELETE finding");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+    // 6. CLEANUP.
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}

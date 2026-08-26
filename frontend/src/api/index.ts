@@ -25,6 +25,12 @@ import type {
   Person,
   CreatePerson,
   UpdatePerson,
+  Issue,
+  CreateIssue,
+  UpdateIssue,
+  Finding,
+  CreateFinding,
+  UpdateFinding,
 } from '../types'
 
 const http = axios.create({
@@ -96,6 +102,32 @@ export const tasksApi = {
   update: (id: string, data: UpdateTask) =>
     http.put<Task>(`/tasks/${id}`, data).then((r) => r.data),
   delete: (id: string) => http.delete(`/tasks/${id}`).then((r) => r.data),
+}
+
+// --- Issues (nested under project) ---
+
+export const issuesApi = {
+  listByProject: (projectId: string) =>
+    http.get<Issue[]>(`/projects/${projectId}/issues`).then((r) => r.data),
+  create: (projectId: string, data: CreateIssue) =>
+    http.post<Issue>(`/projects/${projectId}/issues`, data).then((r) => r.data),
+  get: (id: string) => http.get<Issue>(`/issues/${id}`).then((r) => r.data),
+  update: (id: string, data: UpdateIssue) =>
+    http.put<Issue>(`/issues/${id}`, data).then((r) => r.data),
+  delete: (id: string) => http.delete(`/issues/${id}`).then((r) => r.data),
+}
+
+// --- Findings (nested under project) ---
+
+export const findingsApi = {
+  listByProject: (projectId: string) =>
+    http.get<Finding[]>(`/projects/${projectId}/findings`).then((r) => r.data),
+  create: (projectId: string, data: CreateFinding) =>
+    http.post<Finding>(`/projects/${projectId}/findings`, data).then((r) => r.data),
+  get: (id: string) => http.get<Finding>(`/findings/${id}`).then((r) => r.data),
+  update: (id: string, data: UpdateFinding) =>
+    http.put<Finding>(`/findings/${id}`, data).then((r) => r.data),
+  delete: (id: string) => http.delete(`/findings/${id}`).then((r) => r.data),
 }
 
 // --- Assets ---

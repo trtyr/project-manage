@@ -1,0 +1,89 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE issues\n           SET title            = COALESCE($2, title),\n               description      = COALESCE($3, description),\n               status           = COALESCE($4, status),\n               communication_id = COALESCE($5, communication_id),\n               assignee_id      = COALESCE($6, assignee_id),\n               priority         = COALESCE($7, priority),\n               due_date         = COALESCE($8, due_date)\n           WHERE id = $1\n           RETURNING id, project_id, title, description, status,\n                     communication_id, assignee_id, priority, due_date,\n                     created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "communication_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "assignee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "due_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "403fb3db6ff3cf4b02cc3d5bd52866434b5b04c7e7c4616f7a697562c5dc50d6"
+}

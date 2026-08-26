@@ -9,6 +9,8 @@ pub mod asset;
 pub mod client;
 pub mod communication;
 pub mod deliverable;
+pub mod finding;
+pub mod issue;
 pub mod person;
 pub mod phase;
 pub mod project;
@@ -28,6 +30,8 @@ pub use asset::{Asset, CreateAsset, UpdateAsset};
 pub use project_file::{CreateLink, FileMeta, FileWithProject, ProjectFile, UpdateFile};
 pub use phase::{CreatePhase, Phase, UpdatePhase};
 pub use person::{CreatePerson, Person, PersonSide, UpdatePerson};
+pub use finding::{CreateFinding, FeedbackStatus, Finding, ProductSource, UpdateFinding};
+pub use issue::{CreateIssue, Issue, IssuePriority, IssueStatus, UpdateIssue};
 
 // `#[ts(export)]` on every annotated struct auto-generates a
 // `#[test] fn export_bindings_<typename>()` that calls `Self::export_all()`.

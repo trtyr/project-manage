@@ -114,6 +114,47 @@ async fn search(
         });
     }
 
+    // Issues
+    let rows = sqlx::query!(
+        r#"SELECT id, project_id, title FROM issues
+           WHERE title ILIKE $1 OR description ILIKE $1
+           LIMIT 10"#,
+        q
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_default();
+    for r in rows {
+        hits.push(SearchHit {
+            resource: "issue".into(),
+            id: r.id.to_string(),
+            title: r.title,
+            subtitle: None,
+            project_id: Some(r.project_id.to_string()),
+        });
+    }
+
+    // Findings
+    let rows = sqlx::query!(
+        r#"SELECT id, project_id, title FROM findings
+           WHERE title ILIKE $1 OR description ILIKE $1
+              OR product ILIKE $1 OR vendor ILIKE $1
+           LIMIT 10"#,
+        q
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_default();
+    for r in rows {
+        hits.push(SearchHit {
+            resource: "finding".into(),
+            id: r.id.to_string(),
+            title: r.title,
+            subtitle: None,
+            project_id: Some(r.project_id.to_string()),
+        });
+    }
+
     // People
     let rows = sqlx::query!(
         r#"SELECT id, project_id, name, role FROM people

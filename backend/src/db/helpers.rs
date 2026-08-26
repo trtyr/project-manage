@@ -20,3 +20,27 @@ pub async fn ensure_project_exists(pool: &PgPool, project_id: Uuid) -> AppResult
 
     Ok(())
 }
+
+/// Verify that a communication exists and belongs to the given project.
+/// Used by issues/findings to guard an optional `communication_id` link.
+pub async fn ensure_communication_in_project(
+    pool: &PgPool,
+    project_id: Uuid,
+    communication_id: Uuid,
+) -> AppResult<()> {
+    let exists: Option<(Uuid,)> = sqlx::query_as(
+        "SELECT id FROM communications WHERE id = $1 AND project_id = $2",
+    )
+    .bind(communication_id)
+    .bind(project_id)
+    .fetch_optional(pool)
+    .await?;
+
+    if exists.is_none() {
+        return Err(AppError::BadRequest(format!(
+            "communication {communication_id} does not belong to project {project_id}"
+        )));
+    }
+
+    Ok(())
+}

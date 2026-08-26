@@ -28,5 +28,9 @@ Thumbs.db
 .pi-glla/
 .pi-subagents/
 
+# pi goal runtime state (skills/ is tracked; goals are session-local)
+.pi/goals/
+.pi/.goals-pool-snapshot.json
+
 # Database backups
 backups/

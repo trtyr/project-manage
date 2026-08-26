@@ -25,6 +25,8 @@ import {
   TeamOutlined,
   DatabaseOutlined,
   FolderOutlined,
+  AlertOutlined,
+  BugOutlined,
   FieldTimeOutlined,
   ScheduleOutlined,
 } from '@ant-design/icons'
@@ -36,6 +38,8 @@ import {
   clientsApi,
   assetsApi,
   filesApi,
+  issuesApi,
+  findingsApi,
 } from '../api'
 import type { ProjectStatus, TechApprovalStatus, ProjectFile } from '../types'
 import FilePreview from '../components/FilePreview'
@@ -47,6 +51,8 @@ import CommunicationsTab from '../components/CommunicationsTab'
 import TasksTab from '../components/TasksTab'
 import AssetsTab from '../components/AssetsTab'
 import FilesTab from '../components/FilesTab'
+import IssuesTab from '../components/IssuesTab'
+import FindingsTab from '../components/FindingsTab'
 
 const { Title, Text } = Typography
 
@@ -150,6 +156,18 @@ export default function ProjectDetail() {
   const { data: files } = useQuery({
     queryKey: ['files', id],
     queryFn: () => filesApi.listByProject(id!),
+    enabled: !!id,
+  })
+
+  const { data: issues } = useQuery({
+    queryKey: ['issues', id],
+    queryFn: () => issuesApi.listByProject(id!),
+    enabled: !!id,
+  })
+
+  const { data: findings } = useQuery({
+    queryKey: ['findings', id],
+    queryFn: () => findingsApi.listByProject(id!),
     enabled: !!id,
   })
 
@@ -324,6 +342,28 @@ export default function ProjectDetail() {
               />
             ),
             children: <TasksTab projectId={id!} />,
+          },
+          {
+            key: 'issues',
+            label: (
+              <TabLabel
+                icon={<AlertOutlined />}
+                label="客户关切"
+                count={issues?.length}
+              />
+            ),
+            children: <IssuesTab projectId={id!} />,
+          },
+          {
+            key: 'findings',
+            label: (
+              <TabLabel
+                icon={<BugOutlined />}
+                label="产品发现"
+                count={findings?.length}
+              />
+            ),
+            children: <FindingsTab projectId={id!} />,
           },
           {
             key: 'assets',

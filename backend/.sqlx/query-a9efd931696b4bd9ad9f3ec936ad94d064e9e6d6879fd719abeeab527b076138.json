@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, project_id, title, description, status,\n                  communication_id, assignee_id, priority, due_date,\n                  created_at, updated_at\n           FROM issues\n           WHERE project_id = $1\n           ORDER BY\n                CASE status\n                    WHEN 'open'        THEN 0\n                    WHEN 'in_progress' THEN 1\n                    WHEN 'resolved'    THEN 2\n                    ELSE 3\n                END,\n                CASE priority\n                    WHEN 'urgent' THEN 0\n                    WHEN 'high'   THEN 1\n                    WHEN 'normal' THEN 2\n                    WHEN 'low'    THEN 3\n                    ELSE 4\n                END,\n                due_date NULLS LAST,\n                created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "communication_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "assignee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "due_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "a9efd931696b4bd9ad9f3ec936ad94d064e9e6d6879fd719abeeab527b076138"
+}

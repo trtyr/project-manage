@@ -28,8 +28,9 @@ use tower_http::{
 use crate::error::AppError;
 use crate::handlers::{
     assets_router, clients_router, communications_router, deliverables_router,
-    files_router, people_router, phases_router, project_assets_router,
-    project_communications_router, project_deliverables_router, project_files_router,
+    files_router, findings_router, issues_router, people_router, phases_router,
+    project_assets_router, project_communications_router, project_deliverables_router,
+    project_files_router, project_findings_router, project_issues_router,
     project_people_router, project_phases_router, project_tasks_router,
     projects_router, search_router, tasks_router,
 };
@@ -126,8 +127,12 @@ pub fn build_app(
         .nest("/api", projects_router())
         .nest("/api", communications_router())
         .nest("/api", tasks_router())
+        .nest("/api", issues_router())
+        .nest("/api", findings_router())
         .nest("/api", project_communications_router())
         .nest("/api", project_tasks_router())
+        .nest("/api", project_issues_router())
+        .nest("/api", project_findings_router())
         .nest("/api", project_assets_router())
         .nest("/api", assets_router())
         .nest("/api", project_files_router())

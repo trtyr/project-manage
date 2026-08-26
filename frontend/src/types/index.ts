@@ -41,6 +41,12 @@ import type { UpdateFile } from './generated/UpdateFile'
 import type { UpdatePerson } from './generated/UpdatePerson'
 import type { UpdatePhase } from './generated/UpdatePhase'
 import type { UpdateTask as GeneratedUpdateTask } from './generated/UpdateTask'
+import type { Issue as GeneratedIssue } from './generated/Issue'
+import type { CreateIssue as GeneratedCreateIssue } from './generated/CreateIssue'
+import type { UpdateIssue as GeneratedUpdateIssue } from './generated/UpdateIssue'
+import type { Finding as GeneratedFinding } from './generated/Finding'
+import type { CreateFinding } from './generated/CreateFinding'
+import type { UpdateFinding } from './generated/UpdateFinding'
 
 // --- Primitive aliases (kept manual — ts-rs emits `string` for all) ---
 
@@ -59,6 +65,14 @@ export type TaskStatus = 'current' | 'next' | 'todo'
 
 export type TaskPriority = 'urgent' | 'high' | 'normal' | 'low'
 
+export type IssueStatus = 'open' | 'in_progress' | 'resolved'
+
+export type IssuePriority = 'urgent' | 'high' | 'normal' | 'low'
+
+export type ProductSource = 'ours' | 'third_party'
+
+export type FeedbackStatus = 'unreported' | 'reported'
+
 // `source_type` is a `String` in Rust; keep the narrow union here so call
 // sites that construct a `ProjectFile` get autocomplete and typo detection.
 // Reads (e.g. `r.source_type === 'link'`) keep working because `'link'`
@@ -75,6 +89,8 @@ export type Task = GeneratedTask
 export type Asset = GeneratedAsset
 export type Phase = GeneratedPhase
 export type Person = GeneratedPerson
+export type Issue = GeneratedIssue
+export type Finding = GeneratedFinding
 
 // `ProjectFile` was the frontend-facing name for `FileMeta` (the Rust DB
 // row carries `stored_name`/`file_path` and is intentionally not exported).
@@ -106,6 +122,10 @@ export type CreateTask = Omit<GeneratedCreateTask, 'status'> & {
   status?: TaskStatus
 }
 
+export type CreateIssue = Omit<GeneratedCreateIssue, 'status'> & {
+  status?: IssueStatus
+}
+
 // `tags` is `Vec<String>` with `#[serde(default)]`.
 export type CreateLink = Omit<GeneratedCreateLink, 'tags'> & {
   tags?: string[]
@@ -126,11 +146,16 @@ export type UpdateTask = Omit<GeneratedUpdateTask, 'status'> & {
   status?: TaskStatus
 }
 
+export type UpdateIssue = Omit<GeneratedUpdateIssue, 'status'> & {
+  status?: IssueStatus
+}
+
 // --- Direct re-exports for the rest ---
 
 export type {
   CreateAsset,
   CreateCommunication,
+  CreateFinding,
   CreatePerson,
   CreatePhase,
   FileMeta,
@@ -139,6 +164,7 @@ export type {
   UpdateClient,
   UpdateCommunication,
   UpdateFile,
+  UpdateFinding,
   UpdatePerson,
   UpdatePhase,
 }
