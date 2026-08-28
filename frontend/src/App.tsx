@@ -1,5 +1,5 @@
 import { useState, useEffect, Component } from 'react'
-import { ConfigProvider, Switch, Input, Button, Tooltip } from 'antd'
+import { ConfigProvider, Switch, Input, Button, Tooltip, Spin } from 'antd'
 import { SearchOutlined, LogoutOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
@@ -130,7 +130,7 @@ function App() {
     queryFn: authApi.status,
     staleTime: 60_000,
   })
-  const { data: me, isError: meRejected } = useQuery({
+  const { data: me, isLoading: meLoading, isError: meRejected } = useQuery({
     queryKey: ['auth-me'],
     queryFn: authApi.me,
     enabled: !authStatus?.needs_setup,
@@ -204,6 +204,9 @@ function App() {
   const { data: projects } = useQuery({
     queryKey: ['projects'],
     queryFn: projectsApi.list,
+    // Sidebar metric only — never fire before login, otherwise the 401
+    // interceptor full-page-reloads into a refresh loop on /login & /setup.
+    enabled: !!me,
   })
 
   const isActive = (path: string) =>
@@ -227,6 +230,31 @@ function App() {
     return (
       <ConfigProvider locale={zhCN} theme={isDark ? darkTheme : lightTheme}>
         <SetupPage />
+      </ConfigProvider>
+    )
+  }
+
+  // Auth gate: until bootstrap resolves (status → maybe /me), render a
+  // bare spinner instead of the app shell — otherwise business pages mount
+  // and fire queries that 401 while unauthenticated, causing full-page
+  // bounces (and formerly a reload loop) via the axios interceptor.
+  const authReady =
+    !authLoading &&
+    authStatus !== undefined &&
+    (authStatus.needs_setup || !meLoading)
+  if (!authReady) {
+    return (
+      <ConfigProvider locale={zhCN} theme={isDark ? darkTheme : lightTheme}>
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Spin size="large" />
+        </div>
       </ConfigProvider>
     )
   }

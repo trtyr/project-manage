@@ -1,19 +1,27 @@
 import { useState } from 'react'
 import { Button, Form, Input, Typography, App } from 'antd'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { authApi } from '../api'
+import type { UserPublic } from '../types'
 
 const { Title, Text } = Typography
 
 export default function LoginPage() {
   const { message } = App.useApp()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
 
   const onFinish = async (v: { username: string; password: string }) => {
     setLoading(true)
     try {
-      await authApi.login(v)
+      const user = await authApi.login(v)
+      // The App-level ['auth-me'] query is either error (pre-login race) or
+      // disabled — nobody refetches it on SPA navigation. Seed the cache
+      // with the login response so the sidebar (logout button, counters)
+      // renders without a manual page refresh.
+      queryClient.setQueryData<UserPublic>(['auth-me'], user)
       message.success('登录成功')
       navigate('/')
     } catch (err) {

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Button, Form, Input, Typography, App } from 'antd'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { authApi } from '../api'
+import type { UserPublic } from '../types'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -10,6 +12,7 @@ const { Title, Text, Paragraph } = Typography
 export default function SetupPage() {
   const { message } = App.useApp()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
 
   const onFinish = async (v: {
@@ -19,7 +22,13 @@ export default function SetupPage() {
   }) => {
     setLoading(true)
     try {
-      await authApi.setup(v)
+      const user = await authApi.setup(v)
+      // Setup logs the user in server-side, but the cached auth-status
+      // still says needs_setup:true (60s staleTime) — the App bootstrap
+      // effect would bounce us right back to /setup. Flip both caches
+      // with the response we already hold.
+      queryClient.setQueryData(['auth-status'], { needs_setup: false })
+      queryClient.setQueryData<UserPublic>(['auth-me'], user)
       message.success('初始化完成，欢迎使用！')
       navigate('/')
     } catch (err) {

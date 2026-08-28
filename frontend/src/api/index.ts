@@ -260,7 +260,12 @@ http.interceptors.response.use(
     const status = error?.response?.status
     const url: string = error?.response?.config?.url ?? ''
     if (status === 401 && !url.includes('/auth/')) {
-      window.location.href = '/login'
+      // Guard against self-reload: assigning location.href to the current
+      // path forces a full page refresh — with an unguarded query this
+      // became an infinite loop. Only navigate when actually elsewhere.
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   },

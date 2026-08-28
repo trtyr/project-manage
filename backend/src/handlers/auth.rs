@@ -1,7 +1,7 @@
 //! Authentication HTTP handlers + fail-closed route guard.
 //!
 //! Five endpoints:
-//! - `GET  /api/auth/status` — public probe: `{needs_setup, authenticated}`
+//! - `GET  /api/auth/status` — public probe: `{needs_setup}`
 //! - `POST /api/auth/setup`  — public, ONLY when the users table is empty
 //! - `POST /api/auth/login`  — public, argon2id verify, starts a session
 //! - `POST /api/auth/logout` — authenticated, destroys the session

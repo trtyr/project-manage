@@ -40,6 +40,12 @@ clippy -D warnings 零告警；npm run build 通过；pm 端到端 A-E 场景全
 
 - （无）
 
+## Post-landing audit
+
+- 2026-08-28 认证全链路体检（goal mtcihxxm-2rd2m1）：修复 3 处登录后缓存
+  bug + 1 处抢跑闪屏，API 21/21、pm 7/7、重建复验 7/7 —— 见
+  [topics/auth-chain-audit.md](topics/auth-chain-audit.md)
+
 ## Deferred
 
 - 用户管理界面（加号/改密页）
