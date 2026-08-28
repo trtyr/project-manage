@@ -19,16 +19,11 @@ import {
   ArrowLeftOutlined,
   EditOutlined,
   DeleteOutlined,
+  EyeOutlined,
   ApartmentOutlined,
   MessageOutlined,
-  CheckCircleOutlined,
   TeamOutlined,
   DatabaseOutlined,
-  FolderOutlined,
-  AlertOutlined,
-  BugOutlined,
-  FieldTimeOutlined,
-  ScheduleOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -40,11 +35,11 @@ import {
   filesApi,
   issuesApi,
   findingsApi,
+  deliverablesApi,
 } from '../api'
 import type { ProjectStatus, TechApprovalStatus, ProjectFile } from '../types'
 import FilePreview from '../components/FilePreview'
 import PhasesTab from '../components/PhasesTab'
-import TimelineTab from '../components/TimelineTab'
 import DeliverablesTab from '../components/DeliverablesTab'
 import MembersTab from '../components/MembersTab'
 import CommunicationsTab from '../components/CommunicationsTab'
@@ -53,6 +48,8 @@ import AssetsTab from '../components/AssetsTab'
 import FilesTab from '../components/FilesTab'
 import IssuesTab from '../components/IssuesTab'
 import FindingsTab from '../components/FindingsTab'
+import GroupedTab from '../components/GroupedTab'
+import OverviewTab from '../components/OverviewTab'
 
 const { Title, Text } = Typography
 
@@ -168,6 +165,12 @@ export default function ProjectDetail() {
   const { data: findings } = useQuery({
     queryKey: ['findings', id],
     queryFn: () => findingsApi.listByProject(id!),
+    enabled: !!id,
+  })
+
+  const { data: deliverables } = useQuery({
+    queryKey: ['deliverables', id],
+    queryFn: () => deliverablesApi.listByProject(id!),
     enabled: !!id,
   })
 
@@ -311,101 +314,109 @@ export default function ProjectDetail() {
         className="project-tabs"
         items={[
           {
-            key: 'phases',
-            label: <TabLabel icon={<ApartmentOutlined />} label="阶段规划" />,
+            key: 'overview',
+            label: <TabLabel icon={<EyeOutlined />} label="概览" />,
             children: (
-              <PhasesTab
-                projectId={id!}
-                files={files}
-                onFilePreview={(f) => setPreviewFile(f)}
+              <OverviewTab projectId={id!} project={project} client={client} />
+            ),
+          },
+          {
+            key: 'progress',
+            label: <TabLabel icon={<ApartmentOutlined />} label="推进" />,
+            children: (
+              <GroupedTab
+                items={[
+                  {
+                    key: 'phases',
+                    label: '阶段',
+                    content: (
+                      <PhasesTab
+                        projectId={id!}
+                        files={files}
+                        onFilePreview={(f) => setPreviewFile(f)}
+                      />
+                    ),
+                  },
+                  {
+                    key: 'tasks',
+                    label: '任务',
+                    count: tasks?.length,
+                    content: <TasksTab projectId={id!} />,
+                  },
+                  {
+                    key: 'deliverables',
+                    label: '交付物',
+                    count: deliverables?.length,
+                    content: <DeliverablesTab projectId={id!} />,
+                  },
+                ]}
               />
             ),
           },
           {
-            key: 'communications',
-            label: (
-              <TabLabel
-                icon={<MessageOutlined />}
-                label="沟通记录"
-                count={communications?.length}
+            key: 'client',
+            label: <TabLabel icon={<MessageOutlined />} label="客户" />,
+            children: (
+              <GroupedTab
+                items={[
+                  {
+                    key: 'communications',
+                    label: '沟通记录',
+                    count: communications?.length,
+                    content: (
+                      <CommunicationsTab
+                        projectId={id!}
+                        onFilePreview={(f) => setPreviewFile(f)}
+                      />
+                    ),
+                  },
+                  {
+                    key: 'issues',
+                    label: '客户关切',
+                    count: issues?.length,
+                    content: <IssuesTab projectId={id!} />,
+                  },
+                  {
+                    key: 'findings',
+                    label: '产品发现',
+                    count: findings?.length,
+                    content: <FindingsTab projectId={id!} />,
+                  },
+                ]}
               />
             ),
-            children: <CommunicationsTab projectId={id!} />,
           },
           {
-            key: 'tasks',
-            label: (
-              <TabLabel
-                icon={<CheckCircleOutlined />}
-                label="任务"
-                count={tasks?.length}
+            key: 'materials',
+            label: <TabLabel icon={<DatabaseOutlined />} label="资料" />,
+            children: (
+              <GroupedTab
+                items={[
+                  {
+                    key: 'files',
+                    label: '文件',
+                    count: files?.length,
+                    content: (
+                      <FilesTab
+                        projectId={id!}
+                        onFilePreview={(f) => setPreviewFile(f)}
+                      />
+                    ),
+                  },
+                  {
+                    key: 'assets',
+                    label: '资产',
+                    count: assets?.length,
+                    content: <AssetsTab projectId={id!} />,
+                  },
+                ]}
               />
             ),
-            children: <TasksTab projectId={id!} />,
-          },
-          {
-            key: 'issues',
-            label: (
-              <TabLabel
-                icon={<AlertOutlined />}
-                label="客户关切"
-                count={issues?.length}
-              />
-            ),
-            children: <IssuesTab projectId={id!} />,
-          },
-          {
-            key: 'findings',
-            label: (
-              <TabLabel
-                icon={<BugOutlined />}
-                label="产品发现"
-                count={findings?.length}
-              />
-            ),
-            children: <FindingsTab projectId={id!} />,
-          },
-          {
-            key: 'assets',
-            label: (
-              <TabLabel
-                icon={<DatabaseOutlined />}
-                label="资产清单"
-                count={assets?.length}
-              />
-            ),
-            children: <AssetsTab projectId={id!} />,
           },
           {
             key: 'members',
             label: <TabLabel icon={<TeamOutlined />} label="成员" />,
             children: <MembersTab projectId={id!} />,
-          },
-          {
-            key: 'files',
-            label: (
-              <TabLabel
-                icon={<FolderOutlined />}
-                label="文件管理"
-                count={files?.length}
-              />
-            ),
-            children: (
-              <FilesTab
-                projectId={id!}
-                onFilePreview={(f) => setPreviewFile(f)}
-              />
-            ),
-          },
-          {
-            key: 'timeline',
-            label: <TabLabel icon={<FieldTimeOutlined />} label="时间线" />,
-            children: <TimelineTab projectId={id!} />,
-          },
-          {
-            key: 'deliverables',
-            label: <TabLabel icon={<ScheduleOutlined />} label="交付物" />,
-            children: <DeliverablesTab projectId={id!} />,
           },
         ]}
       />
