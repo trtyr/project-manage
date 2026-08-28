@@ -312,7 +312,7 @@ export default function ProjectBoard() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
               gap: 16,
               marginBottom: 28,
             }}
@@ -368,9 +368,19 @@ export default function ProjectBoard() {
           </div>
 
           {/* === Two-column: projects + activity === */}
-          <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+          {/* flexWrap + minWidth floor: on narrow windows the fixed 320px
+              activity sidebar must wrap below instead of crushing the
+              project list into a sliver. */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 32,
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+            }}
+          >
             {/* Projects */}
-            <div style={{ flex: '1 1 60%', minWidth: 0 }}>
+            <div style={{ flex: '1 1 60%', minWidth: 320 }}>
               <div
                 className="recent-section__label"
                 style={{ marginBottom: 12 }}
