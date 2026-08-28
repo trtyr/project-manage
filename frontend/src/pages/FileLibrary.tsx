@@ -89,13 +89,14 @@ export default function FileLibrary() {
             title: '文件名',
             dataIndex: 'original_name',
             key: 'original_name',
+            ellipsis: true,
             render: (name: string, r: FileWithProject) => (
-              <Space>
+              <>
                 <FileIcon
                   filename={r.original_name}
                   mimeType={r.mime_type}
                   sourceType={r.source_type}
-                />
+                />{' '}
                 {r.source_type === 'link' && r.url ? (
                   <a
                     href={r.url}
@@ -119,17 +120,19 @@ export default function FileLibrary() {
                     {name}
                   </a>
                 )}
-              </Space>
+              </>
             ),
           },
           {
             title: '所属项目',
             dataIndex: 'project_name',
             key: 'project_name',
+            ellipsis: true,
             render: (name: string, r: FileWithProject) => (
               <a
                 role="button"
                 tabIndex={0}
+                title={name}
                 onClick={() => navigate(`/projects/${r.project_id}`)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigate(`/projects/${r.project_id}`)
@@ -144,7 +147,7 @@ export default function FileLibrary() {
             title: '大小',
             dataIndex: 'file_size',
             key: 'file_size',
-            width: 90,
+            width: 70,
             render: (s: number, r: FileWithProject) =>
               r.source_type === 'link' ? '-' : formatSize(s),
           },
@@ -152,6 +155,7 @@ export default function FileLibrary() {
             title: '标签',
             dataIndex: 'tags',
             key: 'tags',
+            width: 140,
             render: (tags: string[]) =>
               tags.map((t) => (
                 <Tag key={t} style={{ marginBottom: 2 }}>

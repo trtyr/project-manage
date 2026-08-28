@@ -128,13 +128,14 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         title: '文件名',
         dataIndex: 'original_name',
         key: 'original_name',
+        ellipsis: true,
         render: (name: string, r: ProjectFile) => (
-          <Space>
+          <>
             <FileIcon
               filename={r.original_name}
               mimeType={r.mime_type}
               sourceType={r.source_type}
-            />
+            />{' '}
             {r.source_type === 'link' && r.url ? (
               <a
                 href={r.url}
@@ -158,14 +159,14 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                 {name}
               </a>
             )}
-          </Space>
+          </>
         ),
       },
       {
         title: '大小',
         dataIndex: 'file_size',
         key: 'file_size',
-        width: 90,
+        width: 70,
         render: (s: number, r: ProjectFile) =>
           r.source_type === 'link' ? '-' : formatSize(s),
       },
@@ -173,6 +174,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         title: '标签',
         dataIndex: 'tags',
         key: 'tags',
+        width: 140,
         render: (tags: string[]) =>
           tags.map((t) => (
             <Tag key={t} style={{ marginBottom: 2 }}>
@@ -184,19 +186,20 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         title: '描述',
         dataIndex: 'description',
         key: 'description',
+        ellipsis: true,
         render: (v: string | null) => v ?? '-',
       },
       {
         title: '上传时间',
         dataIndex: 'created_at',
         key: 'created_at',
-        width: 120,
+        width: 105,
         render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
       },
       {
         title: '来源',
         key: 'source',
-        width: 140,
+        width: 130,
         render: (_: unknown, r: ProjectFile) => {
           if (!r.communication_id)
             return <span style={{ color: 'var(--muted-hex)' }}>直接上传</span>
@@ -231,7 +234,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       {
         title: '阶段',
         key: 'phase',
-        width: 120,
+        width: 100,
         render: (_: unknown, r: ProjectFile) => {
           if (!r.phase_id)
             return <span style={{ color: 'var(--muted-hex)' }}>-</span>
