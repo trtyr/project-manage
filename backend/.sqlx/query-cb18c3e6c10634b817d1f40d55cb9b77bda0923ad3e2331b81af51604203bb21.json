@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, project_id, title, description, status,\n                  communication_id, assignee_id, priority, due_date AS \"due_date: chrono::NaiveDate\",\n                  created_at AS \"created_at: chrono::DateTime<chrono::Utc>\", updated_at AS \"updated_at: chrono::DateTime<chrono::Utc>\"\n           FROM issues WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "communication_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "assignee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "due_date: chrono::NaiveDate",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "cb18c3e6c10634b817d1f40d55cb9b77bda0923ad3e2331b81af51604203bb21"
+}

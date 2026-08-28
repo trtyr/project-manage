@@ -12,6 +12,7 @@ use axum::{
     error_handling::HandleErrorLayer,
     extract::DefaultBodyLimit,
     http::StatusCode,
+    middleware,
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
@@ -24,15 +25,16 @@ use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
+use tower_sessions::SessionManagerLayer;
 
 use crate::error::AppError;
 use crate::handlers::{
-    assets_router, clients_router, communications_router, deliverables_router,
+    assets_router, auth_router, clients_router, communications_router, deliverables_router,
     files_router, findings_router, issues_router, people_router, phases_router,
     project_assets_router, project_communications_router, project_deliverables_router,
     project_files_router, project_findings_router, project_issues_router,
-    project_people_router, project_phases_router, project_tasks_router,
-    projects_router, search_router, tasks_router,
+    project_people_router, project_phases_router, project_tasks_router, projects_router,
+    require_auth, search_router, tasks_router,
 };
 use crate::state::AppState;
 
@@ -81,26 +83,14 @@ async fn handle_layer_error(err: axum::BoxError, request_timeout_secs: u64) -> R
         .into_response()
 }
 
+// Auth endpoints (`/api/auth/*`) and `/api/health` are mounted on the
+// unguarded `public_api` router in `build_app` below; every other
+// `/api/*` route sits behind `require_auth` (fail-closed).
+
 /// Build the Axum router for the API. `pool` is consumed — it is wrapped
-/// in `AppState` and attached via `.with_state()` so the router is a
-/// `Router<()>` and ready to hand to `axum::serve`.
-///
-/// Layer order (outermost → innermost, written innermost-first in source
-/// to match the convention the original `main` established):
-/// 1. `cors`             — innermost of the global stack; preflight.
-/// 2. `HandleErrorLayer` — catches `tower::timeout::error::Elapsed`.
-/// 3. `TimeoutLayer`     — caps each request at `request_timeout_secs`.
-/// 4. `TraceLayer`       — structured access log for every request.
-/// 5. `DefaultBodyLimit` — enforces `body_limit_bytes` on request bodies.
-///
-/// Route layout:
-/// 1. `/api/health`           — kept at the top for clarity.
-/// 2. Flat resources          — clients / projects / communications / ...
-/// 3. Nested project-scoped   — `/projects/:project_id/...`.
-/// 4. Unmatched `/api` paths  — retain the API's empty 404 response.
-/// 5. Unmatched non-API paths — static files with an `index.html` SPA fallback.
 pub fn build_app(
     pool: PgPool,
+    session_layer: SessionManagerLayer<tower_sessions_sqlx_store::PostgresStore>,
     cors: CorsLayer,
     static_dir: &str,
     request_timeout_secs: u64,
@@ -118,8 +108,13 @@ pub fn build_app(
         handle_layer_error(err, request_timeout_secs).await
     };
 
-    let app = Router::new()
+    // --- Unguarded API surface: health + auth (bootstrap/login). ---
+    let public_api = Router::new()
         .route("/api/health", get(health))
+        .nest("/api", auth_router());
+
+    // --- Guarded API surface: every business resource. ---
+    let guarded_api = Router::new()
         // All resource routers expose paths like `/clients`, `/projects/{id}`,
         // etc. — they get the `/api` prefix via `nest` so the React client
         // reaches them at the agreed `/api/...` endpoints.
@@ -147,6 +142,10 @@ pub fn build_app(
         .route("/api", axum::routing::any(api_not_found))
         .route("/api/", axum::routing::any(api_not_found))
         .route("/api/{*path}", axum::routing::any(api_not_found))
+        .layer(middleware::from_fn_with_state(pool.clone(), require_auth));
+
+    let app = public_api
+        .merge(guarded_api)
         .fallback_service(serve_dir)
         .layer(cors)
         .layer(
@@ -155,7 +154,8 @@ pub fn build_app(
                 .layer(TimeoutLayer::new(Duration::from_secs(request_timeout_secs))),
         )
         .layer(TraceLayer::new_for_http())
-        .layer(DefaultBodyLimit::max(body_limit_bytes));
+        .layer(DefaultBodyLimit::max(body_limit_bytes))
+        .layer(session_layer);
 
     let state = AppState { pool };
     app.with_state(state)

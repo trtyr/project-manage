@@ -1,7 +1,7 @@
 # Baseline
 
 Role: entrypoint
-Updated: 2026-08-26
+Updated: 2026-08-27
 
 项目基线（事实、架构、约定）已存在于 `docs/context/`，这里不复制，只做索引。
 
@@ -18,6 +18,13 @@ Updated: 2026-08-26
 | 约定与标准 | [docs/context/conventions.md](../../context/conventions.md) |
 | 安全基线 | [docs/context/security-baseline.md](../../context/security-baseline.md) |
 | 部署 | [docs/context/deploy.md](../../context/deploy.md) |
+
+## 认证现状（2026-08-27 更新）
+
+**已实现**——本地账号（argon2id）+ tower-sessions Postgres 会话，
+fail-closed 保护全部 `/api/*`（白名单：health + auth 四端点）。
+详见 [deploy.md §6.1](../../context/deploy.md) 与
+[plans/authentication/](../plans/authentication/README.md)。
 
 ## 加一个资源的套路（关键）
 

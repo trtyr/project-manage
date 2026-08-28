@@ -1,17 +1,19 @@
 import { useState, useEffect, Component } from 'react'
-import { ConfigProvider, Switch, Input } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { ConfigProvider, Switch, Input, Button, Tooltip } from 'antd'
+import { SearchOutlined, LogoutOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { FolderOutlined, DatabaseOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { lightTheme, darkTheme } from './theme'
-import { projectsApi, searchApi } from './api'
+import { projectsApi, searchApi, authApi } from './api'
 import ProjectBoard from './pages/ProjectBoard'
 import ProjectDetail from './pages/ProjectDetail'
 import CommunicationDetail from './pages/CommunicationDetail'
 import FileLibrary from './pages/FileLibrary'
+import LoginPage from './pages/LoginPage'
+import SetupPage from './pages/SetupPage'
 
 const navItems = [
   { path: '/', label: '项目', icon: FolderOutlined },
@@ -116,6 +118,45 @@ class ErrorBoundary extends Component<
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
+
+  // --- Auth bootstrap: needs_setup → /setup; not logged in → /login.
+  // The 401 interceptor in api/index.ts also bounces to /login when a
+  // business call loses its session, so this gate is the fast path only.
+  const isAuthPage =
+    location.pathname === '/login' || location.pathname === '/setup'
+  const { data: authStatus, isLoading: authLoading } = useQuery({
+    queryKey: ['auth-status'],
+    queryFn: authApi.status,
+    staleTime: 60_000,
+  })
+  const { data: me, isError: meRejected } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: authApi.me,
+    enabled: !authStatus?.needs_setup,
+    retry: false,
+  })
+
+  useEffect(() => {
+    if (authLoading || !authStatus) return
+    if (authStatus.needs_setup && location.pathname !== '/setup') {
+      // Empty users table — bootstrap the first account.
+      navigate('/setup', { replace: true })
+    } else if (
+      !authStatus.needs_setup &&
+      meRejected &&
+      !isAuthPage
+    ) {
+      // /me settled as 401 and we're not on an auth page → logged out.
+      navigate('/login', { replace: true })
+    }
+  }, [authStatus, authLoading, meRejected, location.pathname, navigate, isAuthPage])
+
+  const handleLogout = async () => {
+    await authApi.logout().catch(() => undefined)
+    queryClient.clear()
+    navigate('/login', { replace: true })
+  }
 
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme')
@@ -172,6 +213,23 @@ function App() {
 
   const inProgress =
     projects?.filter((p) => p.status === 'in_progress').length ?? 0
+
+  // Auth pages render standalone (no sidebar); the 401 interceptor and
+  // the bootstrap effect above handle redirects between them and the app.
+  if (location.pathname === '/login') {
+    return (
+      <ConfigProvider locale={zhCN} theme={isDark ? darkTheme : lightTheme}>
+        <LoginPage />
+      </ConfigProvider>
+    )
+  }
+  if (location.pathname === '/setup') {
+    return (
+      <ConfigProvider locale={zhCN} theme={isDark ? darkTheme : lightTheme}>
+        <SetupPage />
+      </ConfigProvider>
+    )
+  }
 
   return (
     <ConfigProvider locale={zhCN} theme={isDark ? darkTheme : lightTheme}>
@@ -272,6 +330,16 @@ function App() {
               {inProgress} 进行中
             </div>
             <div className="sidebar-footer__toggle">
+              {me && (
+                <Tooltip title={`登出（${me.display_name ?? me.username}）`}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<LogoutOutlined />}
+                    onClick={handleLogout}
+                  />
+                </Tooltip>
+              )}
               <Switch
                 checked={isDark}
                 onChange={setIsDark}
@@ -295,6 +363,8 @@ function App() {
                   path="/projects/:id/communications/:commId"
                   element={<CommunicationDetail />}
                 />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/setup" element={<SetupPage />} />
               </Routes>
             </ErrorBoundary>
           </div>

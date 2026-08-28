@@ -1,7 +1,7 @@
 # Plan Tree — project-manage
 
 Role: entrypoint
-Updated: 2026-08-26
+Updated: 2026-08-27
 
 ## 这是什么
 
@@ -22,4 +22,5 @@ Updated: 2026-08-26
 
 | Plan | 状态 | 当前阶段 | 最后落地 | 下一步 |
 | --- | --- | --- | --- | --- |
-| [client-issues-tracking](plans/client-issues-tracking/README.md) | Done | archived | 2026-08-26 | 无 |
+| [authentication](plans/authentication/README.md) | Done | archived | 2026-08-27 全链路上线 | Deferred：用户管理界面 / SSO / 多租户 |
+| [client-issues-tracking](plans/client-issues-tracking/README.md) | Done | archived | 2026-08-26 全链路上线 | 无 |

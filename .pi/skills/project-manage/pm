@@ -44,29 +44,95 @@ def default_api_url() -> str:
     return "http://localhost:3000"
 
 
+def cookie_file() -> str:
+    """Persistent cookie jar location ($PM_SESSION_FILE overrides)."""
+    return os.environ.get("PM_SESSION_FILE") or os.path.expanduser("~/.pm-session")
+
+
+def load_cookie_header(api: str) -> str:
+    """Read the session cookie for this API host from the jar file."""
+    try:
+        with open(cookie_file(), encoding="utf-8") as f:
+            jar = json.load(f)
+        return jar.get(api, "")
+    except (OSError, json.JSONDecodeError):
+        return ""
+
+
+def save_cookie_header(api: str, set_cookie: str) -> None:
+    """Persist the session cookie for this API host."""
+    jar: dict[str, str] = {}
+    try:
+        with open(cookie_file(), encoding="utf-8") as f:
+            jar = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        pass
+    # Parse `name=value` from a Set-Cookie header line.
+    if set_cookie:
+        pair = set_cookie.split(";", 1)[0].strip()
+        if "=" in pair:
+            jar[api] = pair
+    try:
+        with open(cookie_file(), "w", encoding="utf-8") as f:
+            json.dump(jar, f, indent=2)
+    except OSError as exc:
+        sys.stderr.write(f"warning: cannot persist session cookie: {exc}\n")
+
+
+def clear_cookie(api: str) -> None:
+    jar: dict[str, str] = {}
+    try:
+        with open(cookie_file(), encoding="utf-8") as f:
+            jar = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return
+    jar.pop(api, None)
+    try:
+        with open(cookie_file(), "w", encoding="utf-8") as f:
+            json.dump(jar, f, indent=2)
+    except OSError:
+        pass
+
+
 # ---------------------------------------------------------------------------
 # HTTP helpers (30s timeout, non-2xx → stderr + exit 1)
 # ---------------------------------------------------------------------------
-def _request(method: str, url: str, body: str | None = None) -> str:
+def _request(
+    method: str,
+    url: str,
+    body: str | None = None,
+    _retry_auth: bool = True,
+) -> str:
     data = None
+    api = url.split("/api/")[0] if "/api/" in url else url
     headers: dict[str, str] = {}
     if body is not None:
         data = body.encode("utf-8")
         headers["Content-Type"] = "application/json"
+    cookie = load_cookie_header(api)
+    if cookie:
+        headers["Cookie"] = cookie
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
+            set_cookie = resp.headers.get("Set-Cookie", "")
+            if set_cookie:
+                save_cookie_header(api, set_cookie)
             return resp.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
+        # 401 on a business call → try one automatic re-login (PM_USER/PM_PASS).
+        if exc.code == 401 and _retry_auth and PM_USER and PM_PASS:
+            _login_quiet(api)
+            return _request(method, url, body, _retry_auth=False)
         detail = ""
         try:
-            body = exc.read().decode("utf-8", errors="replace").strip()
-            if body:
+            body_text = exc.read().decode("utf-8", errors="replace").strip()
+            if body_text:
                 try:
-                    msg = json.loads(body).get("message")
-                    detail = f": {msg}" if msg else f": {body[:200]}"
+                    msg = json.loads(body_text).get("message")
+                    detail = f": {msg}" if msg else f": {body_text[:200]}"
                 except json.JSONDecodeError:
-                    detail = f": {body[:200]}"
+                    detail = f": {body_text[:200]}"
         except Exception:
             pass
         sys.stderr.write(f"error: {exc.code}{detail}\n")
@@ -74,6 +140,30 @@ def _request(method: str, url: str, body: str | None = None) -> str:
     except urllib.error.URLError as exc:
         sys.stderr.write(f"error: {getattr(exc, 'reason', exc)}\n")
         sys.exit(1)
+
+
+# Credentials for auto re-login (set PM_USER / PM_PASS in the shell).
+PM_USER = os.environ.get("PM_USER", "")
+PM_PASS = os.environ.get("PM_PASS", "")
+
+
+def _login_quiet(api: str) -> None:
+    """Login with PM_USER/PM_PASS, persisting the cookie. No-op on failure."""
+    payload = json.dumps({"username": PM_USER, "password": PM_PASS})
+    data = payload.encode("utf-8")
+    req = urllib.request.Request(
+        f"{api}/api/auth/login",
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            set_cookie = resp.headers.get("Set-Cookie", "")
+            if set_cookie:
+                save_cookie_header(api, set_cookie)
+    except Exception:
+        pass
 
 
 def get(url: str) -> str:
@@ -204,6 +294,28 @@ def dispatch(api: str, resource: str, args) -> str:
     sys.exit(f"unknown subcommand: {sub}")
 
 
+def auth_dispatch(api: str, args) -> str:
+    """`pm auth login|logout|status|me`."""
+    sub = args.subcmd
+    if sub == "login":
+        user = args.username or os.environ.get("PM_USER", "")
+        password = args.password or os.environ.get("PM_PASS", "")
+        if not user or not password:
+            sys.exit("error: --username/--password required (or set PM_USER/PM_PASS)")
+        payload = json.dumps({"username": user, "password": password})
+        result = post(f"{api}/api/auth/login", payload)
+        return json.dumps({"ok": True, "user": json.loads(result)}, ensure_ascii=False, indent=2)
+    if sub == "logout":
+        post(f"{api}/api/auth/logout")
+        clear_cookie(api)
+        return json.dumps({"ok": True})
+    if sub == "status":
+        return get(f"{api}/api/auth/status")
+    if sub == "me":
+        return get(f"{api}/api/auth/me")
+    sys.exit(f"unknown auth subcommand: {sub}")
+
+
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
@@ -302,6 +414,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp_search = resources.add_parser("search", help="global cross-resource search")
     sp_search.add_argument("query")
 
+    # auth — login/logout/status/me
+    sp_auth = resources.add_parser("auth", help="authentication (login/logout/status/me)")
+    auth_sub = sp_auth.add_subparsers(dest="subcmd", required=True)
+    a_login = auth_sub.add_parser("login", help="login and persist the session cookie")
+    a_login.add_argument("--username", help="defaults to $PM_USER")
+    a_login.add_argument("--password", help="defaults to $PM_PASS")
+    auth_sub.add_parser("logout", help="destroy the session and clear the cookie")
+    auth_sub.add_parser("status", help="auth bootstrap status (needs_setup)")
+    auth_sub.add_parser("me", help="current user")
+
     return p
 
 
@@ -312,6 +434,8 @@ def main() -> None:
     if args.command == "search":
         q = urllib.parse.quote(args.query)
         text = get(f"{api}/api/search?q={q}")
+    elif args.command == "auth":
+        text = auth_dispatch(api, args)
     else:
         text = dispatch(api, args.command, args)
 

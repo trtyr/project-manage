@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO clients (\n               name, contact_person, contact_info, notes,\n               products, background_info\n           )\n           VALUES ($1, $2, $3, $4, $5, $6)\n           RETURNING id,\n                     name,\n                     contact_person,\n                     contact_info,\n                     notes,\n                     products       AS \"products!: Vec<String>\",\n                     background_info,\n                     created_at AS \"created_at: chrono::DateTime<chrono::Utc>\",\n                     updated_at AS \"updated_at: chrono::DateTime<chrono::Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "contact_person",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "contact_info",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "products!: Vec<String>",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "background_info",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "9c05118f460b942c512e914d1997b615ccd08423d8c90a3c242652848d8e6798"
+}

@@ -234,6 +234,38 @@ export const healthApi = {
       .then((r) => r.data),
 }
 
+// --- Auth ---
+
+export interface AuthStatus {
+  needs_setup: boolean
+}
+
+export const authApi = {
+  status: () => http.get<AuthStatus>('/auth/status').then((r) => r.data),
+  setup: (data: { username: string; password: string; display_name?: string }) =>
+    http.post<import('../types').UserPublic>('/auth/setup', data).then((r) => r.data),
+  login: (data: { username: string; password: string }) =>
+    http.post<import('../types').UserPublic>('/auth/login', data).then((r) => r.data),
+  logout: () => http.post('/auth/logout').then((r) => r.data),
+  me: () =>
+    http.get<import('../types').UserPublic>('/auth/me').then((r) => r.data),
+}
+
+// 401 interceptor: session expired or never established → bounce to the
+// login page instead of letting business queries fail with cryptic errors.
+// Auth endpoints themselves are exempt (their 401 is meaningful UI state).
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status
+    const url: string = error?.response?.config?.url ?? ''
+    if (status === 401 && !url.includes('/auth/')) {
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  },
+)
+
 // --- Search ---
 
 export interface SearchHit {

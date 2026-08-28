@@ -44,6 +44,24 @@ python3 ~/.pi/agent/skills/public/project-manage/pm search "关键词"
 
 **Global options** (`--api-url`, `--format table`) go BEFORE the subcommand.
 
+## Authentication (since 2026-08-27)
+
+All business endpoints require a session. `pm` handles it:
+
+```bash
+# One-time login — persists the cookie to ~/.pm-session
+pm auth login --username you --password '...'
+
+# Or set PM_USER / PM_PASS and let pm auto-relogin on the first 401
+export PM_USER=you PM_PASS='...'
+
+pm auth me        # who am I
+pm auth logout    # destroy the session
+```
+
+`PM_SESSION_FILE` overrides the cookie jar location. Setup (first account
+creation) happens via the web UI's `/setup` page, not via `pm`.
+
 ## Reference index
 
 | File | What's in it |

@@ -91,7 +91,7 @@ pub mod ProjectStatus {
 ### 2.1 The single error type
 
 Every handler returns `AppResult<T>` (alias for `std::result::Result<T, AppError>`)
-from `backend/src/error.rs`. There are exactly four variants:
+from `backend/src/error.rs`. There are exactly six variants:
 
 | Variant                | Caused by                              |
 |------------------------|----------------------------------------|
@@ -99,6 +99,8 @@ from `backend/src/error.rs`. There are exactly four variants:
 | `BadRequest(String)`   | Hand-rolled 400, e.g. empty content    |
 | `Database(sqlx::Error)`| From `?` on any sqlx call              |
 | `Timeout(String)`      | `tower::timeout` middleware rejection  |
+| `Unauthorized(String)` | Auth middleware / bad login creds (401)|
+| `Conflict(String)`     | State conflict, e.g. re-running setup  |
 
 `sqlx::Error::RowNotFound` is intercepted in `AppError::parts()` and remapped
 to `404 not_found`, so handlers do not need to catch it themselves.
@@ -123,6 +125,8 @@ with these mappings:
 | `Database(check violation)`          |    400 | `check_violation`   | `format!("check constraint violated: {}", db_err.message())` |
 | `Database(other)`                    |    500 | `internal_error`    | `"database error"`                     |
 | `Timeout`                            |    408 | `request_timeout`   | original message                       |
+| `Unauthorized`                       |    401 | `unauthorized`      | original message (generic on login)    |
+| `Conflict`                           |    409 | `conflict`          | original message                       |
 
 ### 2.3 5xx rules
 

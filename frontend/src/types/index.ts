@@ -41,6 +41,7 @@ import type { UpdateFile } from './generated/UpdateFile'
 import type { UpdatePerson } from './generated/UpdatePerson'
 import type { UpdatePhase } from './generated/UpdatePhase'
 import type { UpdateTask as GeneratedUpdateTask } from './generated/UpdateTask'
+import type { UserPublic } from './generated/UserPublic'
 import type { Issue as GeneratedIssue } from './generated/Issue'
 import type { CreateIssue as GeneratedCreateIssue } from './generated/CreateIssue'
 import type { UpdateIssue as GeneratedUpdateIssue } from './generated/UpdateIssue'
@@ -91,6 +92,7 @@ export type Phase = GeneratedPhase
 export type Person = GeneratedPerson
 export type Issue = GeneratedIssue
 export type Finding = GeneratedFinding
+export type User = UserPublic
 
 // `ProjectFile` was the frontend-facing name for `FileMeta` (the Rust DB
 // row carries `stored_name`/`file_path` and is intentionally not exported).
@@ -152,22 +154,7 @@ export type UpdateIssue = Omit<GeneratedUpdateIssue, 'status'> & {
 
 // --- Direct re-exports for the rest ---
 
-export type {
-  CreateAsset,
-  CreateCommunication,
-  CreateFinding,
-  CreatePerson,
-  CreatePhase,
-  FileMeta,
-  FileWithProject,
-  UpdateAsset,
-  UpdateClient,
-  UpdateCommunication,
-  UpdateFile,
-  UpdateFinding,
-  UpdatePerson,
-  UpdatePhase,
-}
+export type { CreateAsset, CreateCommunication, CreateFinding, CreatePerson, CreatePhase, FileMeta, FileWithProject, UpdateAsset, UpdateClient, UpdateCommunication, UpdateFile, UpdateFinding, UpdatePerson, UpdatePhase, UserPublic }
 
 // --- API helpers ---
 

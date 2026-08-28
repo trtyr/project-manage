@@ -16,6 +16,7 @@ pub mod phase;
 pub mod project;
 pub mod project_file;
 pub mod task;
+pub mod user;
 
 pub use client::{Client, CreateClient, UpdateClient};
 pub use deliverable::{
@@ -32,6 +33,7 @@ pub use phase::{CreatePhase, Phase, UpdatePhase};
 pub use person::{CreatePerson, Person, PersonSide, UpdatePerson};
 pub use finding::{CreateFinding, FeedbackStatus, Finding, ProductSource, UpdateFinding};
 pub use issue::{CreateIssue, Issue, IssuePriority, IssueStatus, UpdateIssue};
+pub use user::{LoginRequest, SetupRequest, User, UserPublic};
 
 // `#[ts(export)]` on every annotated struct auto-generates a
 // `#[test] fn export_bindings_<typename>()` that calls `Self::export_all()`.

@@ -52,8 +52,8 @@ async fn list(
                       goals AS "goals!: Vec<String>",
                       tech_approval,
                       competitors,
-                      created_at,
-                      updated_at
+                      created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                      updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
                FROM projects
                WHERE client_id = $1
                ORDER BY created_at DESC"#,
@@ -71,8 +71,8 @@ async fn list(
                       goals AS "goals!: Vec<String>",
                       tech_approval,
                       competitors,
-                      created_at,
-                      updated_at
+                      created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                      updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
                FROM projects
                ORDER BY created_at DESC"#
         )
@@ -126,8 +126,8 @@ async fn create(
                      goals AS "goals!: Vec<String>",
                      tech_approval,
                      competitors,
-                     created_at,
-                     updated_at"#,
+                     created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                     updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         input.client_id,
         input.name,
         status,
@@ -154,8 +154,8 @@ async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<
                   goals AS "goals!: Vec<String>",
                   tech_approval,
                   competitors,
-                  created_at,
-                  updated_at
+                  created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                  updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM projects WHERE id = $1"#,
         id
     )
@@ -213,8 +213,8 @@ async fn update(
                      goals AS "goals!: Vec<String>",
                      tech_approval,
                      competitors,
-                     created_at,
-                     updated_at"#,
+                     created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                     updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         id,
         input.client_id,
         input.name,

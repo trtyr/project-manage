@@ -19,7 +19,7 @@ use axum::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::helpers::{ensure_communication_in_project, ensure_project_exists};
+use crate::db::helpers::{date_to_time_date, ensure_communication_in_project, ensure_project_exists};
 use crate::error::{AppError, AppResult};
 use crate::models::{CreateIssue, Issue, IssuePriority, IssueStatus, UpdateIssue};
 use crate::state::AppState;
@@ -44,8 +44,8 @@ async fn list_by_project(
     let rows = sqlx::query_as!(
         Issue,
         r#"SELECT id, project_id, title, description, status,
-                  communication_id, assignee_id, priority, due_date,
-                  created_at, updated_at
+                  communication_id, assignee_id, priority, due_date AS "due_date: chrono::NaiveDate",
+                  created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM issues
            WHERE project_id = $1
            ORDER BY
@@ -110,8 +110,8 @@ async fn create_for_project(
                               communication_id, assignee_id, priority, due_date)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING id, project_id, title, description, status,
-                     communication_id, assignee_id, priority, due_date,
-                     created_at, updated_at"#,
+                     communication_id, assignee_id, priority, due_date AS "due_date: chrono::NaiveDate",
+                     created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         project_id,
         input.title,
         input.description,
@@ -119,7 +119,7 @@ async fn create_for_project(
         input.communication_id,
         input.assignee_id,
         priority,
-        input.due_date,
+        input.due_date.map(date_to_time_date),
     )
     .fetch_one(&pool)
     .await?;
@@ -131,8 +131,8 @@ async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<
     let row = sqlx::query_as!(
         Issue,
         r#"SELECT id, project_id, title, description, status,
-                  communication_id, assignee_id, priority, due_date,
-                  created_at, updated_at
+                  communication_id, assignee_id, priority, due_date AS "due_date: chrono::NaiveDate",
+                  created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM issues WHERE id = $1"#,
         id
     )
@@ -192,8 +192,8 @@ async fn update(
                due_date         = COALESCE($8, due_date)
            WHERE id = $1
            RETURNING id, project_id, title, description, status,
-                     communication_id, assignee_id, priority, due_date,
-                     created_at, updated_at"#,
+                     communication_id, assignee_id, priority, due_date AS "due_date: chrono::NaiveDate",
+                     created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         id,
         input.title,
         input.description,
@@ -201,7 +201,7 @@ async fn update(
         input.communication_id,
         input.assignee_id,
         input.priority,
-        input.due_date,
+        input.due_date.map(date_to_time_date),
     )
     .fetch_optional(&pool)
     .await?

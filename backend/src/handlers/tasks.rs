@@ -10,7 +10,7 @@ use axum::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::helpers::ensure_project_exists;
+use crate::db::helpers::{date_to_time_date, ensure_project_exists};
 use crate::error::{AppError, AppResult};
 use crate::models::{CreateTask, Task, TaskPriority, TaskStatus, UpdateTask};
 use crate::state::AppState;
@@ -34,8 +34,8 @@ async fn list_by_project(
 
     let rows = sqlx::query_as!(
         Task,
-        r#"SELECT id, project_id, title, status, planned_date,
-                  assignee_id, priority, created_at, updated_at
+        r#"SELECT id, project_id, title, status, planned_date AS "planned_date: chrono::NaiveDate",
+                  assignee_id, priority, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM tasks
            WHERE project_id = $1
            ORDER BY
@@ -94,12 +94,12 @@ async fn create_for_project(
         Task,
         r#"INSERT INTO tasks (project_id, title, status, planned_date, assignee_id, priority)
            VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING id, project_id, title, status, planned_date,
-                     assignee_id, priority, created_at, updated_at"#,
+           RETURNING id, project_id, title, status, planned_date AS "planned_date: chrono::NaiveDate",
+                     assignee_id, priority, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         project_id,
         input.title,
         status,
-        input.planned_date,
+        input.planned_date.map(date_to_time_date),
         input.assignee_id,
         priority,
     )
@@ -112,8 +112,8 @@ async fn create_for_project(
 async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Task>> {
     let row = sqlx::query_as!(
         Task,
-        r#"SELECT id, project_id, title, status, planned_date,
-                  assignee_id, priority, created_at, updated_at
+        r#"SELECT id, project_id, title, status, planned_date AS "planned_date: chrono::NaiveDate",
+                  assignee_id, priority, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM tasks WHERE id = $1"#,
         id
     )
@@ -159,12 +159,12 @@ async fn update(
                assignee_id  = COALESCE($5, assignee_id),
                priority     = COALESCE($6, priority)
            WHERE id = $1
-           RETURNING id, project_id, title, status, planned_date,
-                     assignee_id, priority, created_at, updated_at"#,
+           RETURNING id, project_id, title, status, planned_date AS "planned_date: chrono::NaiveDate",
+                     assignee_id, priority, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         id,
         input.title,
         input.status,
-        input.planned_date,
+        input.planned_date.map(date_to_time_date),
         input.assignee_id,
         input.priority,
     )

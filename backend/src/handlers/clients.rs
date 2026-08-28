@@ -38,8 +38,8 @@ async fn list(State(pool): State<PgPool>) -> AppResult<Json<Vec<Client>>> {
                   notes,
                   products       AS "products!: Vec<String>",
                   background_info,
-                  created_at,
-                  updated_at
+                  created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                  updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM clients
            ORDER BY created_at DESC"#
     )
@@ -71,8 +71,8 @@ async fn create(
                      notes,
                      products       AS "products!: Vec<String>",
                      background_info,
-                     created_at,
-                     updated_at"#,
+                     created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                     updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         input.name,
         input.contact_person,
         input.contact_info,
@@ -97,8 +97,8 @@ async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<
                   notes,
                   products       AS "products!: Vec<String>",
                   background_info,
-                  created_at,
-                  updated_at
+                  created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                  updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM clients
            WHERE id = $1"#,
         id
@@ -141,8 +141,8 @@ async fn update(
                      notes,
                      products       AS "products!: Vec<String>",
                      background_info,
-                     created_at,
-                     updated_at"#,
+                     created_at AS "created_at: chrono::DateTime<chrono::Utc>",
+                     updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         id,
         input.name,
         input.contact_person,

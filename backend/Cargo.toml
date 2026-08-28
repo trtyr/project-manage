@@ -53,9 +53,33 @@ thiserror = "2.0"
 # `.cargo/config.toml` instead, which Cargo picks up automatically.
 dotenvy = "0.15"
 
-# Generate TypeScript types from Rust structs at test time. The
+# Authentication: argon2id password hashing (RustCrypto stable line) and
+# cookie-backed sessions as tower middleware with the official Postgres
+# store. Pairing (verified 2026-08-27): tower-sessions 0.14 / core 0.14 /
+# sqlx-store 0.15 (first store release using core 0.14).
+# NOTE: sqlx-store forces sqlx's `time` feature on, which flips every
+# TIMESTAMPTZ/DATE macro inference to time-crate types. Workaround (user-
+# approved 2026-08-27): every macro query annotates temporal columns with
+# `AS "col: chrono::DateTime<chrono::Utc>"` / `AS "col: chrono::NaiveDate"`.
+argon2 = "0.5.3"
+tower-sessions = "0.14"
+tower-sessions-sqlx-store = { version = "0.15", features = ["postgres"] }
+
+# Bind-side conversion helpers (db/helpers.rs) for macro queries. With
+# sqlx's `time` feature force-enabled (via sqlx-store above), temporal
+# *bind parameters* in `query!`/`query_as!` macros expect time-crate
+# types; our models stay chrono. This direct dep does NOT change macro
+# inference (that's sqlx's own `time` feature, not this crate).
+time = "0.3"
+
+# Generate TypeScript types from Rust structs at test time.
 # `chrono-impl`/`uuid-impl` features pull in the chrono/uuid crates and
 # provide the `TS` impls that map `DateTime<Utc>` and `Uuid` to `string`.
 # `no-serde-warnings` keeps `#[derive(ts_rs::TS)]` quiet on DTOs that
 # only derive `Deserialize` (no `Serialize`).
 ts-rs = { version = "10", features = ["chrono-impl", "uuid-impl", "no-serde-warnings"] }
+
+[dev-dependencies]
+# smoke tests need the cookie jar (session auth round-trips); the main
+# dependency disables default features, so pull reqwest with cookies here.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "cookies"] }

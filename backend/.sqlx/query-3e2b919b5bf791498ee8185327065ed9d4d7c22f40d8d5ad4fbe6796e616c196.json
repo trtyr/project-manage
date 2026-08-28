@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE communications\n           SET content      = COALESCE($2, content),\n               occurred_at  = COALESCE($3, occurred_at),\n               participants = COALESCE($4, participants),\n               conclusion   = COALESCE($5, conclusion)\n           WHERE id = $1\n           RETURNING id, project_id, content, occurred_at AS \"occurred_at: chrono::DateTime<chrono::Utc>\",\n                     participants, conclusion, created_at AS \"created_at: chrono::DateTime<chrono::Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "occurred_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "participants",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "conclusion",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "3e2b919b5bf791498ee8185327065ed9d4d7c22f40d8d5ad4fbe6796e616c196"
+}

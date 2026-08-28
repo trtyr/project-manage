@@ -251,6 +251,31 @@ async fn main() {
     run_migrations_with_retry(&pool).await;
     info!("✅ database migrations applied");
 
+    // 3.5 Session layer — tower-sessions backed by the same Postgres.
+    //     The session table is created by migration 00022 (unified under
+    //     ./migrations rather than the store's runtime migrate).
+    //     Policy: HttpOnly cookie (tower-sessions default), SameSite=Lax
+    //     (same-origin deploy), 30-day sliding expiry, not Secure (plain
+    //     HTTP on the internal host; revisit when TLS lands).
+    // Official store defaults to a dedicated `tower_sessions` schema
+    // (created by its own migrate()). We keep the session table in
+    // `public` via migration 00022 instead — unified migration management
+    // — so point the store at it explicitly.
+    let mut session_store = tower_sessions_sqlx_store::PostgresStore::new(pool.clone());
+    session_store = session_store
+        .with_schema_name("public")
+        .expect("static schema name is valid");
+    // Cookie is unsigned by design (user-approved 2026-08-27): it carries
+    // only a random session id — all state lives server-side in the
+    // `session` table, so forgery is a no-op and sessions survive restarts.
+    let session_layer = tower_sessions::SessionManagerLayer::new(session_store)
+        .with_same_site(tower_sessions::cookie::SameSite::Lax)
+        .with_expiry(tower_sessions::Expiry::OnInactivity(
+            tower_sessions::cookie::time::Duration::seconds(
+                project_manage_backend::handlers::auth::SESSION_TTL_SECS,
+            ),
+        ));
+
     // 4. Runtime configuration from environment — all values have safe
     //    development defaults so `cargo run` keeps working out of the box.
     let port = env_u16("PORT", 3000);
@@ -282,6 +307,7 @@ async fn main() {
     //    same `Router<()>` without going through this `main`.
     let app = build_app(
         pool.clone(),
+        session_layer,
         cors,
         &static_dir.to_string_lossy(),
         REQUEST_TIMEOUT_SECS,

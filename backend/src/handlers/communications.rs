@@ -23,7 +23,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::helpers::ensure_project_exists;
+use crate::db::helpers::{dt_to_offset, ensure_project_exists};
 use crate::error::{AppError, AppResult};
 use crate::models::{Communication, CommunicationWithProject, CreateCommunication, UpdateCommunication};
 use crate::state::AppState;
@@ -59,10 +59,10 @@ async fn list_by_project(
         r#"SELECT id,
                   project_id,
                   content,
-                  occurred_at,
+                  occurred_at AS "occurred_at: chrono::DateTime<chrono::Utc>",
                   participants,
                   conclusion,
-                  created_at
+                  created_at AS "created_at: chrono::DateTime<chrono::Utc>"
            FROM communications
            WHERE project_id = $1
            ORDER BY occurred_at DESC"#,
@@ -90,11 +90,11 @@ async fn create_for_project(
                project_id, content, occurred_at, participants, conclusion
            )
            VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, project_id, content, occurred_at,
-                     participants, conclusion, created_at"#,
+           RETURNING id, project_id, content, occurred_at AS "occurred_at: chrono::DateTime<chrono::Utc>",
+                     participants, conclusion, created_at AS "created_at: chrono::DateTime<chrono::Utc>""#,
         project_id,
         input.content,
-        input.occurred_at,
+        dt_to_offset(input.occurred_at),
         input.participants,
         input.conclusion,
     )
@@ -111,8 +111,8 @@ async fn get_one(
 ) -> AppResult<Json<Communication>> {
     let row = sqlx::query_as!(
         Communication,
-        r#"SELECT id, project_id, content, occurred_at,
-                  participants, conclusion, created_at
+        r#"SELECT id, project_id, content, occurred_at AS "occurred_at: chrono::DateTime<chrono::Utc>",
+                  participants, conclusion, created_at AS "created_at: chrono::DateTime<chrono::Utc>"
            FROM communications WHERE id = $1"#,
         id
     )
@@ -142,11 +142,11 @@ async fn update(
                participants = COALESCE($4, participants),
                conclusion   = COALESCE($5, conclusion)
            WHERE id = $1
-           RETURNING id, project_id, content, occurred_at,
-                     participants, conclusion, created_at"#,
+           RETURNING id, project_id, content, occurred_at AS "occurred_at: chrono::DateTime<chrono::Utc>",
+                     participants, conclusion, created_at AS "created_at: chrono::DateTime<chrono::Utc>""#,
         id,
         input.content,
-        input.occurred_at,
+        input.occurred_at.map(dt_to_offset),
         input.participants,
         input.conclusion,
     )

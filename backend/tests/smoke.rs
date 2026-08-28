@@ -32,6 +32,20 @@ const TEST_TIMEOUT_SECS: u64 = 30;
 /// 100 MiB body cap. Plenty of room for any test JSON payload.
 const TEST_BODY_LIMIT_BYTES: usize = 100 * 1024 * 1024;
 
+/// Shared smoke-test account. Tests run in parallel against one server
+/// process; `auth_login` is idempotent (setup races resolve via 409→login).
+const SMOKE_USER: &str = "smoke@test.local";
+const SMOKE_PASS: &str = "smoke-test-password";
+
+/// Build a reqwest client with a cookie jar so Set-Cookie from
+/// login/setup persists across requests (session auth round-trips).
+fn http_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .cookie_store(true)
+        .build()
+        .expect("reqwest client")
+}
+
 /// Start an Axum test server on a random loopback port. Returns the
 /// base URL (e.g. `http://127.0.0.1:34567`). Polls `/api/health` until
 /// it returns 200 — gives the listening socket time to actually accept
@@ -42,8 +56,19 @@ async fn start_test_server(pool: PgPool) -> String {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    // Point the official store at the public.session table created by
+    // migration 00022 (its default is a private tower_sessions schema).
+    let mut session_store = tower_sessions_sqlx_store::PostgresStore::new(pool.clone());
+    session_store = session_store
+        .with_schema_name("public")
+        .expect("static schema name is valid");
+    let session_layer = tower_sessions::SessionManagerLayer::new(session_store)
+        .with_same_site(tower_sessions::cookie::SameSite::Lax)
+        .with_expiry(tower_sessions::Expiry::OnSessionEnd);
+
     let app = build_app(
         pool,
+        session_layer,
         cors,
         "./static",
         TEST_TIMEOUT_SECS,
@@ -70,6 +95,46 @@ async fn start_test_server(pool: PgPool) -> String {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
     panic!("server did not become ready within 5 seconds");
+}
+
+/// Ensure a logged-in session on `http`. Idempotent under parallel tests:
+/// first caller sets the shared account up (setup 409 → fall through to
+/// login), everyone else just logs in. The reqwest client stores the
+/// Set-Cookie automatically, so subsequent calls carry the session.
+async fn auth_login(http: &reqwest::Client, base_url: &str) {
+    let login = http
+        .post(format!("{base_url}/api/auth/login"))
+        .json(&json!({ "username": SMOKE_USER, "password": SMOKE_PASS }))
+        .send()
+        .await
+        .expect("POST login");
+    if login.status().is_success() {
+        return;
+    }
+    // 401 → account may not exist yet; try setup (races with other tests
+    // resolve via 409, after which login succeeds).
+    let setup = http
+        .post(format!("{base_url}/api/auth/setup"))
+        .json(&json!({ "username": SMOKE_USER, "password": SMOKE_PASS }))
+        .send()
+        .await
+        .expect("POST setup");
+    if setup.status().is_success() {
+        return;
+    }
+    // Lost the setup race or already logged in — a fresh login must work.
+    let retry = http
+        .post(format!("{base_url}/api/auth/login"))
+        .json(&json!({ "username": SMOKE_USER, "password": SMOKE_PASS }))
+        .send()
+        .await
+        .expect("POST login retry");
+    assert!(
+        retry.status().is_success(),
+        "auth_login failed: setup={}, retry={}",
+        setup.status(),
+        retry.status()
+    );
 }
 
 /// Open a fresh pool from `DATABASE_URL`. `cargo test` propagates the
@@ -179,8 +244,10 @@ async fn test_health_check() {
 async fn test_clients_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
     let name = format!("__SMOKE_CLIENT__{suffix}");
 
     // 1. CREATE — verify all CRM-shaped fields round-trip.
@@ -260,8 +327,10 @@ async fn test_clients_crud() {
 async fn test_projects_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     // Setup: a client is required for any project.
     let client = create_test_client(&http, &base_url, &suffix).await;
@@ -352,8 +421,10 @@ async fn test_projects_crud() {
 async fn test_communications_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -425,8 +496,10 @@ async fn test_communications_crud() {
 async fn test_tasks_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -501,8 +574,10 @@ async fn test_tasks_crud() {
 async fn test_phases_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -601,8 +676,10 @@ async fn test_phases_crud() {
 async fn test_project_assets_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -672,8 +749,10 @@ async fn test_project_assets_crud() {
 async fn test_project_files_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -777,8 +856,10 @@ async fn test_project_files_crud() {
 async fn test_people_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -843,8 +924,10 @@ async fn test_people_crud() {
 async fn test_people_reorder() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -926,8 +1009,10 @@ async fn test_people_reorder() {
 async fn test_people_flip_side() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -986,8 +1071,10 @@ async fn test_people_flip_side() {
 async fn test_issues_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -1072,8 +1159,10 @@ async fn test_issues_crud() {
 async fn test_findings_crud() {
     let pool = connect_pool().await;
     let base_url = start_test_server(pool.clone()).await;
-    let http = reqwest::Client::new();
+    let http = http_client();
     let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
 
     let client = create_test_client(&http, &base_url, &suffix).await;
     let client_id = json_id(&client);
@@ -1143,4 +1232,114 @@ async fn test_findings_crud() {
 
     // 6. CLEANUP.
     cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 16. auth_flow — setup/login/me/logout + fail-closed guard
+// =========================================================================
+
+#[tokio::test]
+async fn test_auth_flow() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let anon = reqwest::Client::new(); // no session at all
+
+    // 0. Fail-closed: anonymous access to a business endpoint → 401.
+    let resp = anon
+        .get(format!("{base_url}/api/clients"))
+        .send()
+        .await
+        .expect("GET /api/clients unauthenticated");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "fail-closed 401");
+    let body: Value = resp.json().await.expect("401 body");
+    assert_eq!(body["error"], "unauthorized", "error envelope code");
+
+    // 0.1 Whitelist: health + auth status stay open.
+    let resp = anon
+        .get(format!("{base_url}/api/health"))
+        .send()
+        .await
+        .expect("GET /api/health");
+    assert_eq!(resp.status(), StatusCode::OK, "health whitelisted");
+    let resp = anon
+        .get(format!("{base_url}/api/auth/status"))
+        .send()
+        .await
+        .expect("GET /api/auth/status");
+    assert_eq!(resp.status(), StatusCode::OK, "status whitelisted");
+
+    // 1. Setup the shared account (idempotent: 409 if another test won).
+    let http = http_client();
+    let resp = http
+        .post(format!("{base_url}/api/auth/setup"))
+        .json(&json!({ "username": SMOKE_USER, "password": SMOKE_PASS }))
+        .send()
+        .await
+        .expect("POST setup");
+    assert!(
+        resp.status() == StatusCode::CREATED || resp.status() == StatusCode::CONFLICT,
+        "setup creates or conflicts, got {}",
+        resp.status()
+    );
+
+    // 2. Re-running setup after an account exists → 409.
+    let resp = http
+        .post(format!("{base_url}/api/auth/setup"))
+        .json(&json!({ "username": "other@x.y", "password": "password123" }))
+        .send()
+        .await
+        .expect("POST setup again");
+    assert_eq!(resp.status(), StatusCode::CONFLICT, "second setup → 409");
+
+    // 3. Wrong password → 401 with a generic message.
+    let resp = http
+        .post(format!("{base_url}/api/auth/login"))
+        .json(&json!({ "username": SMOKE_USER, "password": "wrong-password" }))
+        .send()
+        .await
+        .expect("POST login wrong password");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "bad creds → 401");
+    let body: Value = resp.json().await.expect("401 body");
+    assert_eq!(body["error"], "unauthorized");
+    assert_eq!(body["message"], "invalid username or password", "no enumeration");
+
+    // 4. Correct login → 200 + cookie; /me resolves the user.
+    auth_login(&http, &base_url).await;
+    let resp = http
+        .get(format!("{base_url}/api/auth/me"))
+        .send()
+        .await
+        .expect("GET /api/auth/me");
+    assert_eq!(resp.status(), StatusCode::OK, "me after login");
+    let me: Value = resp.json().await.expect("me JSON");
+    assert_eq!(me["username"], SMOKE_USER);
+    assert!(me.get("password_hash").is_none(), "no password material in /me");
+
+    // 5. Authenticated business access works.
+    let resp = http
+        .get(format!("{base_url}/api/clients"))
+        .send()
+        .await
+        .expect("GET /api/clients authenticated");
+    assert_eq!(resp.status(), StatusCode::OK, "business access with session");
+
+    // 6. Logout → 204, and the session is dead afterwards.
+    let resp = http
+        .post(format!("{base_url}/api/auth/logout"))
+        .send()
+        .await
+        .expect("POST logout");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT, "logout 204");
+    let resp = http
+        .get(format!("{base_url}/api/auth/me"))
+        .send()
+        .await
+        .expect("GET /api/auth/me after logout");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "me after logout → 401");
+    let resp = http
+        .get(format!("{base_url}/api/clients"))
+        .send()
+        .await
+        .expect("GET /api/clients after logout");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "business after logout → 401");
 }

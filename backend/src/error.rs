@@ -38,6 +38,16 @@ pub enum AppError {
     /// distinguish this from a generic 5xx.
     #[error("{0}")]
     Timeout(String),
+
+    /// Missing or invalid session. Emitted by the auth middleware
+    /// (fail-closed guard) and by login/setup with bad credentials.
+    /// 401 with a deliberately generic message (no user enumeration).
+    #[error("{0}")]
+    Unauthorized(String),
+
+    /// State conflict, e.g. re-running setup after an account exists.
+    #[error("{0}")]
+    Conflict(String),
 }
 
 impl AppError {
@@ -46,6 +56,10 @@ impl AppError {
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "bad_request", msg.clone()),
             AppError::Timeout(msg) => (StatusCode::REQUEST_TIMEOUT, "request_timeout", msg.clone()),
+            AppError::Unauthorized(msg) => {
+                (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone())
+            }
+            AppError::Conflict(msg) => (StatusCode::CONFLICT, "conflict", msg.clone()),
             AppError::Database(sqlx::Error::RowNotFound) => (
                 StatusCode::NOT_FOUND,
                 "not_found",

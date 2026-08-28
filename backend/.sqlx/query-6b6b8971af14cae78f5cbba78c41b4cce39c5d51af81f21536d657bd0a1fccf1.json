@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO findings (project_id, title, description, product,\n                                product_source, vendor, observed_at,\n                                communication_id, feedback_status)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n           RETURNING id, project_id, title, description, product,\n                     product_source, vendor, observed_at AS \"observed_at: chrono::DateTime<chrono::Utc>\", communication_id,\n                     feedback_status, created_at AS \"created_at: chrono::DateTime<chrono::Utc>\", updated_at AS \"updated_at: chrono::DateTime<chrono::Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "product",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "product_source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "vendor",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "observed_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "communication_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 9,
+        "name": "feedback_status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6b6b8971af14cae78f5cbba78c41b4cce39c5d51af81f21536d657bd0a1fccf1"
+}

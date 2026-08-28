@@ -231,6 +231,24 @@ the runtime `.env` (or orchestrator env) is authoritative.
 | `CORS_ALLOWED_ORIGINS` | Any (permissive) | Comma-separated list of allowed origins. Semantics: unset or empty → `Any` (development default); exactly `*` → `Any`; otherwise only the listed origins. Malformed entries are dropped with a `warn` rather than blocking boot. |
 | `STATIC_DIR` | `./static` | Directory served as the production SPA (with an `index.html` fallback for client-side routing). The Docker image sets `/app/static`. A missing dir is logged at `warn`; the API still works, only frontend assets are unavailable. |
 
+### 6.1 Authentication (since 2026-08-27)
+
+All `/api/*` endpoints require a session cookie except `/api/health`,
+`/api/auth/status`, `/api/auth/setup`, and `/api/auth/login`
+(fail-closed middleware in `app.rs`).
+
+- First run: open the web UI → you are redirected to `/setup` to create
+  the initial account (the setup endpoint is only accepted while the
+  `users` table is empty; afterwards it returns 409).
+- Sessions: tower-sessions cookie (HttpOnly, SameSite=Lax), 30-day
+  sliding expiry, stored server-side in the `session` table
+  (migration 00022). Logout deletes the row immediately.
+- The cookie is intentionally **unsigned**: it carries only a random
+  session id; all state is server-side, so forgery is a no-op and
+  sessions survive restarts. There is no `SESSION_SECRET` to configure.
+- CLI: `pm auth login` (persists the cookie to `~/.pm-session`) or set
+  `PM_USER`/`PM_PASS` for automatic re-login; see the project-manage skill.
+
 ## 7. Deploy shape
 
 project-manage is a **single-user internal-tool MVP**. Three deploy paths

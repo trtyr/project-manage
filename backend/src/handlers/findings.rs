@@ -20,7 +20,7 @@ use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::helpers::{ensure_communication_in_project, ensure_project_exists};
+use crate::db::helpers::{dt_to_offset, ensure_communication_in_project, ensure_project_exists};
 use crate::error::{AppError, AppResult};
 use crate::models::{CreateFinding, FeedbackStatus, Finding, ProductSource, UpdateFinding};
 use crate::state::AppState;
@@ -48,8 +48,8 @@ async fn list_by_project(
     let rows = sqlx::query_as!(
         Finding,
         r#"SELECT id, project_id, title, description, product,
-                  product_source, vendor, observed_at, communication_id,
-                  feedback_status, created_at, updated_at
+                  product_source, vendor, observed_at AS "observed_at: chrono::DateTime<chrono::Utc>", communication_id,
+                  feedback_status, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM findings
            WHERE project_id = $1
            ORDER BY
@@ -108,15 +108,15 @@ async fn create_for_project(
                                 communication_id, feedback_status)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            RETURNING id, project_id, title, description, product,
-                     product_source, vendor, observed_at, communication_id,
-                     feedback_status, created_at, updated_at"#,
+                     product_source, vendor, observed_at AS "observed_at: chrono::DateTime<chrono::Utc>", communication_id,
+                     feedback_status, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         project_id,
         input.title,
         input.description,
         input.product,
         input.product_source,
         input.vendor,
-        observed_at,
+        dt_to_offset(observed_at),
         input.communication_id,
         feedback_status,
     )
@@ -130,8 +130,8 @@ async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<
     let row = sqlx::query_as!(
         Finding,
         r#"SELECT id, project_id, title, description, product,
-                  product_source, vendor, observed_at, communication_id,
-                  feedback_status, created_at, updated_at
+                  product_source, vendor, observed_at AS "observed_at: chrono::DateTime<chrono::Utc>", communication_id,
+                  feedback_status, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
            FROM findings WHERE id = $1"#,
         id
     )
@@ -192,15 +192,15 @@ async fn update(
                feedback_status  = COALESCE($9, feedback_status)
            WHERE id = $1
            RETURNING id, project_id, title, description, product,
-                     product_source, vendor, observed_at, communication_id,
-                     feedback_status, created_at, updated_at"#,
+                     product_source, vendor, observed_at AS "observed_at: chrono::DateTime<chrono::Utc>", communication_id,
+                     feedback_status, created_at AS "created_at: chrono::DateTime<chrono::Utc>", updated_at AS "updated_at: chrono::DateTime<chrono::Utc>""#,
         id,
         input.title,
         input.description,
         input.product,
         input.product_source,
         input.vendor,
-        input.observed_at,
+        input.observed_at.map(dt_to_offset),
         input.communication_id,
         input.feedback_status,
     )
