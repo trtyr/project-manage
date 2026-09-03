@@ -13,6 +13,8 @@ import {
   Card,
   Skeleton,
   Statistic,
+  Tag,
+  Typography,
 } from 'antd'
 import type { MenuProps } from 'antd'
 import {
@@ -26,8 +28,15 @@ import {
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { clientsApi, projectsApi, communicationsApi, filesApi } from '../api'
-import type { Project, ProjectStatus, CommunicationWithProject } from '../types'
+import {
+  clientsApi,
+  projectsApi,
+  communicationsApi,
+  filesApi,
+  searchApi,
+} from '../api'
+import type { SearchHit } from '../api'
+import type { Project, ProjectStatus } from '../types'
 
 /** D5: shared CRM options — same value set as ProjectDetail's edit modal. */
 const TECH_APPROVAL_OPTIONS = [
@@ -36,6 +45,8 @@ const TECH_APPROVAL_OPTIONS = [
   { label: '已认可', value: '已认可' },
   { label: '技术否决', value: '技术否决' },
 ]
+
+const { Text } = Typography
 
 const statusOrder: Record<ProjectStatus, number> = {
   in_progress: 0,
@@ -91,11 +102,20 @@ export default function ProjectBoard() {
     enabled: !isSearching,
   })
 
-  const { data: searchResults } = useQuery({
-    queryKey: ['communications-search', debouncedSearch],
-    queryFn: () => communicationsApi.search(debouncedSearch),
+  // L13: the board search used to hit communicationsApi.search only
+  // (tasks/issues/findings/people/assets were unfindable here while the
+  // sidebar global search could find them) — now both use /api/search.
+  const { data: searchHits } = useQuery({
+    queryKey: ['global-search', debouncedSearch],
+    queryFn: () => searchApi.search(debouncedSearch),
     enabled: isSearching,
   })
+  const commHits = (searchHits ?? []).filter(
+    (h) => h.resource === 'communication',
+  )
+  const otherHits = (searchHits ?? []).filter(
+    (h) => h.resource !== 'project' && h.resource !== 'communication',
+  )
 
   // --- Mutations ---
   const createProjectMut = useMutation({
@@ -263,7 +283,7 @@ export default function ProjectBoard() {
       {/* Search */}
       <Input
         size="large"
-        placeholder="搜索项目、竞品或沟通记录…"
+        placeholder="搜索项目、沟通、任务、关切…"
         prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}
@@ -305,12 +325,12 @@ export default function ProjectBoard() {
           {/* Matched communications */}
           <div className="search-results__group">
             <div className="search-results__label">
-              沟通记录（{searchResults?.length ?? 0}）
+              沟通记录（{commHits.length}）
             </div>
-            {searchResults?.length ? (
+            {commHits.length ? (
               <div>
-                {searchResults.map((c) => (
-                  <SearchResultCard key={c.id} item={c} />
+                {commHits.map((c) => (
+                  <SearchHitRow key={c.id} hit={c} />
                 ))}
               </div>
             ) : (
@@ -319,6 +339,20 @@ export default function ProjectBoard() {
               </div>
             )}
           </div>
+
+          {/* L13: other resources (task/issue/finding/person/asset) */}
+          {otherHits.length > 0 && (
+            <div className="search-results__group">
+              <div className="search-results__label">
+                其他资源（{otherHits.length}）
+              </div>
+              <div>
+                {otherHits.map((h) => (
+                  <SearchHitRow key={h.resource + h.id} hit={h} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -740,56 +774,53 @@ function ProjectRow({
   )
 }
 
-// --- Search result card (communication) ---
+// --- Generic search-hit row (L13: board search now covers all resources) ---
 
-function SearchResultCard({ item }: { item: CommunicationWithProject }) {
+const HIT_RESOURCE_LABEL: Record<string, string> = {
+  project: '项目',
+  client: '客户',
+  communication: '沟通',
+  task: '任务',
+  issue: '关切',
+  finding: '发现',
+  person: '人员',
+}
+
+function SearchHitRow({ hit }: { hit: SearchHit }) {
   const navigate = useNavigate()
-  const participants = (item.participants || '')
-    .split(/[,，、;；]/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-
   return (
     <div
-      className="search-result-card"
+      className="search-hit-row"
       role="button"
       tabIndex={0}
-      onClick={() =>
-        navigate(`/projects/${item.project_id}/communications/${item.id}`)
+      onClick={() => navigate(`/projects/${hit.project_id ?? hit.id}`)}
+      onKeyDown={(e) =>
+        e.key === 'Enter' && navigate(`/projects/${hit.project_id ?? hit.id}`)
       }
-      onKeyDown={(e) => {
-        if (e.key === 'Enter')
-          navigate(`/projects/${item.project_id}/communications/${item.id}`)
+      style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 'var(--space-2)',
+        padding: 'var(--space-2) var(--space-3)',
+        borderRadius: 8,
+        cursor: 'pointer',
+        background: 'var(--card-surface)',
+        marginBottom: 'var(--space-2)',
       }}
     >
-      <div className="search-result-card__head">
-        <span style={{ fontSize: 13, color: 'var(--muted-hex)' }}>
-          {dayjs(item.occurred_at).format('YYYY-MM-DD HH:mm')}
-        </span>
-        <span
-          style={{
-            fontSize: 12,
-            color: 'var(--primary-hex)',
-          }}
-        >
-          {item.project_name}
-        </span>
-        {participants.map((p) => (
-          <span
-            key={p}
-            style={{
-              fontSize: 12,
-              color: 'var(--muted-hex)',
-            }}
-          >
-            {p}
-          </span>
-        ))}
-      </div>
-      <div style={{ fontSize: 14, color: 'var(--muted-hex)' }}>
-        {item.content.replace(/[#*`>\-]/g, '').substring(0, 200)}
-        {item.content.length > 200 && '…'}
-      </div>
+      <Tag style={{ marginInlineEnd: 0, flexShrink: 0 }}>
+        {HIT_RESOURCE_LABEL[hit.resource] ?? hit.resource}
+      </Tag>
+      <Text strong ellipsis style={{ flex: '0 1 auto' }}>
+        {hit.title}
+      </Text>
+      <Text
+        type="secondary"
+        ellipsis
+        style={{ flex: 1, minWidth: 0, fontSize: 12 }}
+      >
+        {hit.subtitle}
+      </Text>
     </div>
   )
 }

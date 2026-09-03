@@ -1,0 +1,4666 @@
+{
+  "desktop:board": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [],
+    "unnamedIconButtons": 3,
+    "contentTop": 36
+  },
+  "desktop:files": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 320,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营 Agent 开发"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营 Agent 开发"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [],
+    "unnamedIconButtons": 42,
+    "contentTop": 36
+  },
+  "desktop:overview": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 3,
+    "contentTop": 36
+  },
+  "desktop:advance": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "h": 15,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "h": 15,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "h": 15,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "h": 15,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "h": 15,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "h": 15,
+            "txt": "安全告警分析SOP梳理_v2.0.doc"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 27,
+    "contentTop": 36
+  },
+  "desktop:advance:任务": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 3,
+    "contentTop": 36
+  },
+  "desktop:advance:交付物": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:client": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:client:任务": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:client:交付物": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:client:沟通记录": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:client:客户关切": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:client:产品发现": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "desktop:data": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:任务": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:交付物": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:沟通记录": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:客户关切": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:产品发现": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:文件": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 235,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 231,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 313,
+            "txt": "安全运营场景需要数据集团提供的数据-1.xlsx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 245,
+            "txt": "安全告警分析SOP梳理_v2.0.docx"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 527,
+            "txt": "安恒-AiLPHA安全分析与管理平台V5.1 OPENAPI接口（网络安全威胁监"
+          },
+          {
+            "tag": "TD",
+            "cls": "ant-table-cell ant-table-cell-ellipsis",
+            "w": 223,
+            "sw": 258,
+            "txt": "NGTIP平台功能API文档-v5.1.13.pdf"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "desktop:data:资产": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 285,
+            "txt": "https://tjclientguard.sdata.net.cn:9093/"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 285,
+            "txt": "https://tjclientguard.sdata.net.cn:9093/"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 268,
+            "txt": "https://tjtip.sdata.net.cn/intelligence/"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 200,
+            "txt": "https://tjasm.sdata.net.cn/login"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 173,
+            "txt": "http://tjailpha.sdata.net.cn/"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjclientguar"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjclientguar"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjtip.sdata."
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjasm.sdata."
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "http://tjailpha.sdat"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 26,
+    "contentTop": 36
+  },
+  "desktop:members": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:任务": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:交付物": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:沟通记录": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:客户关切": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:产品发现": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:文件": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "desktop:members:资产": {
+    "viewport": "1440x900",
+    "issues": [
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:board": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-primary ant-btn-color-",
+            "right": 415,
+            "txt": "新建项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 399,
+            "txt": "新建项目"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-dropdown-trigger project-row__more",
+            "right": 564,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-more",
+            "right": 556,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 556,
+            "txt": ""
+          },
+          {
+            "tag": "path",
+            "cls": "[object SVGAnimatedString]",
+            "right": 549,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [],
+    "unnamedIconButtons": 3,
+    "contentTop": 36
+  },
+  "narrow:files": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "A",
+            "cls": "",
+            "right": 450,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "right": 397,
+            "txt": "安全运营 Agent 开发"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-text ant-btn-color-def",
+            "right": 645,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 639,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-eye",
+            "right": 639,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 639,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营 Agent 开发"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营 Agent 开发"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [],
+    "unnamedIconButtons": 42,
+    "contentTop": 36
+  },
+  "narrow:overview": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 3,
+    "contentTop": 36
+  },
+  "narrow:advance": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 27,
+    "contentTop": 36
+  },
+  "narrow:advance:任务": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 3,
+    "contentTop": 36
+  },
+  "narrow:advance:交付物": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 409,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 393,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 526,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 447,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 447,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 447,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:client": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 427,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 411,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 544,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 465,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:client:任务": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 427,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 411,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 544,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 465,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:client:交付物": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 427,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 411,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 544,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 465,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:client:沟通记录": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 427,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 411,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 544,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 465,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有沟通记录"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:client:客户关切": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 427,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 411,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 544,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 465,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 465,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:client:产品发现": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 479,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 400,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 400,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 400,
+            "txt": ""
+          },
+          {
+            "tag": "path",
+            "cls": "[object SVGAnimatedString]",
+            "right": 399,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 463,
+            "txt": "删除项目"
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 9,
+    "contentTop": 36
+  },
+  "narrow:data": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:任务": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:交付物": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:沟通记录": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:客户关切": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:产品发现": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:文件": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 467,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 451,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 584,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 505,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 505,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警分析 SOP_v3.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴漏面告警 SOP 分析.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "终端告警 SOP 分_v3.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "网络威胁告警分析 SOP.md"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "互联网暴露面告警分析 SOP.pdf"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "安全运营场景需要数据集团提供的数据-1."
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 45,
+    "contentTop": 36
+  },
+  "narrow:data:资产": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 285,
+            "txt": "https://tjclientguard.sdata.net.cn:9093/"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 285,
+            "txt": "https://tjclientguard.sdata.net.cn:9093/"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 268,
+            "txt": "https://tjtip.sdata.net.cn/intelligence/"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 200,
+            "txt": "https://tjasm.sdata.net.cn/login"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-typography ant-typography-ellipsis ant-typography-ellips",
+            "w": 160,
+            "sw": 173,
+            "txt": "http://tjailpha.sdata.net.cn/"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjclientguar"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjclientguar"
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjtip.sdata."
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "https://tjasm.sdata."
+          },
+          {
+            "tag": "A",
+            "cls": "",
+            "h": 17,
+            "txt": "http://tjailpha.sdat"
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+    ],
+    "unnamedIconButtons": 26,
+    "contentTop": 36
+  },
+  "narrow:members": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:任务": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:交付物": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:沟通记录": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:客户关切": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:产品发现": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:文件": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  },
+  "narrow:members:资产": {
+    "viewport": "390x844",
+    "issues": [
+      {
+        "kind": "clipped-content",
+        "items": [
+          {
+            "tag": "DIV",
+            "cls": "ant-tabs-nav-wrap ant-tabs-nav-wrap-ping-left ant-tabs-nav-w",
+            "w": 45,
+            "sw": 488,
+            "txt": "概览\n推进\n客户\n资料\n成员"
+          }
+        ]
+      },
+      {
+        "kind": "offscreen-clickable",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-color-",
+            "right": 444,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "",
+            "right": 428,
+            "txt": "编辑信息"
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-btn css-1acng9q ant-btn-default ant-btn-danger",
+            "right": 561,
+            "txt": "删除项目"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "ant-btn-icon",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "anticon anticon-delete",
+            "right": 482,
+            "txt": ""
+          },
+          {
+            "tag": "svg",
+            "cls": "[object SVGAnimatedString]",
+            "right": 482,
+            "txt": ""
+          }
+        ]
+      },
+      {
+        "kind": "tiny-target",
+        "items": [
+          {
+            "tag": "BUTTON",
+            "cls": "ant-input-clear-icon ant-input-clear-ico",
+            "h": 12,
+            "txt": ""
+          },
+          {
+            "tag": "BUTTON",
+            "cls": "ant-switch ant-switch-small css-1acng9q",
+            "h": 18,
+            "txt": "🌙\n☀️"
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          },
+          {
+            "tag": "SPAN",
+            "cls": "member-card__handle",
+            "h": 14,
+            "txt": ""
+          }
+        ]
+      }
+    ],
+    "emptyStates": [
+      "阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。",
+      "还没有团队成员"
+    ],
+    "unnamedIconButtons": 44,
+    "contentTop": 36
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "pages": [
+    "01-login",
+    "02-board",
+    "03-board-create-modal",
+    "04-filelibrary",
+    "05-detail-overview",
+    "06-detail-advance-phases",
+    "07-detail-advance-tasks",
+    "08-detail-advance-deliverables",
+    "09-detail-client-comms",
+    "10-detail-client-issues",
+    "11-detail-client-findings",
+    "12-detail-data-files",
+    "13-detail-data-assets",
+    "14-detail-members",
+    "15-comm-detail-missing",
+    "16-setup-direct",
+    "17-board-dark",
+    "18-detail-overview-dark",
+    "19-detail-edit-modal",
+    "20-narrow-board",
+    "21-narrow-overview",
+    "22-narrow-client",
+    "23-narrow-files"
+  ],
+  "consoleErrors": [
+    {
+      "page": "desktop",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "page": "desktop",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "page": "narrow",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "pageErrors": [],
+  "badResponses": [
+    {
+      "page": "desktop",
+      "status": 401,
+      "url": "http://localhost:3001/api/auth/me"
+    },
+    {
+      "page": "desktop",
+      "status": 404,
+      "url": "http://localhost:3001/api/communications/00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "page": "narrow",
+      "status": 401,
+      "url": "http://localhost:3001/api/auth/me"
+    }
+  ]
+}
