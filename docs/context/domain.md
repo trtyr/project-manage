@@ -9,13 +9,16 @@ excerpts are kept short and verbatim.
 
 ## 1. Status state machines
 
-Three independent status fields live in the database as plain `TEXT`. Validation
+Four independent status fields live in the database as plain `TEXT`. Validation
 is enforced in Rust, not in Postgres, so adding a new value is a code-only
-change (no migration). Four more columns follow the same pattern:
-`people.side` (`team`|`client`, `PersonSide`), `deliverables.status`,
+change (no migration). Seven more columns follow the same pattern:
+`people.side` (`team`|`client`, `PersonSide`), `deliverables.status`
+(`pending`|`delivered`|`accepted`, `DeliverableStatus`),
 `tasks.priority` (`TaskPriority`), and `projects.tech_approval`
-(`TechApprovalStatus`)
-(`pending`|`delivered`|`accepted`, `DeliverableStatus`).
+(`TechApprovalStatus`), plus — since migrations 020/021 —
+`issues.status` (`IssueStatus`), `issues.priority` (`IssuePriority`),
+`findings.product_source` (`ProductSource`), and
+`findings.feedback_status` (`FeedbackStatus`).
 
 ### 1.1 `projects.status`
 
@@ -94,6 +97,8 @@ to HTTP codes:
 |--------------------------|------|---------------------|
 | `NotFound(msg)`          | 404  | `not_found`         |
 | `BadRequest(msg)`        | 400  | `bad_request`       |
+| `Unauthorized(msg)`      | 401  | `unauthorized`      |
+| `Conflict(msg)`          | 409  | `conflict`          |
 | `Timeout(msg)`           | 408  | `request_timeout`   |
 | `Database(RowNotFound)`  | 404  | `not_found`         |
 | `Database` unique-viol.  | 400  | `conflict`          |
@@ -128,33 +133,43 @@ as 400 `invalid_reference` (`error.rs:65-71`).
 
 ### 2.2 Project → child tables (CASCADE)
 
-All seven project-scoped tables cascade on project delete:
+All nine project-scoped tables cascade on project delete:
 
 | Child table       | FK column    | Migration                          |
 |-------------------|--------------|------------------------------------|
-| `communications`  | `project_id` | `...0003_init_communications.sql:8`|
-| `tasks`           | `project_id` | `...0004_init_tasks.sql:7`         |
-| `assets`          | `project_id` | `005_assets.sql:5`                 |
-| `project_files`   | `project_id` | `006_project_files.sql:5`          |
-| `phases`          | `project_id` | `007_phases.sql:5`                 |
+| `communications`  | `project_id` | `...0003_init_communications.sql`  |
+| `tasks`           | `project_id` | `...0004_init_tasks.sql`           |
+| `assets`          | `project_id` | `005_assets.sql`                   |
+| `project_files`   | `project_id` | `006_project_files.sql`            |
+| `phases`          | `project_id` | `007_phases.sql`                   |
 | `people`          | `project_id` | `014_unify_people.sql` (replaces `members`/`client_contacts`) |
 | `deliverables`    | `project_id` | `018_deliverables.sql`             |
+| `issues`          | `project_id` | `020_issues.sql`                   |
+| `findings`        | `project_id` | `021_findings.sql`                 |
 
 `phases` also cascades on its own `parent_id` self-reference
 (`007_phases.sql:6`), so deleting a parent phase removes its children too.
 
-### 2.3 Project files SET NULL links
+### 2.3 Optional SET NULL links
 
-Two optional FKs on `project_files` use `ON DELETE SET NULL` so files are
-preserved (orphaned but still listed) when their parent disappears:
+Optional FKs use `ON DELETE SET NULL` so rows are preserved (orphaned but
+still listed) when their parent disappears:
 
-| FK column          | Target           | Migration                              |
-|--------------------|------------------|----------------------------------------|
-| `communication_id` | `communications` | `006_project_files.sql:6`              |
-| `phase_id`         | `phases`         | `010_project_files_phase_id.sql:1`     |
+| FK column          | Table              | Target           | Migration                     |
+|--------------------|--------------------|------------------|-------------------------------|
+| `communication_id` | `project_files`    | `communications` | `006_project_files.sql`       |
+| `phase_id`         | `project_files`    | `phases`         | `010_project_files_phase_id.sql` |
+| `assignee_id`      | `tasks`            | `people`         | `017_task_fields.sql`         |
+| `linked_file_id`   | `deliverables`     | `project_files`  | `018_deliverables.sql`        |
+| `communication_id` | `issues`           | `communications` | `020_issues.sql`              |
+| `assignee_id`      | `issues`           | `people`         | `020_issues.sql`              |
+| `communication_id` | `findings`         | `communications` | `021_findings.sql`            |
 
-These are nullable by construction (`project_files.communication_id UUID` with
-no `NOT NULL`, same for `phase_id`).
+All are nullable by construction. For `issues.communication_id` and
+`findings.communication_id` the handler additionally validates that the
+referenced communication belongs to the same project
+(`ensure_communication_in_project`) — the DB cannot express that
+cross-table constraint.
 
 ### 2.4 Timestamps
 
@@ -185,7 +200,7 @@ pub async fn ensure_project_exists(pool: &PgPool, project_id: Uuid) -> AppResult
 }
 ```
 
-This helper is reused by every project-scoped handler module (the seven
+This helper is reused by every project-scoped handler module (the nine
 listed below):
 
 | Handler module              | Call sites    |
@@ -194,6 +209,8 @@ listed below):
 | `handlers/communications.rs`| list, create             |
 | `handlers/deliverables.rs`  | list, create             |
 | `handlers/files.rs`         | list, upload, link       |
+| `handlers/issues.rs`        | list, create             |
+| `handlers/findings.rs`      | list, create             |
 | `handlers/people.rs`        | list, create, reorder    |
 | `handlers/phases.rs`        | list, create             |
 | `handlers/tasks.rs`         | list, create             |
@@ -292,8 +309,10 @@ Two rules are checked in the handler before any DB call:
 
 | Rule                                      | Handlers (excerpt)                                                                                                                                  |
 |-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Empty/whitespace `name` (or `title`, `content`) | `projects.rs:58, 125-129`; `tasks.rs:77, 132-136`; `phases.rs:57`; `communications.rs:84, 133-137`; `clients.rs` create/update.                |
-| Unknown enum value against a const list | `projects.rs` (status, tech_approval); `tasks.rs` (status, priority); `people.rs` (side); `deliverables.rs` (status). Each returns `AppError::BadRequest` with `"… must be one of […]"`. |
+| Empty/whitespace `name` (or `title`, `content`) | `projects.rs`; `tasks.rs`; `phases.rs`; `communications.rs`; `issues.rs`; `findings.rs`; `clients.rs` create/update. `.trim().is_empty()` — `"   "` is rejected too. |
+| Unknown enum value against a const list | `projects.rs` (status, tech_approval); `tasks.rs` (status, priority); `people.rs` (side); `deliverables.rs` (status); `issues.rs` (status, priority); `findings.rs` (product_source, feedback_status). Each returns `AppError::BadRequest` with `"… must be one of […]"`. |
+| Cross-project communication link          | `issues.rs`, `findings.rs` — a supplied `communication_id` must belong to the same project (`ensure_communication_in_project` → 400). |
+| Auth bootstrap state                      | `auth.rs` — setup only while `users` is empty (else 409); password ≥ 8 chars at setup; login failure is a generic 401 (no user enumeration). |
 
 Phase `status` is not validated (see §1.3). Description/tags and other
 free-form fields are stored as-is. The empty-string check uses
@@ -301,26 +320,33 @@ free-form fields are stored as-is. The empty-string check uses
 
 ---
 
-## 6. Multi-user assumptions (deliberate MVP scope)
+## 6. Auth & multi-user assumptions
 
-The backend is explicitly a **single-user internal tool**. There is no auth
-layer. Evidence:
+**Implemented 2026-08-27** — the backend now has local-account session auth:
 
-- `backend/README.md:3` — "Rust + Axum + sqlx + PostgreSQL. Single user,
-  internal-tool MVP."
-- `backend/src/main.rs` middleware stack has no auth layer; only body limit
-  → trace → timeout → CORS.
-- Pool sized for single user: `max_connections = 10` in
-  `backend/src/db/pool.rs:23`, with a comment noting it should be revisited
-  if the deployment moves behind a load balancer.
-
-`AppError` classification exists (`backend/src/error.rs`) but no login flow,
-session, JWT, or user-scoping column on any table exists or is planned.
-Deliberate scope choice, not a missing feature.
-
-Downstream implication: every record is implicitly globally visible. Adding
-multi-tenancy later will require a `user_id`/`org_id` column on each table
-plus an auth extractor — there is no soft hook today.
+- **Single local account.** `users` holds one row (username stored
+  lowercase + argon2id PHC password hash). `POST /api/auth/setup` creates
+  it **only while the table is empty** (else `409 conflict`) — first-run
+  bootstrap, no admin UI.
+- **Fail-closed guard.** `require_auth` (`handlers/auth.rs`) is mounted in
+  `app.rs` over every business router. The public whitelist is exactly
+  `/api/health`, `/api/auth/status`, `/api/auth/setup`, `/api/auth/login`.
+  The guard resolves the session cookie → `user_id`, re-checks the user
+  row still exists, else `401 unauthorized`. New routers mounted on
+  `guarded_api` inherit the guard automatically; a new public endpoint
+  must be added explicitly.
+- **Sessions.** tower-sessions cookie (HttpOnly, SameSite=Lax, 30-day
+  sliding expiry = `SESSION_TTL_SECS`), state server-side in the
+  `session` table (migration 022). The cookie is deliberately
+  **unsigned** — it carries only a random session id, so forgery is a
+  no-op and sessions survive restarts (user-approved 2026-08-27). Logout
+  deletes the row immediately.
+- **No user-scoping on business rows.** Every record remains globally
+  visible to the (single) authenticated user. `users.organization_id`
+  exists in SQL as a **future tenancy placeholder** — nullable, no FK,
+  deliberately not modeled in Rust; do not query it until tenancy lands.
+- Pool sizing (`max_connections = 10` in `backend/src/db/pool.rs`) was
+  chosen for a single-user internal tool; revisit behind a load balancer.
 
 ---
 

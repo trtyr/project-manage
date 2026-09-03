@@ -18,6 +18,7 @@ Updated: 2026-08-27
 | 约定与标准 | [docs/context/conventions.md](../../context/conventions.md) |
 | 安全基线 | [docs/context/security-baseline.md](../../context/security-baseline.md) |
 | 部署 | [docs/context/deploy.md](../../context/deploy.md) |
+| 当前状态（验证基线） | [docs/context/current-state.md](../../context/current-state.md) |
 
 ## 认证现状（2026-08-27 更新）
 

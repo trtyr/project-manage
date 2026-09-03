@@ -15,7 +15,8 @@ or `StatusCode`). Defaults come from `backend/src/main.rs` — the
 
 | Aspect | Rule | Source |
 |---|---|---|
-| URL prefix | All routes under `/api` | `app.rs::build_app` (17 `.nest("/api", …)` calls) |
+| URL prefix | All routes under `/api` | `app.rs::build_app` (22 `.nest("/api", …)` calls) |
+| Authentication | Session cookie required everywhere except the public whitelist (health + `/auth/{status,setup,login}`); missing/invalid session → `401 unauthorized` | `require_auth` middleware in `app.rs` / `handlers/auth.rs` |
 | List endpoint | `200 OK` + JSON array | every `list*` handler |
 | Single read | `200 OK` + JSON object | every `get_one` handler |
 | Create | `201 Created` + JSON object | every `create*` handler returns `(StatusCode::CREATED, Json(row))` |
@@ -32,7 +33,7 @@ or `StatusCode`). Defaults come from `backend/src/main.rs` — the
 
 ## 2. Endpoint Catalog
 
-### 2.1 `GET /api/health` (operational)
+### 2.1 `GET /api/health` (operational, **public**)
 
 | Method | Path | Purpose | Query | Body | Response |
 |---|---|---|---|---|---|
@@ -40,7 +41,24 @@ or `StatusCode`). Defaults come from `backend/src/main.rs` — the
 
 Implemented in `app.rs` (`health()` + `HealthResponse`).
 
-### 2.2 Clients (`backend/src/handlers/clients.rs`)
+### 2.2 Auth (`backend/src/handlers/auth.rs`) — first three **public**
+
+| Method | Path | Purpose | Body | Response |
+|---|---|---|---|---|
+| GET  | `/api/auth/status` | Bootstrap probe: is the users table empty? | — | `200` + `{ "needs_setup": bool }` |
+| POST | `/api/auth/setup`  | Create the initial account — **only while users is empty** (else `409 conflict`) | `SetupRequest` (§3.12) | `201` + `UserPublic` |
+| POST | `/api/auth/login`  | Verify credentials (argon2id), start a session | `{ username, password }` | `200` + `UserPublic` |
+| POST | `/api/auth/logout` | Destroy the server-side session (authenticated) | — | `204` |
+| GET  | `/api/auth/me`     | Current user projection (authenticated) | — | `200` + `UserPublic` |
+
+Behaviour: usernames are normalized (trim + lowercase); passwords must be
+≥ 8 chars at setup; login failure is a deliberately generic
+`401 unauthorized` ("invalid username or password") — no user
+enumeration. `UserPublic` never contains password material. The session
+cookie (HttpOnly, SameSite=Lax, 30-day sliding) is issued by setup and
+login; see `architecture.md §5.7` for the guard mechanics.
+
+### 2.3 Clients (`backend/src/handlers/clients.rs`)
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
@@ -54,7 +72,7 @@ Server-side validation: `name.trim().is_empty()` → `400 bad_request`
 ("name must not be empty"). `DELETE` on a client with existing projects
 triggers FK cascade → `400 invalid_reference`.
 
-### 2.3 Projects (`backend/src/handlers/projects.rs`)
+### 2.4 Projects (`backend/src/handlers/projects.rs`)
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
@@ -68,7 +86,7 @@ Validation: `name` non-empty (else `400`); `status` must be one of
 `ProjectStatus::ALL = ["in_progress", "completed", "paused"]` (else
 `400 bad_request`). Defaults `status` → `in_progress` on create.
 
-### 2.4 Communications (`backend/src/handlers/communications.rs`)
+### 2.5 Communications (`backend/src/handlers/communications.rs`)
 
 | Method | Path | Purpose | Path / Query | Body | Response |
 |---|---|---|---|---|---|
@@ -84,7 +102,7 @@ Validation: `name` non-empty (else `400`); `status` must be one of
 nested write-side handler calls `ensure_project_exists(pool, project_id)`
 first (`db/helpers.rs`) — missing project → `404 not_found`.
 
-### 2.5 Tasks (`backend/src/handlers/tasks.rs`)
+### 2.6 Tasks (`backend/src/handlers/tasks.rs`)
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
@@ -97,7 +115,7 @@ first (`db/helpers.rs`) — missing project → `404 not_found`.
 Validation: `title` non-empty; `status ∈ TaskStatus::ALL =
 ["current", "next", "todo"]` (else `400`).
 
-### 2.6 Assets (`backend/src/handlers/assets.rs`)
+### 2.7 Assets (`backend/src/handlers/assets.rs`)
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
@@ -110,7 +128,7 @@ Validation: `title` non-empty; `status ∈ TaskStatus::ALL =
 
 `asset_type` is free-form TEXT (no enum). Validation: `name` non-empty.
 
-### 2.7 Files / Links (`backend/src/handlers/files.rs`)
+### 2.8 Files / Links (`backend/src/handlers/files.rs`)
 
 | Method | Path | Purpose | Path / Query | Body | Response |
 |---|---|---|---|---|---|
@@ -129,7 +147,7 @@ Validation: `title` non-empty; `status ∈ TaskStatus::ALL =
 `LinkFile` / `LinkPhase` types are request-only DTOs declared inside
 `handlers/files.rs:298-328`. Passing `null` clears the association.
 
-### 2.8 Phases (`backend/src/handlers/phases.rs`)
+### 2.9 Phases (`backend/src/handlers/phases.rs`)
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
@@ -143,7 +161,7 @@ Nesting: `parent_id NULL` = top-level; `parent_id = <other phase.id>`
 = sub-phase. Validated: `name` non-empty. No sort-order collision check
 in MVP — `sort_order` is whatever you pass (default `0`).
 
-### 2.9 People (`backend/src/handlers/people.rs`)
+### 2.10 People (`backend/src/handlers/people.rs`)
 
 Unified roster of everyone associated with a project — both our team and the
 client side, distinguished by `side` (`team` | `client`). Replaces the former
@@ -162,7 +180,7 @@ client side, distinguished by `side` (`team` | `client`). Replaces the former
 Validation: `name` non-empty; `side` must be one of `PersonSide::ALL =
 ["team", "client"]` (else `400`). `role`/`notes` are free-form text.
 
-### 2.10 Deliverables (`backend/src/handlers/deliverables.rs`)
+### 2.11 Deliverables (`backend/src/handlers/deliverables.rs`)
 
 Structured交付物 tracking with a status lifecycle and an optional link to a
 project file.
@@ -180,7 +198,45 @@ Validation: `name` non-empty; `status` must be one of
 `pending`). `due_date` is `YYYY-MM-DD`; `linked_file_id` optionally ties to a
 `project_files` row (SET NULL if that file is deleted).
 
-### 2.11 Search (`backend/src/handlers/search.rs`)
+### 2.12 Issues (`backend/src/handlers/issues.rs`)
+
+客户关切 — concerns the client raised during communication, tracked to
+resolution.
+
+| Method | Path | Purpose | Path params | Body | Response |
+|---|---|---|---|---|---|
+| GET    | `/api/projects/{project_id}/issues` | List for a project, ordered by status (`open`→`in_progress`→`resolved`), then priority (`urgent`→…→`low`), then `due_date NULLS LAST`, then `created_at` | `project_id` | — | `200` + `Issue[]` |
+| POST   | `/api/projects/{project_id}/issues` | Create issue (defaults `status='open'`, `priority='normal'`) | `project_id` | `CreateIssue` (§3.13) | `201` + `Issue` |
+| GET    | `/api/issues/{id}` | Read one | `id` | — | `200` + `Issue` |
+| PUT    | `/api/issues/{id}` | Partial update | `id` | `UpdateIssue` (§3.13) | `200` + `Issue` |
+| DELETE | `/api/issues/{id}` | Remove | `id` | — | `204` |
+
+Validation: `title` non-empty; `status ∈ ["open", "in_progress",
+"resolved"]` (`IssueStatus`); `priority ∈ ["urgent", "high", "normal",
+"low"]` (`IssuePriority`). If `communication_id` is supplied (create or
+update), `ensure_communication_in_project` verifies it belongs to the same
+project (else `400 bad_request`). `assignee_id` optionally references
+`people` (SET NULL on delete).
+
+### 2.13 Findings (`backend/src/handlers/findings.rs`)
+
+产品发现 — problems we observed in the product the client uses (ours or a
+third-party vendor's). Light tracking: only whether we've fed it back.
+
+| Method | Path | Purpose | Path params | Body | Response |
+|---|---|---|---|---|---|
+| GET    | `/api/projects/{project_id}/findings` | List for a project, ordered by `feedback_status` (`unreported`→`reported`), then `observed_at DESC` | `project_id` | — | `200` + `Finding[]` |
+| POST   | `/api/projects/{project_id}/findings` | Create finding (defaults `feedback_status='unreported'`, `observed_at=now`) | `project_id` | `CreateFinding` (§3.14) | `201` + `Finding` |
+| GET    | `/api/findings/{id}` | Read one | `id` | — | `200` + `Finding` |
+| PUT    | `/api/findings/{id}` | Partial update | `id` | `UpdateFinding` (§3.14) | `200` + `Finding` |
+| DELETE | `/api/findings/{id}` | Remove | `id` | — | `204` |
+
+Validation: `title` non-empty; `product_source ∈ ["ours", "third_party"]`
+(`ProductSource`, **required**, no DB default); `feedback_status ∈
+["unreported", "reported"]` (`FeedbackStatus`). Same
+`ensure_communication_in_project` guard on `communication_id`.
+
+### 2.14 Search (`backend/src/handlers/search.rs`)
 
 | Method | Path | Purpose | Query | Body | Response |
 |---|---|---|---|---|---|
@@ -188,7 +244,9 @@ Validation: `name` non-empty; `status` must be one of
 
 Searches **projects** (`name`/`phase`/`competitors`), **clients**
 (`name`/`contact_person`), **communications** (`content`/`participants`, 80-char
-preview), **tasks** (`title`), and **people** (`name`/`role`). Each hit is
+preview), **tasks** (`title`), **issues** (`title`/`description`),
+**findings** (`title`/`description`/`product`/`vendor`), and **people**
+(`name`/`role`). Each hit is
 `{ resource, id, title, subtitle?, project_id? }`. Not project-scoped — no
 `ensure_project_exists`; per-resource query failures are swallowed so one bad
 hit doesn't blank the result.
@@ -303,12 +361,51 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `due_date` | `Option<NaiveDate>` | optional | optional | `YYYY-MM-DD` |
 | `linked_file_id` | `Option<Uuid>` | optional | optional | Ties to `project_files.id` (`SET NULL` if that file is deleted) |
 
-### 3.11 Link DTOs (request-only, defined in `handlers/files.rs:298-328`)
+### 3.11 Link DTOs (request-only, defined in `handlers/files.rs`)
 
 | DTO | Field | Purpose |
 |---|---|---|
 | `LinkFile`  | `communication_id: Option<Uuid>` | Body of `PUT /files/{id}/link`; `null` clears |
 | `LinkPhase` | `phase_id: Option<Uuid>`           | Body of `PUT /files/{id}/link-phase`; `null` clears |
+
+### 3.12 `SetupRequest` / `UserPublic` (auth, `models/user.rs`)
+
+| Field | Type | Notes |
+|---|---|---|
+| `username` | `String` | Required; normalized (trim + lowercase) before storing/comparing |
+| `password` | `String` | Required; ≥ 8 chars at setup; stored as argon2id PHC string (never returned) |
+| `display_name` | `Option<String>` | Optional |
+
+`UserPublic = { id, username, display_name?, created_at }` — the only
+user shape that crosses the API boundary. The row struct `User` (with
+`password_hash`) stays private to the backend; it has no `ts-rs` export.
+`organization_id` exists in SQL as a future tenancy placeholder and is
+deliberately absent from the Rust model.
+
+### 3.13 `CreateIssue` / `UpdateIssue` (`models/issue.rs`)
+
+| Field | Type | Create | Update | Notes |
+|---|---|:---:|:---:|---|
+| `title` | `String` | ✅ required | optional | Non-empty else `400` |
+| `description` | `Option<String>` | optional | optional | |
+| `status` | `Option<String>` | optional (default `"open"`) | optional | `IssueStatus::ALL = ["open", "in_progress", "resolved"]` |
+| `communication_id` | `Option<Uuid>` | optional | optional | Must belong to the same project (guarded) |
+| `assignee_id` | `Option<Uuid>` | optional | optional | FK → `people.id` (`SET NULL`) |
+| `priority` | `Option<String>` | optional (default `"normal"`) | optional | `IssuePriority::ALL = ["urgent", "high", "normal", "low"]` |
+| `due_date` | `Option<NaiveDate>` | optional | optional | `YYYY-MM-DD` |
+
+### 3.14 `CreateFinding` / `UpdateFinding` (`models/finding.rs`)
+
+| Field | Type | Create | Update | Notes |
+|---|---|:---:|:---:|---|
+| `title` | `String` | ✅ required | optional | Non-empty else `400` |
+| `description` | `Option<String>` | optional | optional | |
+| `product` | `Option<String>` | optional | optional | Product name |
+| `product_source` | `String` | ✅ **required** | optional | `ProductSource::ALL = ["ours", "third_party"]`; no DB default |
+| `vendor` | `Option<String>` | optional | optional | Vendor when third-party |
+| `observed_at` | `Option<DateTime<Utc>>` | optional (default `now`) | optional | |
+| `communication_id` | `Option<Uuid>` | optional | optional | Must belong to the same project (guarded) |
+| `feedback_status` | `Option<String>` | optional (default `"unreported"`) | optional | `FeedbackStatus::ALL = ["unreported", "reported"]` |
 
 ---
 
@@ -324,7 +421,9 @@ internally before sending a generic message to the client.
 |---|---|---|---|---|---|
 | `AppError::NotFound(msg)` | n/a | `404 NOT_FOUND` | `not_found` | the supplied `msg` (e.g. `"client <uuid> not found"`) | Raised by every handler's `fetch_optional(...).ok_or_else(NotFound)` / `rows_affected() == 0` check |
 | `AppError::BadRequest(msg)` | n/a | `400 BAD_REQUEST` | `bad_request` | the supplied `msg` | Validation failures (empty name/title/content, bad status, invalid multipart, post-write file I/O) |
-| `AppError::Timeout(msg)` | n/a | `408 REQUEST_TIMEOUT` | `request_timeout` | the supplied `msg` (e.g. `"request exceeded the 30s server timeout"`) | Raised by `HandleErrorLayer` in `main.rs:202-208`; 30 s `REQUEST_TIMEOUT_SECS` |
+| `AppError::Unauthorized(msg)` | n/a | `401 UNAUTHORIZED` | `unauthorized` | the supplied `msg` (deliberately generic on login) | Emitted by the `require_auth` guard (missing/dead session) and by login with bad creds |
+| `AppError::Conflict(msg)` | n/a | `409 CONFLICT` | `conflict` | the supplied `msg` | State conflicts — e.g. re-running `/auth/setup` after an account exists |
+| `AppError::Timeout(msg)` | n/a | `408 REQUEST_TIMEOUT` | `request_timeout` | the supplied `msg` (e.g. `"request exceeded the 30s server timeout"`) | Raised by `HandleErrorLayer` in `app.rs`; 30 s `REQUEST_TIMEOUT_SECS` |
 | `Database(sqlx::Error::RowNotFound)` | `RowNotFound` | `404 NOT_FOUND` | `not_found` | `"resource not found"` | Used by `query_as!`; rarely surfaces since handlers fetch optional explicitly |
 | `Database(_) is_unique_violation()` | `23505 unique_violation` | `400 BAD_REQUEST` | `conflict` | `"记录已存在或关联数据不存在"` | Triggered e.g. by `tags` array uniqueness or duplicate business keys |
 | `Database(_) is_foreign_key_violation()` | `23503 fk_violation` | `400 BAD_REQUEST` | `invalid_reference` | `"记录已存在或关联数据不存在"` | Triggered by e.g. `DELETE /clients/:id` when projects still reference it |
@@ -397,23 +496,28 @@ instance per resource, all sharing `baseURL: '/api'`, `timeout: 30000`).
 
 React Query keys are first-seen in `useQuery({ queryKey })` and then
 invalidated on mutations. They appear in `App.tsx`,
-`pages/{ProjectBoard,ProjectDetail,FileLibrary,CommunicationDetail}.tsx`
-and `components/{PhasesTab,MembersTab,DeliverablesTab,TimelineTab}.tsx`.
+`pages/{ProjectBoard,ProjectDetail,FileLibrary,CommunicationDetail,LoginPage,SetupPage}.tsx`
+and the tab `components/` (`OverviewTab`, `GroupedTab`, `PhasesTab`,
+`TasksTab`, `DeliverablesTab`, `CommunicationsTab`, `IssuesTab`,
+`FindingsTab`, `FilesTab`, `AssetsTab`, `MembersTab`, `TimelineTab`).
 
 | Backend resource group | HTTP prefix (mounted at `/api`) | Frontend `*Api` object | React Query keys |
 |---|---|---|---|
-| Health        | `/health`                                     | `healthApi`            | none in hooks (called once in `App.tsx` project-count footer) |
-| Clients       | `/clients`                                    | `clientsApi`           | `['clients']` (`ProjectBoard.tsx:53`), `['client', project.client_id]` (`ProjectDetail.tsx:115`) |
-| Projects      | `/projects`                                   | `projectsApi`          | `['projects']` (`App.tsx:128`, `ProjectBoard.tsx:48`), `['project', id]` (`ProjectDetail.tsx:109`) |
-| Communications (nested) | `/projects/{project_id}/communications` | `communicationsApi.listByProject` / `.create` | `['communications', id]` (`ProjectDetail.tsx:121`), `['communications-recent']` (`ProjectBoard.tsx:58`), `['communications-search', debouncedSearch]` (`ProjectBoard.tsx:64`) |
-| Communications (flat) | `/communications/{id}` (incl. `/recent`, `/search`) | `communicationsApi.get/update/delete/listRecent/search` | `['communication', commId]` (`CommunicationDetail.tsx:46`) |
-| Tasks         | `/projects/{id}/tasks`, `/tasks/{id}`         | `tasksApi`             | `['tasks', id]` (`ProjectDetail.tsx:127`) |
-| Assets        | `/projects/{id}/assets`, `/assets/{id}`       | `assetsApi`            | `['assets', id]` (`ProjectDetail.tsx:133`) |
-| Files / Links | `/projects/{id}/files`, `/projects/{id}/links`, `/files`, `/files/{id}`, `/files/{id}/{download,preview,link,link-phase}` | `filesApi` | `['files', id]` (project detail + phases tab + comm detail), `['files-all']` (`FileLibrary.tsx:34`) |
-| Phases        | `/projects/{id}/phases`, `/phases/{id}`       | `phasesApi`            | `['phases', projectId]` (`PhasesTab.tsx:70`), `['phases', id]` (`ProjectDetail.tsx:145`) |
-| People        | `/projects/{id}/people`, `/people/{id}`, `/projects/{id}/people/reorder`, `/people/{id}/flip-side` | `peopleApi`            | `['people', projectId]` (`MembersTab.tsx`) |
-| Deliverables  | `/projects/{id}/deliverables`, `/deliverables/{id}` | `deliverablesApi` | `['deliverables', projectId]` (`DeliverablesTab.tsx`) |
-| Search        | `/search`                                     | `searchApi`            | `['search', q]` (`ProjectBoard.tsx` global search) |
+| Health        | `/health`                                     | `healthApi`            | none in hooks (probe only) |
+| Auth          | `/auth/*` (status/setup/login/logout/me)       | `authApi`              | `['auth-status']`, `['auth-me']` (`App.tsx` bootstrap gate) |
+| Clients       | `/clients`                                    | `clientsApi`           | `['clients']` (`ProjectBoard.tsx`, `ProjectDetail.tsx`), `['client', client_id]` (`ProjectDetail.tsx`) |
+| Projects      | `/projects`                                   | `projectsApi`          | `['projects']` (`App.tsx` sidebar, `ProjectBoard.tsx`), `['project', id]` (`ProjectDetail.tsx`) |
+| Communications (nested) | `/projects/{project_id}/communications` | `communicationsApi.listByProject` / `.create` | `['communications', id]` (`ProjectDetail.tsx`, `FilesTab`, `IssuesTab`, `FindingsTab`), `['communications-recent']` (`ProjectBoard.tsx`), `['communications-search', debouncedSearch]` (`ProjectBoard.tsx`) |
+| Communications (flat) | `/communications/{id}` (incl. `/recent`, `/search`) | `communicationsApi.get/update/delete/listRecent/search` | `['communication', commId]` (`CommunicationDetail.tsx`) |
+| Tasks         | `/projects/{id}/tasks`, `/tasks/{id}`         | `tasksApi`             | `['tasks', id]` (`ProjectDetail.tsx`, `TasksTab`) |
+| Issues        | `/projects/{id}/issues`, `/issues/{id}`       | `issuesApi`            | `['issues', id]` (`ProjectDetail.tsx`, `IssuesTab`) |
+| Findings      | `/projects/{id}/findings`, `/findings/{id}`   | `findingsApi`          | `['findings', id]` (`ProjectDetail.tsx`, `FindingsTab`) |
+| Assets        | `/projects/{id}/assets`, `/assets/{id}`       | `assetsApi`            | `['assets', id]` (`ProjectDetail.tsx`, `AssetsTab`) |
+| Files / Links | `/projects/{id}/files`, `/projects/{id}/links`, `/files`, `/files/{id}`, `/files/{id}/{download,preview,link,link-phase}` | `filesApi` | `['files', id]` (`ProjectDetail.tsx`, `FilesTab`), `['files-all']` (`FileLibrary.tsx`) |
+| Phases        | `/projects/{id}/phases`, `/phases/{id}`       | `phasesApi`            | `['phases', projectId]` (`PhasesTab`, `FilesTab`) |
+| People        | `/projects/{id}/people`, `/people/{id}`, `/projects/{id}/people/reorder`, `/people/{id}/flip-side` | `peopleApi`            | `['people', projectId]` (`MembersTab`, `IssuesTab`) |
+| Deliverables  | `/projects/{id}/deliverables`, `/deliverables/{id}` | `deliverablesApi` | `['deliverables', projectId]` (`ProjectDetail.tsx`, `DeliverablesTab`) |
+| Search        | `/search`                                     | `searchApi`            | sidebar global search (`App.tsx`, debounced 300 ms) |
 
 Two error helpers are also exported from the same file and used
 across pages:
@@ -426,11 +530,12 @@ across pages:
   - 409 → `'conflict'`
   - else → `'unknown'`
 
-Note: the backend never returns `409` or `422`; constraint errors are
-`400` with codes `conflict`, `bad_request`, `invalid_reference`, or
-`check_violation`. The frontend's classifier thus only maps the
-status number — it does **not** parse the JSON `error` field — so
-constraint violations surface as `'validation'` in the UI.
+Note: the backend emits `409` only via `AppError::Conflict` (state
+conflicts, e.g. re-running setup); constraint violations are `400` with
+codes `conflict`, `invalid_reference`, or `check_violation`. The
+frontend's classifier maps by status number only — it does **not** parse
+the JSON `error` field — so both DB-level 400s and true 409s are
+distinguished in the UI (`'validation'` vs `'conflict'`).
 
 ---
 

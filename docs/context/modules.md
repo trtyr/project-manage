@@ -115,7 +115,31 @@ Each handler module exports one or more `*_router()` functions that `app::build_
 | Non-trivial behaviour | `create` validates `name` non-empty and `status` via `DeliverableStatus::is_valid` (defaults to `pending`); appends at end of `sort_order`. `linked_file_id` optionally ties a deliverable to a row in `project_files`. `list_by_project` orders by `sort_order, created_at`. `update` sets `updated_at = NOW()`. |
 | Internal deps | `crate::db::helpers::ensure_project_exists`, `crate::models::{CreateDeliverable, Deliverable, DeliverableStatus, UpdateDeliverable}`. |
 
-### A.10 `search` — `backend/src/handlers/search.rs`
+### A.10 `issues` — `backend/src/handlers/issues.rs`
+
+| Field | Value |
+|---|---|
+| Responsibility | Per-project 客户关切 (client concerns) raised during communication, tracked to resolution. |
+| Routers exported | `project_issues_router()`, `issues_router()` |
+| Project-scoped routes | `GET /projects/{project_id}/issues`, `POST /projects/{project_id}/issues` |
+| Flat-by-id routes | `GET /issues/{id}`, `PUT /issues/{id}`, `DELETE /issues/{id}` |
+| Calls `ensure_project_exists` | **Yes** — both nested handlers. |
+| Non-trivial behaviour | `create`/`update` validate `status` via `IssueStatus::is_valid` (default `open`) and `priority` via `IssuePriority::is_valid` (default `normal`); `title` non-empty guard. **`list_by_project` orders by `CASE status` (open→in_progress→resolved), then `CASE priority` (urgent→low), then `due_date NULLS LAST`, then `created_at`.** An optional `communication_id` is guarded by `ensure_communication_in_project` (same-project check, else 400). |
+| Internal deps | `crate::db::helpers::{date_to_time_date, ensure_communication_in_project, ensure_project_exists}`, `crate::models::{CreateIssue, Issue, IssuePriority, IssueStatus, UpdateIssue}`. |
+
+### A.11 `findings` — `backend/src/handlers/findings.rs`
+
+| Field | Value |
+|---|---|
+| Responsibility | Per-project 产品发现 (product findings): problems observed in the product the client uses (ours or a third-party vendor's). Tracks only whether we've fed the problem back. |
+| Routers exported | `project_findings_router()`, `findings_router()` |
+| Project-scoped routes | `GET /projects/{project_id}/findings`, `POST /projects/{project_id}/findings` |
+| Flat-by-id routes | `GET /findings/{id}`, `PUT /findings/{id}`, `DELETE /findings/{id}` |
+| Calls `ensure_project_exists` | **Yes** — both nested handlers. |
+| Non-trivial behaviour | `product_source` is **required** (`ours`/`third_party`, no default); `feedback_status` defaults `unreported`. `observed_at` defaults to `now()` when omitted. `list_by_project` orders by `CASE feedback_status` (unreported→reported), then `observed_at DESC`. Same `ensure_communication_in_project` guard on the optional `communication_id`. |
+| Internal deps | `crate::db::helpers::{dt_to_offset, ensure_communication_in_project, ensure_project_exists}`, `crate::models::{CreateFinding, FeedbackStatus, Finding, ProductSource, UpdateFinding}`. |
+
+### A.12 `search` — `backend/src/handlers/search.rs`
 
 | Field | Value |
 |---|---|
@@ -123,8 +147,19 @@ Each handler module exports one or more `*_router()` functions that `app::build_
 | Router exported | `search_router()` |
 | Routes | `GET /search?q=...` |
 | Calls `ensure_project_exists` | **No** — reads across the whole DB. |
-| Non-trivial behaviour | Runs `ILIKE %q%` against five resources, `LIMIT 10` each: **projects** (`name`/`phase`/`competitors`), **clients** (`name`/`contact_person`), **communications** (`content`/`participants`, returns an 80-char preview), **tasks** (`title`), **people** (`name`/`role`). Returns `SearchHit { resource, id, title, subtitle, project_id }`. Per-resource query failures are swallowed (`.unwrap_or_default()`) so one bad hit doesn't blank the result. |
+| Non-trivial behaviour | Runs `ILIKE %q%` against seven resources, `LIMIT 10` each: **projects** (`name`/`phase`/`competitors`), **clients** (`name`/`contact_person`), **communications** (`content`/`participants`, returns an 80-char preview), **tasks** (`title`), **issues** (`title`/`description`), **findings** (`title`/`description`/`product`/`vendor`), **people** (`name`/`role`). Returns `SearchHit { resource, id, title, subtitle, project_id }`. Per-resource query failures are swallowed (`.unwrap_or_default()`) so one bad hit doesn't blank the result. |
 | Internal deps | `crate::state::AppState`, `sqlx`; serializes `SearchHit` (defined inline). |
+
+### A.13 `auth` — `backend/src/handlers/auth.rs`
+
+| Field | Value |
+|---|---|
+| Responsibility | Local-account authentication (setup/login/logout/me) + the fail-closed `require_auth` route guard mounted over every business router. |
+| Router exported | `auth_router()` — **mounted on the unguarded `public_api`**, unlike every other handler module |
+| Routes | `GET /auth/status`, `POST /auth/setup`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` |
+| Calls `ensure_project_exists` | **No** — not a project resource. |
+| Non-trivial behaviour | `status` probes `users` empty → `{needs_setup}` (a not-yet-migrated table counts as empty). `setup` only works while users is empty (else `AppError::Conflict` → 409); password ≥ 8 chars; username normalized (trim + lowercase). `login` verifies argon2id and returns a deliberately generic 401 on bad creds (no user enumeration). Sessions are tower-sessions cookies holding only `user_id`; `SESSION_TTL_SECS = 30 days` sliding. `require_auth` resolves the session to a user_id, re-checks the user exists, and 401s otherwise — fail-closed. |
+| Internal deps | `argon2` (hash/verify), `tower_sessions::Session`, `crate::models::user::{SetupRequest, User, UserPublic}`, `crate::state::AppState`. |
 
 ---
 
@@ -140,11 +175,14 @@ One module per row struct + `Create`/`Update` DTO pair. All row structs derive `
 | `project.rs` | `Project` | `CreateProject` | `UpdateProject` | **`ProjectStatus` const-module** (see B.2) |
 | `communication.rs` | `Communication` | `CreateCommunication` | `UpdateCommunication` | `CommunicationWithProject` (joined view, `Serialize`-only) |
 | `task.rs` | `Task` | `CreateTask` | `UpdateTask` | **`TaskStatus` const-module** (see B.3) |
+| `issue.rs` | `Issue` | `CreateIssue` | `UpdateIssue` | **`IssueStatus` + `IssuePriority` const-modules** (see B.6) |
+| `finding.rs` | `Finding` | `CreateFinding` | `UpdateFinding` | **`ProductSource` + `FeedbackStatus` const-modules** (see B.7) |
 | `asset.rs` | `Asset` | `CreateAsset` | `UpdateAsset` | — |
 | `project_file.rs` | `ProjectFile` | (no file-upload DTO; multipart) | `UpdateFile` | `FileMeta` (Serialize, hides `file_path` + `stored_name`), `FileWithProject` (joined view), `CreateLink` |
 | `phase.rs` | `Phase` | `CreatePhase` | `UpdatePhase` | — |
 | `person.rs` | `Person` | `CreatePerson` | `UpdatePerson` | **`PersonSide` const-module** (see B.4); `side: String` |
 | `deliverable.rs` | `Deliverable` | `CreateDeliverable` | `UpdateDeliverable` | **`DeliverableStatus` const-module** (see B.5); `due_date: Option<NaiveDate>`, `linked_file_id: Option<Uuid>` |
+| `user.rs` | `User` (**not serialized**, keeps `password_hash` private) | `SetupRequest` (also aliased `LoginRequest`) | — | `UserPublic` (safe projection, ts-rs exported) |
 
 Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `updated_at: DateTime<Utc>` (maintained by DB trigger `set_updated_at()` from migration 001). `Create` DTOs omit id/timestamps; `Update` DTOs mark every field `Option` + `#[serde(default)]` for partial updates.
 
@@ -194,6 +232,25 @@ Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `update
 | Validator | `pub fn is_valid(input: &str) -> bool` via `matches!` |
 | Used by | `handlers::deliverables::{create_for_project, update}` validate and default to `PENDING`. |
 
+### B.6 `models::issue::{IssueStatus, IssuePriority}` — enum-style status + priority
+
+| Field | `IssueStatus` | `IssuePriority` |
+|---|---|---|
+| File | `backend/src/models/issue.rs` | same |
+| Purpose | Allowed values for `issues.status`. | Allowed values for `issues.priority`. |
+| Constants | `OPEN`, `IN_PROGRESS = "in_progress"`, `RESOLVED = "resolved"` | `URGENT`, `HIGH`, `NORMAL`, `LOW` |
+| Aggregate | `["open", "in_progress", "resolved"]` | `["urgent", "high", "normal", "low"]` |
+| Used by | `handlers::issues::{create_for_project, update}` validate + default `OPEN`; `list_by_project` `CASE` ordering uses the literals. | same handlers validate + default `NORMAL`; second `CASE` ordering key. |
+
+### B.7 `models::finding::{ProductSource, FeedbackStatus}` — enum-style classifiers
+
+| Field | `ProductSource` | `FeedbackStatus` |
+|---|---|---|
+| File | `backend/src/models/finding.rs` | same |
+| Purpose | Where the observed product comes from. | Whether we've fed the problem back. |
+| Constants | `OURS = "ours"`, `THIRD_PARTY = "third_party"` | `UNREPORTED = "unreported"`, `REPORTED = "reported"` |
+| Used by | `handlers::findings` — **required on create** (no default, no DB default) | same handlers validate + default `UNREPORTED`; `CASE` ordering key in list. |
+
 ---
 
 ## C. Backend DB layer (`backend/src/db/`)
@@ -202,7 +259,7 @@ Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `update
 
 | Field | Value |
 |---|---|
-| Responsibility | Build a `PgPool` from `DATABASE_URL` with conservative timeouts (single-user internal tool). |
+| Responsibility | Build a `PgPool` from `DATABASE_URL` with conservative timeouts (internal tool; revisit behind a load balancer). |
 | Export | `pub async fn build_pool() -> Result<PgPool, sqlx::Error>` (re-exported as `db::build_pool`) |
 | Config | `PgPoolOptions::new().max_connections(10).acquire_timeout(5s).idle_timeout(10min).max_lifetime(30min)` |
 | Caller | `main.rs` wraps this in `build_pool_with_retry` (1 + 5 retries, 1/2/4/8/16s backoff). |
@@ -212,10 +269,10 @@ Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `update
 
 | Field | Value |
 |---|---|
-| Responsibility | Shared DB helpers used by every project-scoped handler. |
-| Export | `pub async fn ensure_project_exists(pool: &PgPool, project_id: Uuid) -> AppResult<()>` |
-| Behaviour | `SELECT id FROM projects WHERE id = $1`; returns `AppError::NotFound("project {id} not found")` if no row. |
-| Callers | `handlers::{communications, tasks, assets, files, phases, people, deliverables}::{list_by_project, create_for_project/upload_file/create_link}` — every project-scoped path. |
+| Responsibility | Shared DB helpers + chrono↔time bind conversions. |
+| Exports | `pub async fn ensure_project_exists(pool, project_id) -> AppResult<()>`; `pub async fn ensure_communication_in_project(pool, project_id, communication_id) -> AppResult<()>`; `pub fn dt_to_offset(chrono DateTime<Utc>) -> time::OffsetDateTime`; `pub fn date_to_time_date(chrono NaiveDate) -> time::Date` |
+| Behaviour | `ensure_project_exists`: `SELECT id FROM projects WHERE id = $1` → 404 if no row. `ensure_communication_in_project`: the communication must exist AND belong to the project → 400 otherwise; used by issues/findings to guard the optional `communication_id` link. The two conversion fns exist because `tower-sessions-sqlx-store` force-enables sqlx's `time` feature, flipping macro *bind* inference while models stay chrono (output columns are handled by `AS "col: chrono::…"` annotations in the SQL). |
+| Callers | `handlers::{communications, tasks, issues, findings, assets, files, phases, people, deliverables}` — every project-scoped path; the communication guard is called by `handlers::{issues, findings}`. |
 
 ---
 
@@ -239,11 +296,11 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Field | Value |
 |---|---|
 | Route | `/projects/:id` |
-| Responsibility | Heavy tabbed detail page for one project (communications / tasks / assets / files / phases / **people** / **deliverables** / timeline tabs); also handles project-level edit and file upload + link creation. |
+| Responsibility | Heavy tabbed detail page for one project. Since the 2026-08-28 detail-IA rework the tab bar is **5 aggregated tabs**: 概览 (`OverviewTab`), 推进 (`GroupedTab` wrapping 阶段 `PhasesTab` / 任务 `TasksTab` / 交付物 `DeliverablesTab`), 客户 (`GroupedTab` wrapping 沟通记录 `CommunicationsTab` / 客户关切 `IssuesTab` / 产品发现 `FindingsTab`), 资料 (`GroupedTab` wrapping 文件 `FilesTab` / 资产 `AssetsTab`), 成员 (`MembersTab`). Also owns project-level edit and create/edit modals. |
 | Public API (TS) | `export default function ProjectDetail(): JSX.Element` |
-| State | Many: `commForm`, `taskForm`, `assetForm`, `projectForm`, `fileOpen`, `editingAsset`, `selectedFile`, plus modal-open flags. |
-| Calls | `projectsApi.get`, `communicationsApi.{listByProject, create}`, `tasksApi.{listByProject, create, update}`, `assetsApi.{listByProject, create, update, delete}`, `filesApi.{upload, createLink, listByProject, download, update, delete}`, `phasesApi.listByProject`, `clientsApi.list`. |
-| Internal deps | `FilePreview`, `PhasesTab`, `MembersTab` (the people UI — name kept for history, calls `peopleApi`), `DeliverablesTab`, `TimelineTab`, `CommunicationList`, `ParticipantsInput` from `../components`; `formatSize` from `../utils/format`. |
+| State | Project edit form, modal-open flags, tab-label counts (components own their own data; React Query dedupes by key). |
+| Calls | Owns 9 mount-time queries (`project`, `client` chained, `communications`, `tasks`, `assets`, `files`, `issues`, `findings`, `deliverables`) + `clientsApi.list` for the edit modal; mutations through the same `*Api` objects. |
+| Internal deps | `OverviewTab`, `GroupedTab`, `PhasesTab`, `TasksTab`, `DeliverablesTab`, `CommunicationsTab`, `IssuesTab`, `FindingsTab`, `FilesTab`, `AssetsTab`, `MembersTab` from `../components`. |
 
 ### D.3 `FileLibrary` — `frontend/src/pages/FileLibrary.tsx`
 
@@ -267,81 +324,168 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Calls | `communicationsApi.{get, update}`, `filesApi.listByProject`, plus upload/link helpers. |
 | Internal deps | `Markdown`, `ParticipantsInput`, `FilePreview` from `../components`; `formatSize` from `../utils/format`. |
 
+### D.5 `LoginPage` — `frontend/src/pages/LoginPage.tsx`
+
+| Field | Value |
+|---|---|
+| Route | `/login` (rendered standalone, no app shell) |
+| Responsibility | Username + password form → `authApi.login`. On success it **seeds the `['auth-me']` query cache** with the login response (nobody refetches it on SPA navigation), shows 登录成功, and navigates to `/`. 401 → "用户名或密码错误" toast. |
+| Internal deps | `authApi`; antd form components. |
+
+### D.6 `SetupPage` — `frontend/src/pages/SetupPage.tsx`
+
+| Field | Value |
+|---|---|
+| Route | `/setup` (rendered standalone, no app shell) |
+| Responsibility | First-run bootstrap: create the initial account via `authApi.setup` (username / password ≥ 8 chars / display name). Only reachable in practice while the users table is empty — `App.tsx`'s bootstrap effect routes here when `authStatus.needs_setup`. |
+| Internal deps | `authApi`; antd form components. |
+
 ---
 
 ## E. Frontend components (`frontend/src/components/`)
 
-### E.1 `PhasesTab` — `frontend/src/components/PhasesTab.tsx`
+The detail-IA rework (2026-08-28) reorganized this folder around one
+component per project-detail sub-tab plus two layout primitives. The
+former `components/FileLibrary.tsx` and `components/CommunicationDetail.tsx`
+were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
+
+### E.1 `GroupedTab` — the aggregation primitive
+
+| Field | Value |
+|---|---|
+| Responsibility | Renders a nested antd tab group (inner tabs inside one outer tab). The whole "推进 / 客户 / 资料" grouping of ProjectDetail is built on it. |
+| Public API (TS) | `export default function GroupedTab({ items }: { items: Array<{ key, label, content }> })` |
+| Internal deps | antd `Tabs` only — purely presentational, no data fetching. |
+
+### E.2 `OverviewTab` — 概览
+
+| Field | Value |
+|---|---|
+| Responsibility | Project summary: status, client info, CRM fields, key metrics; embeds `TimelineTab` as the project timeline section. |
+| Public API (TS) | `export default function OverviewTab({ projectId, project, client }: Props)` |
+| Internal deps | `TimelineTab`; project/client data comes in via props (owned by `ProjectDetail`). |
+
+### E.3 `PhasesTab` — 阶段
 
 | Field | Value |
 |---|---|
 | Responsibility | Phase CRUD inside a project; builds a nested tree from `parent_id` links; surfaces files attached to a phase. |
-| Public API (TS) | `export default function PhasesTab({ projectId, files, onFilePreview }: Props): JSX.Element` |
-| Calls | `phasesApi.{listByProject, create, update, delete}`, `filesApi.listByProject`. |
-| Internal deps | `phasesApi`, `filesApi`; types `Phase`, `ProjectFile`. Local helpers `buildTree`, `formatSize`, `statusConfig` (color-coded `pending`/`in_progress`/`completed`). |
+| Public API (TS) | `export default function PhasesTab({ projectId, files, onFilePreview }: Props)` |
+| Calls | `phasesApi.{listByProject, create, update, delete}`; files arrive via props. |
+| Internal deps | `phasesApi`; types `Phase`, `ProjectFile`; local `buildTree`, `statusConfig` helpers. |
 
-### E.2 `MembersTab` — `frontend/src/components/MembersTab.tsx`
+### E.4 `TasksTab` — 任务
 
 | Field | Value |
 |---|---|
-| Responsibility | People UI for a project — team + client side-by-side (the component kept its historical `MembersTab` name, but the data model is the unified `people` table). Add / edit / delete people, drag-and-drop reorder within a side, and flip a person team↔client. |
-| Public API (TS) | `export default function MembersTab({ projectId }: Props): JSX.Element` |
+| Responsibility | Task board (current / next / todo columns) with create / edit / delete / status change. |
+| Public API (TS) | `export default function TasksTab({ projectId }: Props)` |
+| Calls | `tasksApi.*`; owns its `['tasks', projectId]` query. |
+
+### E.5 `DeliverablesTab` — 交付物
+
+| Field | Value |
+|---|---|
+| Responsibility | Deliverable list with status lifecycle (`pending`/`delivered`/`accepted`), due dates, and optional file link. |
+| Public API (TS) | `export default function DeliverablesTab({ projectId }: Props)` |
+| Calls | `deliverablesApi.*`; owns its `['deliverables', projectId]` query. |
+
+### E.6 `CommunicationsTab` — 沟通记录
+
+| Field | Value |
+|---|---|
+| Responsibility | Project communication log; create form + clickable list rendered through `CommunicationList`; navigates to `CommunicationDetail`. |
+| Public API (TS) | internal to ProjectDetail's 客户 group |
+| Calls | `communicationsApi.{listByProject, create}` (data actually owned by ProjectDetail's query; React Query dedupes by key). |
+| Internal deps | `CommunicationList`. |
+
+### E.7 `IssuesTab` — 客户关切
+
+| Field | Value |
+|---|---|
+| Responsibility | Issue CRUD (open / in_progress / resolved × urgent…low priority, due date, optional assignee + originating communication link). |
+| Public API (TS) | `export default function IssuesTab({ projectId }: Props)` |
+| Calls | `issuesApi.*`; also queries `['people', projectId]` (assignee select) and `['communications', projectId]` (link target select). |
+
+### E.8 `FindingsTab` — 产品发现
+
+| Field | Value |
+|---|---|
+| Responsibility | Finding CRUD (ours / third_party source, feedback_status unreported / reported, observed date, optional communication link). |
+| Public API (TS) | `export default function FindingsTab({ projectId }: Props)` |
+| Calls | `findingsApi.*`; also queries `['communications', projectId]` (link target select). |
+
+### E.9 `FilesTab` — 文件
+
+| Field | Value |
+|---|---|
+| Responsibility | Project file library: upload (multipart), link creation, description/tags edit, download, delete, comm/phase link, preview hook. Replaces the removed `components/FileLibrary.tsx`. |
+| Public API (TS) | `export default function FilesTab({ projectId, onFilePreview }: Props)` |
+| Calls | `filesApi.{listByProject, upload, createLink, update, delete, download}`; also queries `['communications', projectId]` and `['phases', projectId]` for link targets. |
+| Internal deps | `FileIcon`, `FilePreview` (via callback), `formatSize`. |
+
+### E.10 `AssetsTab` — 资产
+
+| Field | Value |
+|---|---|
+| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/credentials/vendor fields. |
+| Public API (TS) | `export default function AssetsTab({ projectId }: Props)` |
+| Calls | `assetsApi.*` including `reorder`. |
+
+### E.11 `MembersTab` — 成员
+
+| Field | Value |
+|---|---|
+| Responsibility | People UI for a project — team + client side-by-side (component kept its historical `MembersTab` name; the data model is the unified `people` table). Add / edit / delete people, drag-and-drop reorder within a side, flip a person team↔client. |
+| Public API (TS) | `export default function MembersTab({ projectId }: Props)` |
 | Calls | `peopleApi.{listByProject, create, update, delete, reorder, flipSide}`. |
-| Internal deps | `peopleApi`; type `Person` (and `CreatePerson`/`UpdatePerson`). |
 
-### E.3 `FilePreview` — `frontend/src/components/FilePreview.tsx`
-
-| Field | Value |
-|---|---|
-| Responsibility | Modal that previews any file by mime type: text→`<pre>`, image→`<img>`, PDF→`<iframe>`, html→`<iframe srcdoc>`, other→download prompt. |
-| Public API (TS) | `export default function FilePreview({ file, open, onClose }: Props): JSX.Element` |
-| Behaviour | Fetches `filesApi.previewUrl(file.id)` for text types via `fetch` + `AbortController`. Closes on `Escape`. Local helpers `isTextType`, `isHtmlType`, `isImageType`, `isPdfType`. |
-| Internal deps | `filesApi.previewUrl` (returns `/api/files/{id}/preview`). |
-
-### E.4 `FileLibrary` component (note: name collision with `pages/FileLibrary.tsx`)
+### E.12 `TimelineTab` — 时间线
 
 | Field | Value |
 |---|---|
-| File | `frontend/src/components/FileLibrary.tsx` (component, distinct from the page in `pages/`) |
-| Responsibility | Lower-level file-library component used inside `ProjectDetail` (project-scoped variant). Renders a table of `ProjectFile` with upload + link actions and preview hook. |
-| Public API (TS) | `export default function FileLibrary({ projectId, onFilePreview }: Props): JSX.Element` |
-| Calls | `filesApi.{listByProject, upload, createLink, update, delete, download}`. |
-| Internal deps | `filesApi`; types `ProjectFile`; `formatSize`. |
+| Responsibility | Chronological project timeline (phases + communications merged view); embedded inside `OverviewTab` since the detail-IA rework. |
+| Public API (TS) | `export default function TimelineTab({ projectId }: Props)` |
+| Calls | `phasesApi.listByProject`, `communicationsApi.listByProject`. |
 
-### E.5 `CommunicationList` — `frontend/src/components/CommunicationList.tsx`
+### E.13 `CommunicationList`
 
 | Field | Value |
 |---|---|
 | Responsibility | Vertical clickable list of communications; each row shows date, participants (parsed), excerpt, attached-file count; click navigates to `CommunicationDetail`. |
-| Public API (TS) | `export default function CommunicationList({ communications, projectId, files }: Props): JSX.Element` |
+| Public API (TS) | `export default function CommunicationList({ communications, projectId, files }: Props)` |
 | Internal deps | `dayjs`; types `Communication`, `ProjectFile`. Local `parseParticipants` (handles `,` `，` `、` `;` `；`). |
 
-### E.6 `CommunicationDetail` component (note: name collision with `pages/CommunicationDetail.tsx`)
+### E.14 `FilePreview`
 
 | Field | Value |
 |---|---|
-| File | `frontend/src/components/CommunicationDetail.tsx` |
-| Responsibility | Form-level detail editor used inside `ProjectDetail` for an inline comm view (the page in `pages/` is the full route; this component embeds the same fields as a sub-view). |
-| Public API (TS) | `export default function CommunicationDetail({ comm, projectId, onUpdated, onDeleted }: Props): JSX.Element` |
-| Calls | `communicationsApi.{update, delete}`, `filesApi.listByProject`, `filesApi.link`. |
-| Internal deps | `communicationsApi`, `filesApi`; types `Communication`, `UpdateCommunication`, `ProjectFile`. |
+| Responsibility | Modal that previews any file by mime type: text→`<pre>`, image→`<img>`, PDF→`<iframe>`, html→`<iframe srcdoc>`, other→download prompt. |
+| Public API (TS) | `export default function FilePreview({ file, open, onClose }: Props)` |
+| Behaviour | Fetches `filesApi.previewUrl(file.id)` for text types via `fetch` + `AbortController`. Closes on `Escape`. Local helpers `isTextType`, `isHtmlType`, `isImageType`, `isPdfType`. |
 
-### E.7 `Markdown` — `frontend/src/components/Markdown.tsx`
+### E.15 `FileIcon`
+
+| Field | Value |
+|---|---|
+| Responsibility | Mime-type-aware file icon (used by `FilesTab` and the `FileLibrary` page). |
+| Public API (TS) | `export default function FileIcon({ … }: Props)` |
+
+### E.16 `Markdown`
 
 | Field | Value |
 |---|---|
 | Responsibility | Thin wrapper around `react-markdown` + `remark-gfm` for GitHub-flavoured markdown rendering inside a `.md-render` container. |
-| Public API (TS) | `export default function Markdown({ children }: Props): JSX.Element` |
+| Public API (TS) | `export default function Markdown({ children }: Props)` |
 | Internal deps | `react-markdown`, `remark-gfm`. |
 
-### E.8 `ParticipantsInput` — `frontend/src/components/ParticipantsInput.tsx`
+### E.17 `ParticipantsInput`
 
 | Field | Value |
 |---|---|
 | Responsibility | Tag-style AntD `Select` that accepts free-text names and joins them into a delimited string for `Communication.participants`. |
-| Public API (TS) | `export default function ParticipantsInput({ value, onChange, placeholder }: Props): JSX.Element` |
-| Behaviour | Splits on `,` `，` `、` `;` `；`. `Select` `open={false}` (acts like a token input, not a dropdown). Local `parseParticipants`. |
-| Internal deps | `antd` `Select`. |
+| Public API (TS) | `export default function ParticipantsInput({ value, onChange, placeholder }: Props)` |
+| Behaviour | Splits on `,` `，` `、` `;` `；`. `Select` `open={false}` (acts like a token input, not a dropdown). |
 
 ---
 
@@ -351,18 +495,18 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 
 | Field | Value |
 |---|---|
-| Responsibility | Single axios instance (`baseURL: '/api'`, `timeout: 30000`) + one API object per resource + error classifier. |
-| Exports (11 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `assetsApi` (incl. `reorder`), `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `searchApi`, `healthApi` |
-| Extra exports | `ApiErrorKind` type (`'offline' \| 'server' \| 'validation' \| 'conflict' \| 'unknown'`), `ApiErrorInfo` interface, `classifyApiError(err: unknown): ApiErrorInfo` |
-| Behaviour | `classifyApiError`: no `response` → `offline`; 5xx → `server`; 400/422 → `validation`; 409 → `conflict`; else `unknown`. |
-| Internal deps | `axios`; every `*Api` consumes a typed interface from `../types`. |
+| Responsibility | Single axios instance (`baseURL: '/api'`, `timeout: 30000`) + one API object per resource + error classifier + 401 interceptor. |
+| Exports (14 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`, `findingsApi`, `assetsApi` (incl. `reorder`), `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `searchApi`, `healthApi`, `authApi` (status/setup/login/logout/me) |
+| Extra exports | `ApiErrorKind` type (`'offline' \| 'server' \| 'validation' \| 'conflict' \| 'unknown'`), `ApiErrorInfo` interface, `classifyApiError(err: unknown): ApiErrorInfo`, `AuthStatus` + `SearchHit` interfaces |
+| Behaviour | `classifyApiError`: no `response` → `offline`; 5xx → `server`; 400/422 → `validation`; 409 → `conflict`; else `unknown`. **401 interceptor**: any non-`/auth/*` 401 redirects `window.location.href = '/login'` (guarded against self-reload loops — only navigates when actually elsewhere). |
+| Internal deps | `axios`; every `*Api` consumes a typed interface from `../types` (row types hand-written in `types/index.ts`, DTOs codegen'd by ts-rs into `types/generated/`). |
 
 ### F.2 `types/index.ts`
 
 | Field | Value |
 |---|---|
-| Responsibility | TS mirrors of every backend row struct + Create/Update DTO; aliases `UUID`, `ISODateTime`, `ISODate`. |
-| Public API (TS) | Interfaces: `Client`, `Project`, `ProjectStatus`, `Communication`, `CommunicationWithProject`, `Task`, `TaskStatus`, `Asset`, `ProjectFile`, `FileWithProject`, `Phase`, `Person` (+ `PersonSide`), `Deliverable` (+ `DeliverableStatus`) + matching `Create*`/`Update*` interfaces + `SearchHit` + `ApiError`. (Backend DTOs are codegen'd into `types/generated/` by ts-rs at test time.) |
+| Responsibility | TS mirrors of backend row structs + Create/Update DTOs; aliases `UUID`, `ISODateTime`, `ISODate`. |
+| Public API (TS) | Interfaces: `Client`, `Project`, `ProjectStatus`, `Communication`, `CommunicationWithProject`, `Task`, `TaskStatus`, `Issue` (+ `IssueStatus` / `IssuePriority` unions), `Finding` (+ `ProductSource` / `FeedbackStatus` unions), `Asset`, `ProjectFile`, `FileWithProject`, `Phase`, `Person` (+ `PersonSide`), `Deliverable` (+ `DeliverableStatus`), `UserPublic` + matching `Create*`/`Update*` interfaces + `SearchHit` + `ApiError`. (Backend DTOs are codegen'd into `types/generated/` by ts-rs at test time — 37 files, incl. `Issue`, `Finding`, `UserPublic`, `SetupRequest`.) |
 | Notable | `ProjectStatus = 'in_progress' \| 'completed' \| 'paused'` (TS union mirrors `ProjectStatus` const-module on backend). `TaskStatus = 'current' \| 'next' \| 'todo'`. `ProjectFile.source_type: 'file' \| 'link'`. |
 | Internal deps | None. |
 
@@ -387,10 +531,10 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 
 | Field | Value |
 |---|---|
-| Responsibility | Top-level shell: persistent sidebar (logo + nav + project-count footer + theme toggle) + `<Routes>` wrapped in `ErrorBoundary`. |
+| Responsibility | Top-level shell: auth bootstrap gate (`auth-status` → `/setup`, `/me` 401 → `/login`, spinner until resolved) + persistent sidebar (logo + global search + nav + project-count footer + logout + theme toggle) + `<Routes>` wrapped in `ErrorBoundary`. |
 | Public API (TS) | `export default function App(): JSX.Element` (plus internal `SidebarItem` and `ErrorBoundary` classes — not exported) |
-| State | `isDark` (localStorage-persisted, falls back to `prefers-color-scheme`); `useQuery(['projects'], projectsApi.list)` for footer stats. |
-| Routes | `/` → `ProjectBoard`; `/files` → `FileLibrary`; `/projects/:id` → `ProjectDetail`; `/projects/:id/communications/:commId` → `CommunicationDetail`. |
+| State | `isDark` (localStorage-persisted, falls back to `prefers-color-scheme`); sidebar global search (debounced 300 ms via `searchApi`); `useQuery(['projects'], projectsApi.list)` for footer stats — **enabled only after login** (`!!me`) so the sidebar never fires a 401 on `/login`/`/setup`. |
+| Routes | `/` → `ProjectBoard`; `/files` → `FileLibrary`; `/projects/:id` → `ProjectDetail`; `/projects/:id/communications/:commId` → `CommunicationDetail`; `/login` → `LoginPage`; `/setup` → `SetupPage` (last two render standalone, no app shell). |
 | ErrorBoundary | Class component; on failure shows a "页面出错了" + reload button; logs to `console.error`. |
 | Internal deps | `lightTheme`, `darkTheme` from `./theme`; `projectsApi` from `./api`; pages from `./pages/*`. |
 
@@ -413,9 +557,12 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | projects | Project, CreateProject, UpdateProject, ProjectStatus | no | `tokio::fs::remove_dir_all("./uploads/{id}")` on delete |
 | communications | Communication, CommunicationWithProject, Create*U, Update*U | **yes** (nested) | — |
 | tasks | Task, CreateTask, UpdateTask, TaskStatus | **yes** (nested) | — |
+| issues | Issue, CreateIssue, UpdateIssue, IssueStatus, IssuePriority | **yes** (nested; + `ensure_communication_in_project`) | — |
+| findings | Finding, CreateFinding, UpdateFinding, ProductSource, FeedbackStatus | **yes** (nested; + `ensure_communication_in_project`) | — |
 | assets | Asset, CreateAsset, UpdateAsset | **yes** (nested) | — |
 | files | ProjectFile, FileMeta, FileWithProject, CreateLink, UpdateFile | **yes** (nested) | **writes to `./uploads/{project_id}/{uuid}{ext}` on upload; removes file on delete; removes dir on parent project delete (via projects::remove)** |
 | phases | Phase, CreatePhase, UpdatePhase | **yes** (nested) | — |
 | people | Person, CreatePerson, UpdatePerson, PersonSide | **yes** (nested) | — |
 | deliverables | Deliverable, CreateDeliverable, UpdateDeliverable, DeliverableStatus | **yes** (nested) | — |
 | search | (none — inline `SearchHit`) | no | — |
+| auth | User, UserPublic, SetupRequest | no | argon2id hash/verify; tower-sessions writes |

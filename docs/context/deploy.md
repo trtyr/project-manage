@@ -20,7 +20,7 @@ Related docs in this folder: `conventions.md` (code patterns),
 |---|---|---|
 | Rust toolchain | **1.85+ (edition 2024)** | `backend/Cargo.toml` uses `edition = "2024"`, which stabilized in Rust 1.85. There is no `rust-toolchain.toml` floor; the Docker image pins `rust:1.97`. |
 | Node.js | **20 or newer** | `frontend/package.json` requires Vite 8 (`^8.1.1`), which only runs on Node 20+. |
-| PostgreSQL | **16** | Matches the schema features used by the 19 migrations (`gen_random_uuid()` via `pgcrypto`-equivalent, `TEXT[]`, `TIMESTAMPTZ`, self-referential phases). |
+| PostgreSQL | **16** | Matches the schema features used by the 22 migrations (`gen_random_uuid()` via `pgcrypto`-equivalent, `TEXT[]`, `TIMESTAMPTZ`, self-referential phases). |
 
 ### 1.1 PostgreSQL role & auth
 
@@ -74,7 +74,7 @@ just build-backend       # cargo build --release --manifest-path backend/Cargo.t
 just build-frontend      # cd frontend && npm run build
 just deploy-static       # 构建前端并拷贝 dist/ 到 backend/static/
 just check               # clippy + 后端测试 + 冒烟测试 + 前端 tsc
-just smoke               # 仅跑 11 个冒烟测试（全模块 CRUD + CRM 字段 + people 排序/换边）
+just smoke               # 仅跑 14 个冒烟测试（全模块 CRUD + issues/findings + auth 全链路）
 just clean               # cargo clean + 删前端构建产物
 ```
 
@@ -111,33 +111,44 @@ Order matters because each step assumes the previous one has succeeded.
    `sqlx::migrate::Migrator::new` and runs it with the same retry policy.
    `Migrator::run` is idempotent against the `_sqlx_migrations`
    bookkeeping table, so a partial batch can be retried safely.
-5. Read runtime env: `PORT` (default `3000`), `MAX_BODY_SIZE_MB`
+5. Build the session store — `tower_sessions_sqlx_store::PostgresStore`
+   on the same pool, pointed at schema `public` (the `session` table is
+   created by migration 00022; the store's own `migrate()` is NOT used).
+   `SessionManagerLayer` config: HttpOnly cookie (store default),
+   SameSite=Lax, 30-day sliding expiry (OnInactivity), unsigned by
+   design — all session state lives server-side, so there is no
+   `SESSION_SECRET` to configure.
+6. Read runtime env: `PORT` (default `3000`), `MAX_BODY_SIZE_MB`
    (default `100`), `STATIC_DIR` (default `./static`, served as the SPA
    fallback — the Docker image sets `/app/static`), `CORS_ALLOWED_ORIGINS`
    (default `Any`). Misconfigured values are logged at `warn` and the
    default is used.
-6. Build the router (`app::build_app`) — **17** `.nest("/api", ...)`
-   mounts (the 9 resource groups clients / projects / communications /
-   tasks / phases / people / assets / files / deliverables, most with both
-   a project-scoped and a flat router, plus `search`) behind a layer
-   stack: CORS → `HandleErrorLayer`+`TimeoutLayer` (30s) → `TraceLayer` →
-   `DefaultBodyLimit`. The 30-second per-request timeout is
-   `TimeoutLayer::new(Duration::from_secs(30))` wrapped in
+7. Build the router (`app::build_app`) — **22** `.nest("/api", "...")`
+   mounts split into two surfaces: `public_api` (health + the five
+   `/auth/*` endpoints) and `guarded_api` (every business router for
+   clients / projects / communications / tasks / issues / findings /
+   phases / people / assets / files / deliverables / search, most with
+   both a project-scoped and a flat router) wrapped in the fail-closed
+   `require_auth` middleware. The layer stack: CORS →
+   `HandleErrorLayer`+`TimeoutLayer` (30s) → `TraceLayer` →
+   `DefaultBodyLimit` → `SessionManagerLayer`. The 30-second per-request
+   timeout is `TimeoutLayer::new(Duration::from_secs(30))` wrapped in
    `HandleErrorLayer` so an elapsed request becomes a `408
-   request_timeout` rather than a 500. Unmatched `/api/*` returns the API's
-   own empty 404; everything else falls through to `ServeDir` with an
-   `index.html` SPA fallback (serving the built frontend from `STATIC_DIR`).
-7. Bind `tokio::net::TcpListener` to `0.0.0.0:{port}`. A bind failure
+   request_timeout` rather than a 500. Unmatched `/api/*` returns the
+   API's own empty 404; everything else falls through to `ServeDir` with
+   an `index.html` SPA fallback (serving the built frontend from
+   `STATIC_DIR`).
+8. Bind `tokio::net::TcpListener` to `0.0.0.0:{port}`. A bind failure
    (port already in use) logs a friendly message pointing at `just stop`
    or `PORT=… cargo run` and exits 1 rather than panicking. The listener
    is handed to `axum::serve(...).with_graceful_shutdown(...)`.
-8. **Startup readiness self-check** — the server task is spawned, then the
+9. **Startup readiness self-check** — the server task is spawned, then the
    process issues `GET http://127.0.0.1:{port}/api/health` (2 s timeout).
    A 200 logs the "fully ready" line; any other outcome is a non-fatal
    `warn` (a real failure surfaces on the next request). Reaching this
    check is the actual readiness signal — stronger than "we called
    `axum::serve`".
-9. On **SIGINT** (Ctrl-C) or **SIGTERM** — log `shutdown signal received`,
+10. On **SIGINT** (Ctrl-C) or **SIGTERM** — log `shutdown signal received`,
    call `pool.close().await`, log `pool closed`. In-flight requests drain
    via `axum::serve`; the process exits when the listener is gone.
 
@@ -165,18 +176,20 @@ output.
 ## 4. Smoke tests
 
 ```bash
-# 11 个冒烟测试（全模块 CRUD + CRM 字段 + people 排序/换边）
+# 14 个冒烟测试（全模块 CRUD + CRM 字段 + people 排序/换边 + issues/findings + auth 全链路）
 just smoke
 ```
 
-The 11-test suite covers: health check; clients, projects (incl. CRM fields
+The 14-test suite covers: health check; clients, projects (incl. CRM fields
 `tech_approval` / `competitors`), communications, tasks, phases (tree
-structure), project assets, project files (link type) CRUD; and **people** CRUD
-plus reorder and team↔client `flip-side`. (No dedicated smoke test yet for
-deliverables, global search, asset reorder, or task assignee/priority — those
-paths are exercised by the ts-rs export bindings + manual use.) Each test
-creates and cleans up its own data with `__SMOKE_`-prefixed UUIDs and binds a
-random loopback port, so they run in parallel without `#[serial]`.
+structure), project assets, project files (link type), **issues**,
+**findings** CRUD; **people** CRUD plus reorder and team↔client
+`flip-side`; and the **auth flow** (setup gate → 401 without session →
+login → guarded access → logout kills the session). Each test creates and
+cleans up its own data with `__SMOKE_`-prefixed UUIDs and binds a random
+loopback port, so they run in parallel without `#[serial]`. (No dedicated
+smoke test yet for deliverables, global search, or asset reorder — those
+paths are exercised by the ts-rs export bindings + manual use.)
 
 `/api/health` always returns `200` if the process is up; it does not
 check the database. The DB-bound check is the fact that

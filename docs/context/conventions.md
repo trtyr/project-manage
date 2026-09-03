@@ -14,9 +14,12 @@ a more general rule on the wider web, this file wins for project-manage.
 ### 1.1 Backend modules — one Rust file per resource
 
 - Handler files live in `backend/src/handlers/<resource>.rs`, one per resource.
-  The set is fixed: `clients`, `projects`, `communications`, `tasks`, `assets`,
-  `files`, `phases`, `people`, `deliverables`, `search`. All names are lowercase, singular,
-  no underscores. (`search` is flat-only — no row model.)
+  The set is fixed: `clients`, `projects`, `communications`, `tasks`,
+  `issues`, `findings`, `assets`, `files`, `phases`, `people`,
+  `deliverables`, `search`, `auth`. All names are lowercase, singular,
+  no underscores. (`search` is flat-only — no row model. `auth` is
+  public-only and exports the `require_auth` middleware in addition to its
+  router.)
 - Model files live in `backend/src/models/<resource>.rs`, one per resource,
   and each module exposes three re-exports:
   - `Row` — DB-shape struct, `#[derive(sqlx::FromRow)]` with `pub` fields
@@ -58,11 +61,14 @@ pub mod ProjectStatus {
 }
 ```
 
-- Currently six: `ProjectStatus` (`in_progress` / `completed` / `paused`),
+- Currently ten: `ProjectStatus` (`in_progress` / `completed` / `paused`),
   `TaskStatus` (`current` / `next` / `todo`), `TaskPriority`
   (`urgent` / `high` / `normal` / `low`), `TechApprovalStatus`
   (`未接触` / `POC中` / `已认可` / `技术否决`), `PersonSide` (`team` / `client`),
-  and `DeliverableStatus` (`pending` / `delivered` / `accepted`).
+  `DeliverableStatus` (`pending` / `delivered` / `accepted`),
+  `IssueStatus` (`open` / `in_progress` / `resolved`), `IssuePriority`
+  (`urgent` / `high` / `normal` / `low`), `ProductSource` (`ours` /
+  `third_party`), and `FeedbackStatus` (`unreported` / `reported`).
 - Every status module MUST expose `pub const ALL: &[&str]` and
   `pub fn is_valid(input: &str) -> bool`. Handlers build their own error
   message referencing `ALL`; the type itself stays data-only.
@@ -80,8 +86,9 @@ pub mod ProjectStatus {
   wrappers.
 - `frontend/src/api/index.ts` exposes one axios-based object per resource,
   named exactly `<resource>Api` (camelCase, no separator): `clientsApi`,
-  `projectsApi`, `communicationsApi`, `tasksApi`, `assetsApi`, `filesApi`,
-  `phasesApi`, `peopleApi`, `deliverablesApi`, `searchApi`, `healthApi`.
+  `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`,
+  `findingsApi`, `assetsApi`, `filesApi`, `phasesApi`, `peopleApi`,
+  `deliverablesApi`, `searchApi`, `healthApi`, `authApi`.
 - API methods return the unwrapped body: `http.get<X>(...).then(r => r.data)`.
   Every method takes an explicit `string` id where applicable; no opaque
   type wrappers.
@@ -146,8 +153,11 @@ Any handler routed under `/api/projects/:project_id/...` calls
 if the project is missing, so the cascade is `404 → 400 → ...` instead of
 `500 → 400 → ...` on FK violations.
 
-The 7 handlers that share this guard today:
-`communications`, `tasks`, `assets`, `files`, `phases`, `people`, `deliverables`.
+The 9 handlers that share this guard today:
+`communications`, `tasks`, `issues`, `findings`, `assets`, `files`,
+`phases`, `people`, `deliverables`. Issues and findings additionally call
+`ensure_communication_in_project` when an optional `communication_id` link
+is supplied.
 
 If you add a new project-scoped resource, add the call here too — do not
 rely on the FK to do it.
@@ -195,7 +205,7 @@ application-side timestamps.
 ### 5.2 Migration conventions
 
 - Naming: uniform `<timestamp>_<name>.sql` using UTC seconds
-  (`20250714000001_init_clients.sql` … `20250714000018_deliverables.sql`).
+  (`20250714000001_init_clients.sql` … `20250714000022_users_and_sessions.sql`).
   sqlx applies migrations sorted by the numeric version parsed from the prefix,
   so the timestamp MUST stay monotonic with dependency order — base tables
   (clients / projects / communications / tasks) before the tables that reference
@@ -225,9 +235,9 @@ which returns `{ kind, message, status? }` with
 - `!err.response` → `'offline'` (network / DNS / CORS / timeout).
 - `status` in `[500, 600)` → `'server'`.
 - `status === 400` or `status === 422` → `'validation'`.
-- `status === 409` → `'conflict'` (kept for future use; today's backend
-  emits `400 conflict` for unique violations, so classify treats 409
-  as a distinct conflict rather than validation).
+- `status === 409` → `'conflict'` (the backend now emits real 409s via
+  `AppError::Conflict`, e.g. re-running setup; DB unique violations remain
+  `400 conflict` and classify as `'validation'`).
 - otherwise → `'unknown'`.
 
 ### 6.2 React Query configuration

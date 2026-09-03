@@ -45,7 +45,7 @@ and operational notes.
 
 ## 2. Migration inventory
 
-Nineteen SQL files in `backend/migrations/`, applied in lexicographic order.
+Twenty-two SQL files in `backend/migrations/`, applied in lexicographic order.
 Each row below lists the table created (or altered), key columns, foreign
 keys, ON DELETE behavior, and indexes.
 
@@ -70,6 +70,9 @@ keys, ON DELETE behavior, and indexes.
 | 017 | `017_task_fields.sql` | alter `tasks` | adds `assignee_id UUID`, `priority TEXT DEFAULT 'normal'` | `assignee_id REFERENCES people(id) ON DELETE SET NULL` | — |
 | 018 | `018_deliverables.sql` | **creates `deliverables`** | `project_id`, `name`, `status TEXT DEFAULT 'pending'`, `due_date DATE`, `linked_file_id UUID`, `sort_order`, `created_at`, `updated_at` | `project_id ... CASCADE`; `linked_file_id REFERENCES project_files(id) ON DELETE SET NULL` | `deliverables_project_id_idx`; `trg_deliverables_updated_at` |
 | 019 | `019_drop_client_security_concerns.sql` | alter `clients` | **drops `security_concerns TEXT[]`** (project repositioned as generic PM, not security-services) | — | — |
+| 020 | `020_issues.sql` | **creates `issues`** | `project_id`, `title`, `description`, `status TEXT DEFAULT 'open'`, `communication_id`, `assignee_id`, `priority TEXT DEFAULT 'normal'`, `due_date DATE`, timestamps | `project_id ... CASCADE`; `communication_id ... SET NULL`; `assignee_id REFERENCES people(id) ON DELETE SET NULL` | `idx_issues_project_id`, `idx_issues_status`; `trg_issues_updated_at` |
+| 021 | `021_findings.sql` | **creates `findings`** | `project_id`, `title`, `description`, `product`, `product_source TEXT NOT NULL` (no default), `vendor`, `observed_at TIMESTAMPTZ`, `communication_id`, `feedback_status TEXT DEFAULT 'unreported'`, timestamps | `project_id ... CASCADE`; `communication_id ... SET NULL` | `idx_findings_project_id`, `idx_findings_feedback_status`; `trg_findings_updated_at` |
+| 022 | `022_users_and_sessions.sql` | **creates `users` + `session`** | `users`: `username TEXT UNIQUE` (lowercase), `password_hash TEXT` (argon2id PHC), `display_name`, `organization_id UUID` (FUTURE tenancy placeholder, no FK, not modeled in Rust). `session`: `id TEXT PK`, `data BYTEA`, `expiry_date` | none | `trg_users_updated_at`; `idx_session_expiry_date`. Session table is hand-written to match tower-sessions-sqlx-store, unified under `./migrations` instead of the store's own migrate. |
 
 ### Highlights
 
@@ -124,6 +127,19 @@ keys, ON DELETE behavior, and indexes.
   lifecycle (`pending` / `delivered` / `accepted`), optional
   `linked_file_id` → `project_files` (`SET NULL`), and its own
   `set_updated_at()` trigger.
+- **020 — `issues`.** Per-project 客户关切 with status/priority validated
+  in Rust (`IssueStatus` / `IssuePriority`). Optional `communication_id`
+  (what conversation raised it, `SET NULL`) and `assignee_id` (owner, a
+  `people` row, `SET NULL`).
+- **021 — `findings`.** Per-project 产品发现. Unlike issues (resolution
+  tracking), findings only track `feedback_status` (have we told the
+  client?). `product_source` is required with **no DB default** — the
+  handler rejects a missing value rather than inventing one.
+- **022 — auth tables.** `users` (single local account; `organization_id`
+  is a deliberate future-tenancy placeholder — do not query it until
+  tenancy lands) + `session` (tower-sessions MessagePack blobs, hand-written
+  DDL so all schema stays under `./migrations`; verify against the crate
+  docs when bumping `tower-sessions-sqlx-store`).
 
 ## 3. Schema conventions
 
@@ -132,24 +148,33 @@ keys, ON DELETE behavior, and indexes.
   anywhere — IDs stay portable and client-generable.
 - **Timestamps:** `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` on every
   table. `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` is present on
-  `clients`, `projects`, `tasks`, `assets`, `phases`, `deliverables`. The
-  `set_updated_at()` trigger created in migration 001 is explicitly
-  attached in 001, 002, and 004 (the other tables with `updated_at`
-  historically had it maintained by the application layer — keep this in
-  mind if you add a BEFORE-UPDATE trigger later).
+  `clients`, `projects`, `tasks`, `assets`, `phases`, `deliverables`,
+  `issues`, `findings`, `users`. The `set_updated_at()` trigger created in
+  migration 001 is attached in 001, 002, 004 and — since migration 018 — in
+  every table that introduces `updated_at` (018 `deliverables`, 020
+  `issues`, 021 `findings`, 022 `users` all install their trigger).
 - **Tables without `updated_at`:** `communications`, `project_files`,
-  `people`. Each is append-mostly or log-shaped, so
+  `people`, `session`. Each is append-mostly or log-shaped, so
   the trigger would be redundant. `communications` omits `updated_at` by
-  design — its temporal key is `occurred_at`, not `updated_at`.
+  design — its temporal key is `occurred_at`, not `updated_at`. `session`
+  is tower-sessions-owned bookkeeping (expiry swept by the store).
 - **Status columns are `TEXT`, not `ENUM`.** `projects.status`,
   `tasks.status`, `phases.status`, `assets.asset_type`,
-  `project_files.source_type` are all `TEXT`. Adding a new value does not
-  require a migration — the Postgres ENUM upgrade dance is avoided.
+  `project_files.source_type`, `issues.status`, `issues.priority`,
+  `findings.product_source`, `findings.feedback_status` are all `TEXT`.
+  Adding a new value does not require a migration — the Postgres ENUM
+  upgrade dance is avoided.
 - **Validation lives in the Rust layer.** Allowed sets are constants and
   an `is_valid` predicate per resource:
   - `ProjectStatus::ALL = ["in_progress", "completed", "paused"]`
     (`models/project.rs`).
   - `TaskStatus::ALL = ["current", "next", "todo"]` (`models/task.rs`).
+  - `IssueStatus::ALL = ["open", "in_progress", "resolved"]` and
+    `IssuePriority::ALL = ["urgent", "high", "normal", "low"]`
+    (`models/issue.rs`).
+  - `ProductSource::ALL = ["ours", "third_party"]` and
+    `FeedbackStatus::ALL = ["unreported", "reported"]`
+    (`models/finding.rs`).
   - Handlers reject unrecognised statuses with `AppError::BadRequest`.
 - **Arrays:** `TEXT[]` is used for `clients.products`,
   `projects.goals`, `project_files.tags`.
@@ -177,18 +202,23 @@ keys, ON DELETE behavior, and indexes.
               │ N                       background_info
           projects
               │ 1
-   ┌──────────┼──────────┬──────────┬──────────┬──────────┬──────────┐
-   │ N        │ N        │ N        │ N        │ N        │ N        │ N
-   ▼          ▼          ▼          ▼          ▼          ▼          ▼
- communi-    tasks      assets   project_    phases    people   deliver-
- cations                                       (self-ref)        ables
-  CASCADE    CASCADE    CASCADE   CASCADE     CASCADE   CASCADE   CASCADE
-              ▲                       ▲    ▲
-              │                       │    │
-              │ SET NULL              │    │ SET NULL
-              │   comm_id ────────────┘    │
-              └──────────────── phase_id ──┘
-                                         (self: parent_id CASCADE)
+   ┌─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┐
+   │ N       │ N       │ N       │ N       │ N       │ N       │ N       │ N
+   ▼         ▼         ▼         ▼         ▼         ▼         ▼         ▼
+ communi-   tasks     assets  project_   phases    people   deliver-  issues
+ cations                     files     (self-ref)        ables     findings
+  CASCADE   CASCADE   CASCADE  CASCADE    CASCADE  CASCADE  CASCADE   CASCADE
+              ▲                    ▲    ▲                             ▲    ▲
+              │                    │    │                             │    │
+              │ SET NULL           │    │ SET NULL                    │    │ SET NULL
+              │  comm_id ──────────┘    │ phase_id                    │    │ comm_id
+              └────────────── phase_id ─┘                             │    │
+                                        (self: parent_id CASCADE)    │    │
+                                                                     │    │
+                                                        linked_file_id    assignee_id
+                                                        (→ project_files)  (→ people)
+
+users (local account; no FK to business tables)   session (tower-sessions rows, no FK)
 ```
 
 ASCII summary lines:
@@ -202,6 +232,8 @@ projects ──<  project_files                 (ON DELETE CASCADE)
 projects ──<  phases                        (ON DELETE CASCADE)
 projects ──<  people                        (ON DELETE CASCADE)
 projects ──<  deliverables                  (ON DELETE CASCADE)
+projects ──<  issues                        (ON DELETE CASCADE)
+projects ──<  findings                      (ON DELETE CASCADE)
 phases    ──<  phases  (parent_id, ON DELETE CASCADE)
 
 Cross-table optional FKs (all ON DELETE SET NULL):
@@ -209,11 +241,16 @@ Cross-table optional FKs (all ON DELETE SET NULL):
   phases.id          ◄── project_files.phase_id
   people.id          ◄── tasks.assignee_id         (migration 017)
   project_files.id   ◄── deliverables.linked_file_id (migration 018)
+  communications.id  ◄── issues.communication_id   (migration 020)
+  people.id          ◄── issues.assignee_id        (migration 020)
+  communications.id  ◄── findings.communication_id (migration 021)
 ```
 
 Every project-scoped resource is `N:1` under `projects`. Only `phases` is
-recursive (self-FK on `parent_id`). Only `project_files` has secondary
-optional FKs to `communications` and `phases`.
+recursive (self-FK on `parent_id`). `project_files`, `issues`, and
+`findings` carry secondary optional FKs to `communications`/`phases`/
+`people`/`project_files`. `users` and `session` stand apart — no FK into
+the business graph.
 
 ## 5. Query patterns
 
@@ -252,11 +289,20 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
 | `projects.rs` | `query_as!` | all four; reads `goals AS "goals!: Vec<String>"` to assert the array type at compile time |
 | `communications.rs` | `query_as!` for project-scoped CRUD; `query_as::<_, CommunicationWithProject>` for `list_all` and similar joins | projection differs from the row type |
 | `tasks.rs` | `query_as!` | all four endpoints |
+| `issues.rs` | `query_as!` | all five endpoints; temporal columns annotated `AS "col: chrono::…"`, date binds via `date_to_time_date` |
+| `findings.rs` | `query_as!` | all five endpoints; temporal columns annotated, timestamptz binds via `dt_to_offset` |
 | `assets.rs` | `query_as::<_, Asset>` | multi-line `\`-joined SQL |
 | `people.rs` | `query_as::<_, Person>` | same shape; dynamic `PERSON_COLUMNS` const |
 | `deliverables.rs` | `query_as::<_, Deliverable>` | same shape; dynamic `COLS` const |
 | `phases.rs` | `query_as::<_, Phase>` | same shape, including self-FK parent reads |
 | `files.rs` | `query_as::<_, ProjectFile>` / `query_as::<_, FileWithProject>` | almost every query is multi-line; the `UPDATE` with `COALESCE` cannot be a macro literal |
+| `auth.rs` | `query_scalar` / `query_as::<_, User>` | hand-written SQL (users table lookups, inserts); not compile-time checked |
+
+**chrono ↔ time note (since migration 022):** `tower-sessions-sqlx-store`
+force-enables sqlx's `time` feature, so temporal *bind parameters* in
+`query!` macros infer time-crate types while models use chrono. Handlers
+annotate output columns (`AS "due_date: chrono::NaiveDate"` etc.) and pass
+binds through `db::helpers::{dt_to_offset, date_to_time_date}`.
 
 ## 6. Migration bootstrap and idempotency
 
@@ -349,9 +395,11 @@ columns (e.g. `join ... p.name AS project_name` in `files::list_all`).
   see `progress.md` 2026-07-15 entry).
 - **`ensure_project_exists(pool, project_id)`** in `db/helpers.rs` is
   called at the top of every project-scoped handler (communications,
-  tasks, assets, files, phases, people, deliverables). It runs a
-  one-column `SELECT id FROM projects WHERE id = $1` so 404s are
-  returned before any child query runs.
+  tasks, issues, findings, assets, files, phases, people, deliverables).
+  It runs a one-column `SELECT id FROM projects WHERE id = $1` so 404s are
+  returned before any child query runs. Its sibling
+  **`ensure_communication_in_project`** guards the optional
+  `communication_id` link accepted by issues and findings.
 - **Pool sizing** (`max_connections=10`) plus `acquire_timeout=5s` is
   sized for a single-user internal tool. The crate-level doc-comment in
   `pool.rs` calls out that these values should be revisited if the

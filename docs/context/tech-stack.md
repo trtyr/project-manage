@@ -89,10 +89,18 @@ feature flags. The crate package itself is `project-manage-backend` at `0.1.0`.
 | Tracing subscriber | `tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }` | Log initialization and `RUST_LOG` filtering |
 | Thiserror | `thiserror = "2.0"` | Derive support for the unified application error type |
 | Dotenvy | `dotenvy = "0.15"` | Load `.env` values at process startup |
+| Argon2 | `argon2 = "0.5.3"` | Password hashing (argon2id, OWASP-grade default params) |
+| Tower Sessions | `tower-sessions = "0.14"` | Cookie-backed session middleware |
+| Tower Sessions SQLx store | `tower-sessions-sqlx-store = { version = "0.15", features = ["postgres"] }` | Postgres-backed session store (`public.session` table) |
+| Time | `time = "0.3"` | chrono↔time bind conversions for `query!` macros (sqlx `time` feature is force-enabled by the session store) |
+| Reqwest | `reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }` | Startup readiness self-check (`GET /api/health` on loopback); dev-dependency adds `cookies` for smoke-test session round-trips |
 
 The server composes Axum with Tower and Tower HTTP layers. The resulting
-stack includes CORS handling, a 30-second request timeout, a body limit for
-uploads, and structured HTTP traces.
+stack includes session management (public/guarded split with a fail-closed
+auth middleware), CORS handling, a 30-second request timeout, a body limit for
+uploads, static SPA serving, and structured HTTP traces. The
+`tower-sessions 0.14 / core 0.14 / sqlx-store 0.15` pairing was verified
+2026-08-27 (first store release using core 0.14).
 
 ## 3. Frontend stack
 
@@ -117,6 +125,7 @@ below are quoted exactly, including their semver range operators.
 | Ant Design icons | `"@ant-design/icons": "^5.6.1"` | UI icons |
 | React Markdown | `"react-markdown": "^10.1.0"` | Markdown rendering in communication details |
 | Remark GFM | `"remark-gfm": "^4.0.1"` | GitHub-flavored Markdown support |
+| dnd-kit (devDep) | `"@dnd-kit/core": "^6.3.1"`, `"@dnd-kit/sortable": "^10.0.0"`, `"@dnd-kit/utilities": "^2.2.2"` | Drag-and-drop reorder in `AssetsTab` / `MembersTab` |
 
 Ant Design is configured with the `zh_CN` locale in `App.tsx`. Markdown
 components pass `remarkGfm` through `remarkPlugins` to `ReactMarkdown`.
@@ -129,6 +138,8 @@ components pass `remarkGfm` through `remarkPlugins` to `ReactMarkdown`.
 | React Vite plugin | `"@vitejs/plugin-react": "^6.0.3"` | React transform and HMR integration |
 | TypeScript | `"typescript": "~6.0.2"` | Type checking and the `tsc -b` build step |
 | Oxlint | `"oxlint": "^1.71.0"` | Frontend linting |
+| Vitest | `"vitest": "^4.1.10"` | Frontend unit tests (`npm run test`) |
+| Prettier | `"prettier": "^3.9.6"` | Frontend formatting (`format` / `format:check`) |
 | Node types | `"@types/node": "^24.13.2"` | Node/Vite configuration types |
 | React types | `"@types/react": "^19.2.17"` | React TypeScript declarations |
 | React DOM types | `"@types/react-dom": "^19.2.3"` | React DOM TypeScript declarations |
@@ -140,6 +151,10 @@ The package scripts are also build-tooling contracts:
 | `dev` | `"dev": "vite"` | Starts the Vite development server |
 | `build` | `"build": "tsc -b && vite build"` | Type-checks project references, then bundles |
 | `lint` | `"lint": "oxlint"` | Runs Oxlint |
+| `test` | `"test": "vitest run"` | Runs the vitest suite (node env; `classifyApiError` contract tests) |
+| `test:watch` | `"test:watch": "vitest"` | Vitest in watch mode |
+| `format` | `"format": "prettier --write 'src/**/*.{ts,tsx,css}'"` | Formats frontend sources |
+| `format:check` | `"format:check": "prettier --check 'src/**/*.{ts,tsx,css}'"` | Verifies formatting |
 | `preview` | `"preview": "vite preview"` | Serves the production build locally |
 
 ### Vite development topology
@@ -171,7 +186,7 @@ The package scripts are also build-tooling contracts:
 | Database server | PostgreSQL `16` | Primary relational database and SQL dialect |
 | Client layer | SQLx `0.8` with `"postgres"` | Async PostgreSQL pool and query execution |
 | TLS/runtime | `"runtime-tokio"`, `"tls-rustls"` | Tokio execution with Rustls support |
-| Schema format | 19 first-party `*.sql` migrations | Readable, diffable PostgreSQL schema history |
+| Schema format | 22 first-party `*.sql` migrations | Readable, diffable PostgreSQL schema history |
 | Build-time URL | `DATABASE_URL = { value = "postgres://localhost:5432/project_manage", force = false }` | Cargo development default; an explicit shell value wins |
 
 Migrations use **sqlx-migrate at runtime, not compile-time macros**. The
@@ -238,12 +253,13 @@ modals, and tabs. `App.tsx` selects `lightTheme` or `darkTheme` through
 
 ## 7. First-party source inventory
 
-The repository's approximate first-party source count is **101 files**:
+The repository's approximate first-party source count is **124 files**
+(counted 2026-08-30 with `fd`):
 
 | Bucket | Count | Scope |
 |---|---:|---|
-| Rust (server) | 29 `.rs` | `backend/src/**/*.rs` |
-| SQL | 19 `.sql` | `backend/migrations/` |
-| TypeScript | 34 `.ts` | `frontend/src/**/*.ts` (incl. ts-rs `generated/`) |
-| TSX | 19 `.tsx` | `frontend/src/**/*.tsx` |
-| **Total** | **101** | Excludes dependencies; includes generated TS bindings |
+| Rust (server) | 35 `.rs` | `backend/src/**/*.rs` |
+| SQL | 22 `.sql` | `backend/migrations/` |
+| TypeScript | 42 `.ts` | `frontend/src/**/*.ts` (incl. ts-rs `generated/`) |
+| TSX | 25 `.tsx` | `frontend/src/**/*.tsx` |
+| **Total** | **124** | Excludes dependencies; includes generated TS bindings |
