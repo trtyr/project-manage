@@ -103,8 +103,6 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       setLinkName('')
       setUploadMode('file')
     },
-    onError: () =>
-      message.error(uploadMode === 'link' ? '添加失败' : '上传失败'),
   })
 
   const deleteFileMut = useMutation({
@@ -113,7 +111,6 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
       message.success('文件已删除')
     },
-    onError: () => message.error('删除失败，请重试'),
   })
 
   const updateFileMut = useMutation({
@@ -129,7 +126,6 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       message.success('已保存')
       setMetaEdit(null)
     },
-    onError: () => message.error('保存失败，请重试'),
   })
 
   const handleDownload = async (file: ProjectFile) => {

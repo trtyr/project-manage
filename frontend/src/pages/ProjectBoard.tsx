@@ -127,12 +127,10 @@ export default function ProjectBoard() {
       form.resetFields()
       setClientMode('existing')
     },
-    onError: () => message.error('创建失败，请重试'),
   })
 
   const createClientMut = useMutation({
     mutationFn: clientsApi.create,
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateProjectMut = useMutation({
@@ -148,7 +146,6 @@ export default function ProjectBoard() {
       message.success('项目已更新')
       setEditTarget(null)
     },
-    onError: () => message.error('更新失败，请重试'),
   })
 
   const deleteProjectMut = useMutation({
@@ -157,7 +154,6 @@ export default function ProjectBoard() {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       message.success('项目已删除')
     },
-    onError: () => message.error('删除失败，请重试'),
   })
 
   const clientMap = new Map(clients?.map((c) => [c.id, c.name]))

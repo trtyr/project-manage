@@ -57,7 +57,6 @@ export default function CommunicationsTab({ projectId }: Props) {
       setCommOpen(false)
       commForm.resetFields()
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   return (

@@ -69,7 +69,6 @@ export default function TasksTab({ projectId }: Props) {
       setEditing(null)
       taskForm.resetFields()
     },
-    onError: () => message.error('添加失败，请重试'),
   })
 
   const updateTaskMut = useMutation({
@@ -83,7 +82,6 @@ export default function TasksTab({ projectId }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
     },
-    onError: () => message.error('更新失败，请重试'),
   })
 
   // B7 fix: tasks used to be create-only — no edit, no delete.
@@ -93,7 +91,6 @@ export default function TasksTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
       message.success('已删除')
     },
-    onError: () => message.error('删除失败，请重试'),
   })
 
   function openCreate() {

@@ -56,7 +56,6 @@ export default function DeliverablesTab({ projectId }: Props) {
       setOpen(false)
       form.resetFields()
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateMut = useMutation({
@@ -73,7 +72,6 @@ export default function DeliverablesTab({ projectId }: Props) {
       setEditing(null)
       form.resetFields()
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const deleteMut = useMutation({
@@ -82,7 +80,6 @@ export default function DeliverablesTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['deliverables', projectId] })
       message.success('已删除')
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const columns = useMemo(

@@ -85,7 +85,6 @@ export default function CommunicationDetail() {
       queryClient.invalidateQueries({ queryKey: ['files', id] })
       message.success('文件已上传并关联到本记录')
     },
-    onError: () => message.error('上传失败，请重试'),
   })
 
   const deleteFileMut = useMutation({
@@ -94,7 +93,6 @@ export default function CommunicationDetail() {
       queryClient.invalidateQueries({ queryKey: ['files', id] })
       message.success('文件已删除')
     },
-    onError: () => message.error('删除失败'),
   })
 
   const handleDownload = async (f: ProjectFile) => {

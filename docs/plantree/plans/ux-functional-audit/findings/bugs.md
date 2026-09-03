@@ -82,7 +82,7 @@
   都没有编辑入口——上传时填错描述无法修正。
 - 建议：FilesTab 行内加编辑动作或点描述列就地编辑。
 
-## B10 · mutation 错误处理大面积缺失（失败静默）— P2（系统性） [fixed 8777ab3]（19 处 mutation onError 补齐）
+## B10 · mutation 错误处理大面积缺失（失败静默）— P2（系统性） [fixed]（全局 MutationCache.onError 边界兜底全部 mutation，classifyApiError 分类文案；31 处冗余本地 onError 拆除防双弹；断网探针证据 evidence/reverify/b10-offline-probe.md）
 
 - 位置：PhasesTab(create/update/delete)、TasksTab(create/update)、IssuesTab×3、
   FindingsTab×3、DeliverablesTab×3、MembersTab(create/update/delete)、

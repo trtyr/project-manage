@@ -1,5 +1,13 @@
 import { useState, useEffect, Component } from 'react'
-import { ConfigProvider, Switch, Input, Button, Tooltip, Spin } from 'antd'
+import {
+  ConfigProvider,
+  Switch,
+  Input,
+  Button,
+  Tooltip,
+  Spin,
+  App as AntApp,
+} from 'antd'
 import { SearchOutlined, LogoutOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
@@ -7,6 +15,7 @@ import { FolderOutlined, DatabaseOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { lightTheme, darkTheme } from './theme'
+import { registerMutationErrorToast } from './mutationToast'
 import { projectsApi, searchApi, authApi } from './api'
 import ProjectBoard from './pages/ProjectBoard'
 import ProjectDetail from './pages/ProjectDetail'
@@ -113,6 +122,24 @@ class ErrorBoundary extends Component<
     }
     return this.props.children
   }
+}
+
+/**
+ * B10: registers the theme-aware antd message API into main.tsx's
+ * mutation-error boundary so every failed mutation shows a classified
+ * toast without per-component onError handlers.
+ */
+function MutationToastBridge() {
+  const { message } = AntApp.useApp()
+  useEffect(() => {
+    registerMutationErrorToast((msg) => message.error(msg))
+    return () => {
+      // fall back to nothing on unmount (StrictMode double-mount safe:
+      // the second mount re-registers immediately)
+      registerMutationErrorToast(() => undefined)
+    }
+  }, [message])
+  return null
 }
 
 function App() {
@@ -268,6 +295,9 @@ function App() {
 
   return (
     <ConfigProvider locale={zhCN} theme={isDark ? darkTheme : lightTheme}>
+      {/* B10: wires the antd message API into the global mutation-error
+          boundary (must mount before any mutation can fail). */}
+      <MutationToastBridge />
       <div className="app-shell">
         {/* Sidebar */}
         <aside className="app-sidebar">

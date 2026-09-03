@@ -66,7 +66,6 @@ export default function FindingsTab({ projectId }: Props) {
       setFindingOpen(false)
       findingForm.resetFields()
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateFindingMut = useMutation({
@@ -80,7 +79,6 @@ export default function FindingsTab({ projectId }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['findings', projectId] })
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const deleteFindingMut = useMutation({
@@ -89,7 +87,6 @@ export default function FindingsTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['findings', projectId] })
       message.success('已删除')
     },
-    onError: () => message.error('操作失败，请重试'),
   })
 
   const columns = useMemo(
