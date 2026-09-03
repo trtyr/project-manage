@@ -207,7 +207,10 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             style={{
               fontSize: 12,
               borderColor: 'transparent',
-              background: `${cfg.color}15`,
+              // B4 fix: `${color}15` string-appends alpha to a var() — invalid
+              // CSS that silently dropped the background. color-mix works with
+              // both var() tokens and hex.
+              background: `color-mix(in srgb, ${cfg.color} 12%, transparent)`,
               color: cfg.color,
             }}
           >

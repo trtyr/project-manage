@@ -51,7 +51,7 @@ export default function SetupPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg, #f0f2f5)',
+        background: 'var(--bg, #f5f7f7)',
       }}
     >
       <div
@@ -60,7 +60,7 @@ export default function SetupPage() {
           padding: 32,
           background: 'var(--card-surface, #fff)',
           borderRadius: 8,
-          border: '1px solid var(--hairline, #e8eaed)',
+          border: '1px solid var(--hairline, #e8eded)',
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 16 }}>

@@ -352,8 +352,10 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                 return false
               }}
               onRemove={(file) =>
+                // B6 fix: filter by list uid, not name — two files with the
+                // same name used to remove both at once.
                 setSelectedFiles((prev) =>
-                  prev.filter((f) => f.name !== file.name),
+                  prev.filter((_, i) => String(i) !== file.uid),
                 )
               }
               fileList={selectedFiles.map(

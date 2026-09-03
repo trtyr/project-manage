@@ -178,7 +178,14 @@ export default function FindingsTab({ projectId }: Props) {
   return (
     <div>
       <div className="tab-action">
-        <Button icon={<PlusOutlined />} onClick={() => setFindingOpen(true)}>
+        <Button
+          icon={<PlusOutlined />}
+          onClick={() => {
+            // B2 fix (same as CommunicationsTab): refresh the default on open.
+            findingForm.setFieldsValue({ observed_at: dayjs() })
+            setFindingOpen(true)
+          }}
+        >
           记录发现
         </Button>
       </div>

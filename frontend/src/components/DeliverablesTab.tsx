@@ -143,7 +143,12 @@ export default function DeliverablesTab({ projectId }: Props) {
               icon={<EditOutlined />}
               onClick={() => {
                 setEditing(r)
-                form.setFieldsValue(r)
+                // B3 fix: DatePicker expects a Dayjs — a raw 'YYYY-MM-DD'
+                // string renders empty and crashes .format() on save.
+                form.setFieldsValue({
+                  ...r,
+                  due_date: r.due_date ? dayjs(r.due_date) : null,
+                })
                 setOpen(true)
               }}
             />

@@ -100,7 +100,7 @@ class ErrorBoundary extends Component<
             style={{
               padding: '8px 20px',
               borderRadius: 6,
-              border: '1px solid var(--line)',
+              border: '1px solid var(--hairline)',
               background: 'var(--surface)',
               color: 'var(--ink)',
               cursor: 'pointer',

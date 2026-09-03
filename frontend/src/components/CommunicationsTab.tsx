@@ -68,6 +68,10 @@ export default function CommunicationsTab({ projectId }: Props) {
             // Defensive reset so a previously-cancelled session cannot leak
             // pending uploads into a fresh modal.
             setPendingFiles([])
+            // B2 fix: initialValue={dayjs()} is only evaluated on first field
+            // registration (the Modal stays mounted), so a stale default time
+            // would survive reopens — set "now" explicitly on every open.
+            commForm.setFieldsValue({ occurred_at: dayjs() })
             setCommOpen(true)
           }}
         >

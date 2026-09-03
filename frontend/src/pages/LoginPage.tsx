@@ -43,7 +43,7 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg, #f0f2f5)',
+        background: 'var(--bg, #f5f7f7)',
       }}
     >
       <div
@@ -52,7 +52,7 @@ export default function LoginPage() {
           padding: 32,
           background: 'var(--card-surface, #fff)',
           borderRadius: 8,
-          border: '1px solid var(--hairline, #e8eaed)',
+          border: '1px solid var(--hairline, #e8eded)',
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -61,7 +61,7 @@ export default function LoginPage() {
               width: 10,
               height: 10,
               borderRadius: '50%',
-              background: 'var(--primary, #1a365d)',
+              background: 'var(--primary, #148374)',
               display: 'inline-block',
               marginRight: 8,
             }}

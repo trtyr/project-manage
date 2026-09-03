@@ -296,10 +296,14 @@ export default function ProjectDetail() {
             okType="danger"
             cancelText="取消"
             onConfirm={() => {
-              projectsApi.delete(project.id).then(() => {
-                message.success('项目已删除')
-                navigate('/')
-              })
+              // B11 fix: a failed delete used to navigate away silently.
+              projectsApi
+                .delete(project.id)
+                .then(() => {
+                  message.success('项目已删除')
+                  navigate('/')
+                })
+                .catch(() => message.error('删除失败，请重试'))
             }}
           >
             <Button danger icon={<DeleteOutlined />}>

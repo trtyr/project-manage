@@ -7,6 +7,14 @@ import type { Phase } from '../types'
 
 const { Text } = Typography
 
+// B5 fix: phase status shown as raw English ('in_progress') on timeline rows —
+// map to the same Chinese labels the phases tab uses.
+const STATUS_LABEL: Record<string, string> = {
+  pending: '待开始',
+  in_progress: '进行中',
+  completed: '已完成',
+}
+
 interface Props {
   projectId: string
 }
@@ -142,7 +150,7 @@ export default function TimelineTab({ projectId }: Props) {
                     padding: '0 4px',
                   }}
                 >
-                  {p.status}
+                  {STATUS_LABEL[p.status] ?? p.status}
                 </Tag>
               )}
             </div>
