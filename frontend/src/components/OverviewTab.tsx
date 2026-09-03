@@ -1,26 +1,8 @@
-import { Descriptions, Tag, Typography } from 'antd'
-import type {
-  Client,
-  Project,
-  ProjectStatus,
-  TechApprovalStatus,
-} from '../types'
+import { Descriptions, Typography } from 'antd'
+import type { Client, Project } from '../types'
 import TimelineTab from './TimelineTab'
 
 const { Text } = Typography
-
-const statusLabel: Record<ProjectStatus, string> = {
-  in_progress: '进行中',
-  completed: '已完成',
-  paused: '已暂停',
-}
-
-const techTagColors: Record<TechApprovalStatus, string | undefined> = {
-  未接触: undefined,
-  POC中: 'processing',
-  已认可: 'success',
-  技术否决: 'error',
-}
 
 interface Props {
   projectId: string
@@ -31,52 +13,21 @@ interface Props {
 }
 
 /**
- * 「概览」tab: a structured summary card of the project (the header only
- * shows inline chips) plus the cross-entity timeline. Data arrives via
- * props from ProjectDetail's existing queries — no extra requests.
+ * 「概览」tab: the deep fields the header chips don't carry (goals,
+ * competitor notes) plus the cross-entity timeline. Status / client /
+ * phase / tech-approval live in the detail header only (L10 dedup).
+ * Data arrives via props from ProjectDetail's existing queries — no
+ * extra requests.
  */
-export default function OverviewTab({ projectId, project, client }: Props) {
+export default function OverviewTab({ projectId, project }: Props) {
   return (
     <div>
       <Descriptions
         size="small"
         column={2}
         bordered
-        style={{ marginBottom: 24 }}
+        style={{ marginBottom: 'var(--space-6)' }}
         items={[
-          {
-            key: 'status',
-            label: '状态',
-            children: (
-              <Tag className={`status-badge status-badge--${project.status}`}>
-                {statusLabel[project.status] ?? project.status}
-              </Tag>
-            ),
-          },
-          {
-            key: 'client',
-            label: '客户',
-            children: client
-              ? `${client.name}${client.contact_person ? ` · ${client.contact_person}` : ''}${
-                  client.contact_info ? ` · ${client.contact_info}` : ''
-                }`
-              : '-',
-          },
-          { key: 'phase', label: '阶段', children: project.phase || '-' },
-          {
-            key: 'tech',
-            label: '技术认可',
-            children: project.tech_approval ? (
-              <Tag
-                color={techTagColors[project.tech_approval]}
-                style={{ marginInlineEnd: 0 }}
-              >
-                {project.tech_approval}
-              </Tag>
-            ) : (
-              '-'
-            ),
-          },
           {
             key: 'goals',
             label: '目标',
@@ -97,11 +48,17 @@ export default function OverviewTab({ projectId, project, client }: Props) {
             span: 2,
             children: project.competitors || '-',
           },
+          // L10 fix: 状态/客户/阶段/技术认可 rows removed — the detail header
+          // already shows all four; the overview keeps only the deeper fields.
         ]}
       />
       <Text
         type="secondary"
-        style={{ fontSize: 13, display: 'block', marginBottom: 8 }}
+        style={{
+          fontSize: 13,
+          display: 'block',
+          marginBottom: 'var(--space-2)',
+        }}
       >
         时间线
       </Text>

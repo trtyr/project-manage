@@ -108,10 +108,11 @@ function DroppableArea({
 
 interface SortableCardProps {
   itemId: string
+  label: string
   children: React.ReactNode
 }
 
-function SortableCard({ itemId, children }: SortableCardProps) {
+function SortableCard({ itemId, label, children }: SortableCardProps) {
   const {
     attributes,
     listeners,
@@ -132,7 +133,14 @@ function SortableCard({ itemId, children }: SortableCardProps) {
   }
   return (
     <div ref={setNodeRef} className="member-card" style={style}>
-      <span className="member-card__handle" {...attributes} {...listeners}>
+      {/* L5: drag handle carries the person name so screen readers and
+          the unnamed-icon audit can identify it. */}
+      <span
+        className="member-card__handle"
+        aria-label={`拖动排序 ${label}`}
+        {...attributes}
+        {...listeners}
+      >
         <HolderOutlined />
       </span>
       {children}
@@ -315,7 +323,11 @@ export default function MembersTab({ projectId }: Props) {
               />
             ) : (
               list.map((p) => (
-                <SortableCard key={p.id} itemId={itemId(side, p.id)}>
+                <SortableCard
+                  key={p.id}
+                  itemId={itemId(side, p.id)}
+                  label={p.name}
+                >
                   <Text strong style={{ flex: '0 0 auto' }}>
                     {p.name}
                   </Text>
@@ -332,6 +344,7 @@ export default function MembersTab({ projectId }: Props) {
                       type="text"
                       size="small"
                       icon={<EditOutlined />}
+                      aria-label={`编辑 ${p.name}`}
                       onClick={() => openEdit(p)}
                     />
                     <Popconfirm
@@ -343,6 +356,7 @@ export default function MembersTab({ projectId }: Props) {
                         danger
                         size="small"
                         icon={<DeleteOutlined />}
+                        aria-label={`删除 ${p.name}`}
                       />
                     </Popconfirm>
                   </Space>

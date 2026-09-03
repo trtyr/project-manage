@@ -324,7 +324,7 @@ export default function AssetsTab({ projectId }: Props) {
               {isUrl ? (
                 <Text
                   ellipsis
-                  style={{ maxWidth: 160, verticalAlign: 'middle' }}
+                  style={{ maxWidth: 220, verticalAlign: 'middle' }}
                 >
                   <a href={v} target="_blank" rel="noopener noreferrer">
                     {v}
@@ -333,7 +333,7 @@ export default function AssetsTab({ projectId }: Props) {
               ) : (
                 <Text
                   ellipsis
-                  style={{ maxWidth: 160, verticalAlign: 'middle' }}
+                  style={{ maxWidth: 220, verticalAlign: 'middle' }}
                 >
                   {v}
                 </Text>
@@ -342,6 +342,7 @@ export default function AssetsTab({ projectId }: Props) {
                 type="text"
                 size="small"
                 icon={<CopyOutlined />}
+                aria-label={`复制 ${v}`}
                 onClick={() => copy(v)}
               />
             </Space>
@@ -396,6 +397,7 @@ export default function AssetsTab({ projectId }: Props) {
               type="text"
               size="small"
               icon={<EditOutlined />}
+              aria-label={`编辑资产 ${r.name}`}
               onClick={() => {
                 setEditingAsset(r)
                 assetForm.setFieldsValue({
@@ -419,6 +421,7 @@ export default function AssetsTab({ projectId }: Props) {
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
+                aria-label={`删除资产 ${r.name}`}
               />
             </Popconfirm>
           </Space>

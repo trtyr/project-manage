@@ -255,6 +255,15 @@ Page / tab components obtain data via `useQuery({ queryKey, queryFn })`
 where `queryFn` is an `<resource>Api` method. Do not introduce a parallel
 data-fetching mechanism.
 
+### 6.2a Spacing & color tokens (L8/L9 convention)
+
+`index.css` defines `--space-1..12` (4/8/12/16/24/32/48px) and status
+tokens `--success/warning/danger/info-hex` (dark-adjusted under
+`html.dark`). New code MUST use them instead of raw px margins or
+hardcoded status colors; when touching a file that still carries raw
+values, migrate the values you touch (incremental, no big-bang refactor
+of the remaining inline styles).
+
 ### 6.3 ErrorBoundary
 
 A class-component `ErrorBoundary` is mounted at the App root in

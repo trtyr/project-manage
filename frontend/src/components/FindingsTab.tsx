@@ -94,7 +94,7 @@ export default function FindingsTab({ projectId }: Props) {
 
   const columns = useMemo(
     () => [
-      { title: '问题', dataIndex: 'title', key: 'title' },
+      { title: '发现', dataIndex: 'title', key: 'title' },
       {
         title: '归属',
         dataIndex: 'product_source',
@@ -253,7 +253,9 @@ export default function FindingsTab({ projectId }: Props) {
             }
           })
         }
-        confirmLoading={createFindingMut.isPending || updateFindingMut.isPending}
+        confirmLoading={
+          createFindingMut.isPending || updateFindingMut.isPending
+        }
         width={480}
         okText={editing ? '保存' : '添加'}
         cancelText="取消"
@@ -261,7 +263,7 @@ export default function FindingsTab({ projectId }: Props) {
         <Form form={findingForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="title"
-            label="问题"
+            label="发现"
             rules={[{ required: true, message: '请输入问题' }]}
           >
             <Input placeholder="如：对象存储偶发超时" />
@@ -284,7 +286,7 @@ export default function FindingsTab({ projectId }: Props) {
             <Input placeholder="第三方产品时填，如：阿里云" />
           </Form.Item>
           <Form.Item name="observed_at" label="发现日期" initialValue={dayjs()}>
-            <DatePicker showTime style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="communication_id" label="来源交流">
             <Select

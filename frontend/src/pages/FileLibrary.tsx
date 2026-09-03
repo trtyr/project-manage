@@ -182,6 +182,7 @@ export default function FileLibrary() {
                     type="text"
                     size="small"
                     icon={<LinkOutlined />}
+                    aria-label={`打开链接 ${r.original_name}`}
                     onClick={() =>
                       window.open(r.url!, '_blank', 'noopener,noreferrer')
                     }
@@ -192,12 +193,14 @@ export default function FileLibrary() {
                       type="text"
                       size="small"
                       icon={<EyeOutlined />}
+                      aria-label={`预览 ${r.original_name}`}
                       onClick={() => setPreviewFile(r)}
                     />
                     <Button
                       type="text"
                       size="small"
                       icon={<DownloadOutlined />}
+                      aria-label={`下载 ${r.original_name}`}
                       onClick={() => handleDownload(r)}
                     />
                   </>
@@ -213,6 +216,7 @@ export default function FileLibrary() {
                     danger
                     size="small"
                     icon={<DeleteOutlined />}
+                    aria-label={`删除 ${r.original_name}`}
                   />
                 </Popconfirm>
               </Space>

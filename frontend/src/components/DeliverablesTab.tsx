@@ -118,7 +118,7 @@ export default function DeliverablesTab({ projectId }: Props) {
           const d = dayjs(v)
           const overdue = d.isBefore(dayjs(), 'day')
           return (
-            <span style={{ color: overdue ? '#ff4d4f' : 'inherit' }}>
+            <span style={{ color: overdue ? 'var(--danger-hex)' : 'inherit' }}>
               {d.format('MM-DD')}
             </span>
           )
@@ -144,6 +144,7 @@ export default function DeliverablesTab({ projectId }: Props) {
               type="text"
               size="small"
               icon={<EditOutlined />}
+              aria-label={`编辑交付物 ${r.name}`}
               onClick={() => {
                 setEditing(r)
                 // B3 fix: DatePicker expects a Dayjs — a raw 'YYYY-MM-DD'
@@ -161,6 +162,7 @@ export default function DeliverablesTab({ projectId }: Props) {
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
+                aria-label={`删除交付物 ${r.name}`}
               />
             </Popconfirm>
           </Space>

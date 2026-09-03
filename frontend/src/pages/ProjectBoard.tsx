@@ -11,6 +11,7 @@ import {
   App,
   Dropdown,
   Card,
+  Skeleton,
   Statistic,
 } from 'antd'
 import type { MenuProps } from 'antd'
@@ -21,7 +22,7 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   PauseCircleOutlined,
-  AlertOutlined,
+  FolderOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -259,7 +260,11 @@ export default function ProjectBoard() {
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}
         allowClear
-        style={{ marginBottom: 24, borderRadius: 8, maxWidth: 420 }}
+        style={{
+          marginBottom: 'var(--space-6)',
+          borderRadius: 8,
+          maxWidth: 420,
+        }}
       />
 
       {/* === Search mode === */}
@@ -314,8 +319,8 @@ export default function ProjectBoard() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: 16,
-              marginBottom: 28,
+              gap: 'var(--space-4)',
+              marginBottom: 'var(--space-6)',
             }}
           >
             <Card
@@ -341,7 +346,11 @@ export default function ProjectBoard() {
               <Statistic
                 title="已完成"
                 value={completed}
-                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                prefix={
+                  <CheckCircleOutlined
+                    style={{ color: 'var(--success-hex)' }}
+                  />
+                }
               />
             </Card>
             <Card
@@ -352,7 +361,11 @@ export default function ProjectBoard() {
               <Statistic
                 title="已暂停"
                 value={paused}
-                prefix={<PauseCircleOutlined style={{ color: '#faad14' }} />}
+                prefix={
+                  <PauseCircleOutlined
+                    style={{ color: 'var(--warning-hex)' }}
+                  />
+                }
               />
             </Card>
             <Card
@@ -363,7 +376,7 @@ export default function ProjectBoard() {
               <Statistic
                 title="资料"
                 value={recentFiles?.length ?? 0}
-                prefix={<AlertOutlined style={{ color: '#722ed1' }} />}
+                prefix={<FolderOutlined style={{ color: 'var(--info-hex)' }} />}
               />
             </Card>
           </div>
@@ -389,9 +402,7 @@ export default function ProjectBoard() {
                 项目列表
               </div>
               {isLoading ? (
-                <div style={{ color: 'var(--muted-hex)', fontSize: 14 }}>
-                  加载中…
-                </div>
+                <Skeleton active paragraph={{ rows: 4 }} />
               ) : !projects?.length ? (
                 <Empty
                   description="还没有项目"

@@ -42,7 +42,7 @@ export default function FileIcon({
       exts: ['pdf'],
       mimes: ['application/pdf'],
       Icon: FilePdfOutlined,
-      color: '#ff4d4f',
+      color: 'var(--danger-hex)',
     },
     {
       exts: ['doc', 'docx'],
@@ -54,7 +54,7 @@ export default function FileIcon({
       exts: ['xls', 'xlsx'],
       mimes: ['excel', 'spreadsheet'],
       Icon: FileExcelOutlined,
-      color: '#52c41a',
+      color: 'var(--success-hex)',
     },
     {
       exts: ['ppt', 'pptx'],
@@ -66,7 +66,7 @@ export default function FileIcon({
       exts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico'],
       mimes: ['image/'],
       Icon: FileImageOutlined,
-      color: '#722ed1',
+      color: 'var(--info-hex)',
     },
     {
       exts: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'],

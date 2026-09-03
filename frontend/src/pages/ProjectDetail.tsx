@@ -11,7 +11,6 @@ import {
   Modal,
   Skeleton,
   Space,
-  Popconfirm,
   Empty,
   App,
 } from 'antd'
@@ -108,7 +107,7 @@ function TabLabel({
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
 
   // --- Forms ---
@@ -289,27 +288,36 @@ export default function ProjectDetail() {
           >
             编辑信息
           </Button>
-          <Popconfirm
-            title={`删除项目「${project.name}」？`}
-            description="所有数据将永久删除，不可恢复"
-            okText="确认删除"
-            okType="danger"
-            cancelText="取消"
-            onConfirm={() => {
-              // B11 fix: a failed delete used to navigate away silently.
-              projectsApi
-                .delete(project.id)
-                .then(() => {
-                  message.success('项目已删除')
-                  navigate('/')
-                })
-                .catch(() => message.error('删除失败，请重试'))
+          {/* L16: project-level delete uses modal.confirm everywhere —
+              same pattern as ProjectBoard (row-level deletes keep
+              Popconfirm, but project deletion is too destructive for a
+              small popover). */}
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              modal.confirm({
+                title: `删除项目「${project.name}」？`,
+                content:
+                  '所有沟通记录、任务、文件、阶段等数据将一并删除，不可恢复。',
+                okText: '确认删除',
+                okType: 'danger',
+                cancelText: '取消',
+                onOk: () => {
+                  // B11 fix: a failed delete used to navigate away silently.
+                  return projectsApi
+                    .delete(project.id)
+                    .then(() => {
+                      message.success('项目已删除')
+                      navigate('/')
+                    })
+                    .catch(() => message.error('删除失败，请重试'))
+                },
+              })
             }}
           >
-            <Button danger icon={<DeleteOutlined />}>
-              删除项目
-            </Button>
-          </Popconfirm>
+            删除项目
+          </Button>
         </Space>
       </div>
 

@@ -11,11 +11,7 @@ import {
   Space,
   App,
 } from 'antd'
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { tasksApi, peopleApi } from '../api'
@@ -184,7 +180,7 @@ export default function TasksTab({ projectId }: Props) {
           const d = dayjs(v)
           const overdue = d.isBefore(dayjs(), 'day')
           return (
-            <span style={{ color: overdue ? '#ff4d4f' : 'inherit' }}>
+            <span style={{ color: overdue ? 'var(--danger-hex)' : 'inherit' }}>
               {d.format('MM-DD')}
             </span>
           )

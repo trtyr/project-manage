@@ -54,7 +54,7 @@ function buildTree(phases: Phase[]): PhaseNode[] {
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: '待开始', color: 'var(--muted-hex)' },
   in_progress: { label: '进行中', color: 'var(--primary-hex)' },
-  completed: { label: '已完成', color: '#2d8659' },
+  completed: { label: '已完成', color: 'var(--success-hex)' },
 }
 
 interface StandardPhaseTemplate {
@@ -234,32 +234,38 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             </Text>
           )}
           <Space style={{ marginLeft: 'auto' }}>
-            <Button
-              type="text"
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setCreateOpen(true)
-                form.setFieldsValue({ parent_id: node.id })
-              }}
-            />
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditTarget(node)
-                editForm.setFieldsValue({
-                  ...node,
-                  planned_start: node.planned_start
-                    ? dayjs(node.planned_start)
-                    : null,
-                  planned_end: node.planned_end
-                    ? dayjs(node.planned_end)
-                    : null,
-                })
-              }}
-            />
+            <Tooltip title="添加子阶段">
+              <Button
+                type="text"
+                size="small"
+                icon={<PlusOutlined />}
+                aria-label={`为 ${node.name} 添加子阶段`}
+                onClick={() => {
+                  setCreateOpen(true)
+                  form.setFieldsValue({ parent_id: node.id })
+                }}
+              />
+            </Tooltip>
+            <Tooltip title="编辑阶段">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label={`编辑阶段 ${node.name}`}
+                onClick={() => {
+                  setEditTarget(node)
+                  editForm.setFieldsValue({
+                    ...node,
+                    planned_start: node.planned_start
+                      ? dayjs(node.planned_start)
+                      : null,
+                    planned_end: node.planned_end
+                      ? dayjs(node.planned_end)
+                      : null,
+                  })
+                }}
+              />
+            </Tooltip>
             <Popconfirm
               title="删除该阶段？子阶段也会一起删除"
               onConfirm={() => deleteMut.mutate(node.id)}
@@ -269,6 +275,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
+                aria-label={`删除阶段 ${node.name}`}
               />
             </Popconfirm>
           </Space>
@@ -341,6 +348,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
                   danger
                   icon={<DeleteOutlined />}
                   style={{ fontSize: 11, padding: 0, width: 18 }}
+                  aria-label={`取消关联 ${f.original_name}`}
                 />
               </Popconfirm>
             </Space>
@@ -371,7 +379,12 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             }}
           >
             <Tooltip title="上传新文件到此阶段">
-              <Button type="text" size="small" icon={<UploadOutlined />} />
+              <Button
+                type="text"
+                size="small"
+                icon={<UploadOutlined />}
+                aria-label={`上传文件到阶段 ${node.name}`}
+              />
             </Tooltip>
           </Upload>
           {phaseFiles.length === 0 && !availableFiles.length && (
@@ -492,10 +505,10 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             }}
           >
             <Form.Item name="planned_start" label="计划开始">
-              <DatePicker showTime style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="planned_end" label="计划结束">
-              <DatePicker showTime style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </div>
         </Form>
@@ -551,10 +564,10 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             }}
           >
             <Form.Item name="planned_start" label="计划开始">
-              <DatePicker showTime style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="planned_end" label="计划结束">
-              <DatePicker showTime style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </div>
         </Form>

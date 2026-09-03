@@ -171,7 +171,7 @@ export default function IssuesTab({ projectId }: Props) {
           const d = dayjs(v)
           const overdue = d.isBefore(dayjs(), 'day')
           return (
-            <span style={{ color: overdue ? '#ff4d4f' : 'inherit' }}>
+            <span style={{ color: overdue ? 'var(--danger-hex)' : 'inherit' }}>
               {d.format('MM-DD')}
             </span>
           )

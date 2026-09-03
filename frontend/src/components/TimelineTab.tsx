@@ -73,20 +73,33 @@ export default function TimelineTab({ projectId }: Props) {
     return { offsetPct, widthPct, ps, pe }
   }
 
-  // Week markers across the span
-  const weekMarkers: { label: string; pct: number }[] = []
+  // Week markers across the span (first week of a month also shows the
+  // month for long-range context — L12)
+  const weekMarkers: { label: string; pct: number; isMonth?: boolean }[] = []
   const totalWeeks = Math.ceil(span / 7)
+  let lastMonth = -1
   for (let w = 0; w <= totalWeeks; w++) {
     const day = w * 7
     if (day > span) break
+    const d = start.add(day, 'day')
+    const isMonth = d.month() !== lastMonth
+    lastMonth = d.month()
     weekMarkers.push({
-      label: start.add(day, 'day').format('MM/DD'),
+      label: isMonth ? d.format('YY年M月') : d.format('MM/DD'),
       pct: (day / span) * 100,
+      isMonth,
     })
   }
 
+  // L12: today marker position (only when today falls inside the span)
+  const todayOffsetPct = (() => {
+    const diff = dayjs().diff(start, 'day')
+    if (diff < 0 || diff > span) return null
+    return (diff / span) * 100
+  })()
+
   return (
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: 'var(--space-2)' }}>
       {/* Header: date axis */}
       <div
         style={{
@@ -104,7 +117,8 @@ export default function TimelineTab({ projectId }: Props) {
               position: 'absolute',
               left: `${m.pct}%`,
               fontSize: 11,
-              color: 'var(--muted-hex)',
+              color: m.isMonth ? 'var(--ink-hex)' : 'var(--muted-hex)',
+              fontWeight: m.isMonth ? 500 : 400,
               transform: 'translateX(-50%)',
               whiteSpace: 'nowrap',
             }}
@@ -115,99 +129,118 @@ export default function TimelineTab({ projectId }: Props) {
       </div>
 
       {/* Phase rows */}
-      {phases.map((p) => {
-        const bar = barFor(p)
-        return (
+      <div style={{ position: 'relative' }}>
+        {/* L12: today line across all phase rows */}
+        {todayOffsetPct !== null && (
           <div
-            key={p.id}
+            aria-hidden
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 8,
-              minHeight: 32,
+              position: 'absolute',
+              left: `calc(160px + (100% - 160px) * ${todayOffsetPct / 100})`,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              background: 'var(--danger-hex)',
+              opacity: 0.45,
+              zIndex: 1,
             }}
-          >
-            {/* Label */}
+            title="今天"
+          />
+        )}
+        {phases.map((p) => {
+          const bar = barFor(p)
+          return (
             <div
+              key={p.id}
               style={{
-                width: 150,
-                flexShrink: 0,
-                fontSize: 13,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                paddingRight: 10,
-                textAlign: 'right',
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 8,
+                minHeight: 32,
               }}
             >
-              {p.name}
-              {p.status && p.status !== 'pending' && (
-                <Tag
-                  style={{
-                    marginLeft: 4,
-                    fontSize: 10,
-                    lineHeight: '16px',
-                    padding: '0 4px',
-                  }}
-                >
-                  {STATUS_LABEL[p.status] ?? p.status}
-                </Tag>
-              )}
-            </div>
+              {/* Label */}
+              <div
+                style={{
+                  width: 150,
+                  flexShrink: 0,
+                  fontSize: 13,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  paddingRight: 10,
+                  textAlign: 'right',
+                }}
+              >
+                {p.name}
+                {p.status && p.status !== 'pending' && (
+                  <Tag
+                    style={{
+                      marginLeft: 4,
+                      fontSize: 10,
+                      lineHeight: '16px',
+                      padding: '0 4px',
+                    }}
+                  >
+                    {STATUS_LABEL[p.status] ?? p.status}
+                  </Tag>
+                )}
+              </div>
 
-            {/* Bar track */}
-            <div
-              style={{
-                flex: 1,
-                position: 'relative',
-                height: 24,
-                background: 'var(--subtle-bg)',
-                borderRadius: 4,
-              }}
-            >
-              {bar ? (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: `${bar.offsetPct}%`,
-                    width: `${Math.max(bar.widthPct, 2)}%`,
-                    top: 2,
-                    bottom: 2,
-                    background: 'var(--primary-hex)',
-                    borderRadius: 4,
-                    opacity: p.status === 'completed' ? 0.5 : 0.85,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 10,
-                    color: '#fff',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                  }}
-                  title={`${bar.ps.format('MM-DD')} → ${bar.pe.format('MM-DD')}`}
-                >
-                  {bar.widthPct > 8
-                    ? `${bar.pe.diff(bar.ps, 'day') + 1}天`
-                    : ''}
-                </div>
-              ) : (
-                <Text
-                  style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    fontSize: 11,
-                  }}
-                  type="secondary"
-                >
-                  未排期
-                </Text>
-              )}
+              {/* Bar track */}
+              <div
+                style={{
+                  flex: 1,
+                  position: 'relative',
+                  height: 24,
+                  background: 'var(--subtle-bg)',
+                  borderRadius: 4,
+                }}
+              >
+                {bar ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: `${bar.offsetPct}%`,
+                      width: `${Math.max(bar.widthPct, 2)}%`,
+                      top: 2,
+                      bottom: 2,
+                      background: 'var(--primary-hex)',
+                      borderRadius: 4,
+                      opacity: p.status === 'completed' ? 0.5 : 0.85,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 10,
+                      color: '#fff',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                    }}
+                    title={`${bar.ps.format('MM-DD')} → ${bar.pe.format('MM-DD')}`}
+                  >
+                    {bar.widthPct > 8
+                      ? `${bar.pe.diff(bar.ps, 'day') + 1}天`
+                      : ''}
+                  </div>
+                ) : (
+                  <Text
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: 11,
+                    }}
+                    type="secondary"
+                  >
+                    未排期
+                  </Text>
+                )}
+              </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

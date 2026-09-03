@@ -12,7 +12,7 @@
   --surface-hex: #ffffff;
   --ink-hex: #1a1e1e;
   --primary-hex: #148374;
-  --accent-hex: #d48042;
+  --accent-hex: var(--warning-hex);
   --muted-hex: #5f6868;
 
   /* Typography */
@@ -52,6 +52,12 @@
   --primary-rgb: 20, 131, 116;
   --sidebar-bg: #f7f8f8;
 
+  /* Status tokens (L9: single source for success/warning/danger/info) */
+  --success-hex: var(--success-hex);
+  --warning-hex: var(--warning-hex);
+  --danger-hex: #ff4d4f;
+  --info-hex: #722ed1;
+
   color-scheme: light;
 }
 
@@ -82,6 +88,12 @@ html.dark {
   --overlay: rgba(255, 255, 255, 0.06);
   --primary-rgb: 45, 184, 158;
   --sidebar-bg: #0f1111;
+
+  /* Status tokens — dark-adjusted */
+  --success-hex: #5bbf8a;
+  --warning-hex: #e0a560;
+  --danger-hex: #ff7875;
+  --info-hex: #9254de;
 
   color-scheme: dark;
 }
@@ -378,11 +390,11 @@ body {
 }
 
 .status-dot--completed {
-  background: #2d8659;
+  background: var(--success-hex);
 }
 
 .status-dot--paused {
-  background: #d48042;
+  background: var(--warning-hex);
 }
 
 /* === Recent activity === */
@@ -678,12 +690,12 @@ body {
 
 .status-badge--completed {
   background: rgba(45, 134, 89, 0.1);
-  color: #2d8659;
+  color: var(--success-hex);
 }
 
 .status-badge--paused {
   background: rgba(212, 128, 66, 0.1);
-  color: #d48042;
+  color: var(--warning-hex);
 }
 
 /* === Tab action bar === */

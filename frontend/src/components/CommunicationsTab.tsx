@@ -135,7 +135,7 @@ export default function CommunicationsTab({ projectId }: Props) {
           })
         }
         confirmLoading={createCommMut.isPending}
-        width="100%"
+        width={800}
         centered
         styles={{ body: { height: '85vh', overflow: 'auto' } }}
         okText="添加"
