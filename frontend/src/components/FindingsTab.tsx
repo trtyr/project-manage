@@ -227,7 +227,10 @@ export default function FindingsTab({ projectId }: Props) {
         pagination={false}
         scroll={{ x: 'max-content' }}
         columns={columns}
-        locale={{ emptyText: '还没有记录的发现' }}
+        locale={{
+          emptyText:
+            '还没有产品发现。评测或对比中看到的现象（自家或三方产品）都值得留痕。',
+        }}
       />
 
       <Modal

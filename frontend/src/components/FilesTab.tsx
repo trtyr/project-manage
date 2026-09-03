@@ -29,6 +29,8 @@ import type { ProjectFile } from '../types'
 import FileIcon from './FileIcon'
 import { formatSize } from '../utils/format'
 
+const { CheckableTag } = Tag
+
 interface Props {
   projectId: string
   onFilePreview?: (f: ProjectFile) => void
@@ -330,21 +332,64 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
     [communications, phases, navigate, projectId, onFilePreview],
   )
 
+  // D4: tag filter chips — tags existed only on upload forms with no way
+  // to filter by them, so nobody filled them. Make tags useful first.
+  const [activeTags, setActiveTags] = useState<string[]>([])
+  const allTags = useMemo(
+    () =>
+      Array.from(new Set((files ?? []).flatMap((f) => f.tags ?? []))).sort(),
+    [files],
+  )
+  const visibleFiles = activeTags.length
+    ? (files ?? []).filter((f) =>
+        activeTags.every((t) => (f.tags ?? []).includes(t)),
+      )
+    : files
+
   return (
     <div>
       <div className="tab-action">
         <Button icon={<PlusOutlined />} onClick={() => setFileOpen(true)}>
           上传文件
         </Button>
+        {allTags.length > 0 && (
+          <Space size={[4, 4]} wrap style={{ marginLeft: 'var(--space-2)' }}>
+            {allTags.map((t) => (
+              <CheckableTag
+                key={t}
+                checked={activeTags.includes(t)}
+                onChange={(checked: boolean) =>
+                  setActiveTags((prev) =>
+                    checked ? [...prev, t] : prev.filter((x) => x !== t),
+                  )
+                }
+              >
+                {t}
+              </CheckableTag>
+            ))}
+            {activeTags.length > 0 && (
+              <Button
+                type="link"
+                size="small"
+                onClick={() => setActiveTags([])}
+                aria-label="清除标签筛选"
+              >
+                清除筛选
+              </Button>
+            )}
+          </Space>
+        )}
       </div>
       <Table
-        dataSource={files}
+        dataSource={visibleFiles}
         rowKey="id"
         size="small"
         pagination={false}
         scroll={{ x: 'max-content' }}
         columns={columns}
-        locale={{ emptyText: '还没有上传文件' }}
+        locale={{
+          emptyText: '还没有上传文件。把方案、报告拖进来，并关联到对应阶段。',
+        }}
       />
 
       <Modal

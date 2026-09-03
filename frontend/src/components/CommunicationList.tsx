@@ -29,7 +29,7 @@ export default function CommunicationList({
     return (
       <Empty
         image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description="还没有沟通记录"
+        description="还没有沟通记录。会议纪要、微信要点、电话结论——记下和客户的每次关键往来。"
       />
     )
   }

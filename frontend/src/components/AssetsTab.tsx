@@ -462,7 +462,10 @@ export default function AssetsTab({ projectId }: Props) {
             scroll={{ x: 'max-content' }}
             columns={columns}
             components={{ body: { row: SortableRow } }}
-            locale={{ emptyText: '还没有记录资产' }}
+            locale={{
+              emptyText:
+                '还没有记录资产。把账号、平台入口、凭据集中登记在这里。',
+            }}
           />
         </SortableContext>
       </DndContext>

@@ -10,6 +10,8 @@ interface Props {
   project: Project
   /** from the parent's existing client query (may still be loading) */
   client?: Client
+  /** D3: handed to TimelineTab's 去填日期 empty-state button. */
+  onGoFillPhaseDates?: () => void
 }
 
 /**
@@ -19,7 +21,11 @@ interface Props {
  * Data arrives via props from ProjectDetail's existing queries — no
  * extra requests.
  */
-export default function OverviewTab({ projectId, project }: Props) {
+export default function OverviewTab({
+  projectId,
+  project,
+  onGoFillPhaseDates,
+}: Props) {
   return (
     <div>
       <Descriptions
@@ -62,7 +68,7 @@ export default function OverviewTab({ projectId, project }: Props) {
       >
         时间线
       </Text>
-      <TimelineTab projectId={projectId} />
+      <TimelineTab projectId={projectId} onGoFillDates={onGoFillPhaseDates} />
     </div>
   )
 }

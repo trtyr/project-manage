@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Table, Tag, Space, Button, Input, Popconfirm, App } from 'antd'
 import {
@@ -14,6 +14,8 @@ import type { FileWithProject } from '../types'
 import FilePreview from '../components/FilePreview'
 import FileIcon from '../components/FileIcon'
 import { formatSize } from '../utils/format'
+
+const { CheckableTag } = Tag
 
 export default function FileLibrary() {
   const navigate = useNavigate()
@@ -49,6 +51,13 @@ export default function FileLibrary() {
     }
   }
 
+  // D4: tag chips filter in addition to the text search
+  const [activeTags, setActiveTags] = useState<string[]>([])
+  const allTags = useMemo(
+    () => Array.from(new Set((files ?? []).flatMap((f) => f.tags))).sort(),
+    [files],
+  )
+
   const filtered = files?.filter(
     (f) =>
       f.original_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -57,6 +66,9 @@ export default function FileLibrary() {
         t.toLowerCase().includes(search.toLowerCase()),
       ),
   )
+  const visible = activeTags.length
+    ? filtered?.filter((f) => activeTags.every((t) => f.tags.includes(t)))
+    : filtered
 
   return (
     <div className="fade-in">
@@ -77,9 +89,36 @@ export default function FileLibrary() {
         style={{ marginBottom: 20, maxWidth: 400 }}
         onChange={(e) => setSearch(e.target.value)}
       />
+      {allTags.length > 0 && (
+        <Space size={[4, 4]} wrap style={{ marginLeft: 'var(--space-2)' }}>
+          {allTags.map((t) => (
+            <CheckableTag
+              key={t}
+              checked={activeTags.includes(t)}
+              onChange={(checked: boolean) =>
+                setActiveTags((prev) =>
+                  checked ? [...prev, t] : prev.filter((x) => x !== t),
+                )
+              }
+            >
+              {t}
+            </CheckableTag>
+          ))}
+          {activeTags.length > 0 && (
+            <Button
+              type="link"
+              size="small"
+              onClick={() => setActiveTags([])}
+              aria-label="清除标签筛选"
+            >
+              清除筛选
+            </Button>
+          )}
+        </Space>
+      )}
 
       <Table
-        dataSource={filtered}
+        dataSource={visible}
         rowKey="id"
         size="small"
         loading={isLoading}

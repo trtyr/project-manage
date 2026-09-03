@@ -193,7 +193,9 @@ export default function DeliverablesTab({ projectId }: Props) {
         pagination={false}
         scroll={{ x: 'max-content' }}
         columns={columns}
-        locale={{ emptyText: '还没有交付物' }}
+        locale={{
+          emptyText: '还没有交付物。每个阶段的产出文件挂在这里，形成验收清单。',
+        }}
       />
 
       <Modal
@@ -230,9 +232,9 @@ export default function DeliverablesTab({ projectId }: Props) {
           <Form.Item name="status" label="状态" initialValue="pending">
             <Select options={STATUS_OPTIONS} />
           </Form.Item>
-          <Form.Item name="due_date" label="截止日期">
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
+          {/* D7: 关联文件 moved above 截止日期 — real usage is a
+              file-linked deliverables list (3/3 linked, 0/3 dated), so
+              the date is secondary. */}
           <Form.Item name="linked_file_id" label="关联文件">
             <Select
               allowClear
@@ -242,6 +244,9 @@ export default function DeliverablesTab({ projectId }: Props) {
                 value: f.id,
               }))}
             />
+          </Form.Item>
+          <Form.Item name="due_date" label="截止日期（可选）">
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>

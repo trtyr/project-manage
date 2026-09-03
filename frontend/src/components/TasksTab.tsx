@@ -160,6 +160,14 @@ export default function TasksTab({ projectId }: Props) {
             style={{ width: 110 }}
             allowClear
             placeholder="指派"
+            // D2: guide to 成员 when the team side is empty
+            notFoundContent={
+              teamPeople.length === 0 ? (
+                <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                  团队侧暂无成员——到「成员」页添加后可指派
+                </span>
+              ) : undefined
+            }
             options={teamPeople.map((p) => ({ label: p.name, value: p.id }))}
             onChange={(val) =>
               updateTaskMut.mutate({
@@ -232,7 +240,10 @@ export default function TasksTab({ projectId }: Props) {
         pagination={false}
         scroll={{ x: 'max-content' }}
         columns={columns}
-        locale={{ emptyText: '还没有任务' }}
+        locale={{
+          emptyText:
+            '还没有任务。把下一步要做的事记下来，用状态区分「待办 / 进行中 / 下一步」。',
+        }}
       />
 
       <Modal
@@ -281,6 +292,13 @@ export default function TasksTab({ projectId }: Props) {
             <Select
               allowClear
               placeholder="选择团队成员"
+              notFoundContent={
+                teamPeople.length === 0 ? (
+                  <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                    团队侧暂无成员——到「成员」页添加后可指派
+                  </span>
+                ) : undefined
+              }
               options={teamPeople.map((p) => ({ label: p.name, value: p.id }))}
             />
           </Form.Item>

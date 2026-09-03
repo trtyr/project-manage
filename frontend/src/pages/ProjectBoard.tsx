@@ -29,6 +29,14 @@ import dayjs from 'dayjs'
 import { clientsApi, projectsApi, communicationsApi, filesApi } from '../api'
 import type { Project, ProjectStatus, CommunicationWithProject } from '../types'
 
+/** D5: shared CRM options — same value set as ProjectDetail's edit modal. */
+const TECH_APPROVAL_OPTIONS = [
+  { label: '未接触', value: '未接触' },
+  { label: 'POC中', value: 'POC中' },
+  { label: '已认可', value: '已认可' },
+  { label: '技术否决', value: '技术否决' },
+]
+
 const statusOrder: Record<ProjectStatus, number> = {
   in_progress: 0,
   paused: 1,
@@ -599,6 +607,18 @@ export default function ProjectBoard() {
               placeholder={'如：完成需求分析\n提供修复建议'}
             />
           </Form.Item>
+          {/* D5: CRM fields also on the board create form — entry parity
+              with the detail edit modal. */}
+          <Form.Item name="tech_approval" label="技术认可度">
+            <Select
+              allowClear
+              options={TECH_APPROVAL_OPTIONS}
+              placeholder="客户对技术的认可状态"
+            />
+          </Form.Item>
+          <Form.Item name="competitors" label="竞争对手">
+            <Input placeholder="如：奇安信、深信服" />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -649,6 +669,17 @@ export default function ProjectBoard() {
           </Form.Item>
           <Form.Item name="goals" label="项目目标" extra="每行一个目标">
             <Input.TextArea rows={3} />
+          </Form.Item>
+          {/* D5: entry parity with the detail edit modal. */}
+          <Form.Item name="tech_approval" label="技术认可度">
+            <Select
+              allowClear
+              options={TECH_APPROVAL_OPTIONS}
+              placeholder="客户对技术的认可状态"
+            />
+          </Form.Item>
+          <Form.Item name="competitors" label="竞争对手">
+            <Input placeholder="如：奇安信、深信服" />
           </Form.Item>
         </Form>
       </Modal>

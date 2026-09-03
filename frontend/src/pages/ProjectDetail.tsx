@@ -108,6 +108,8 @@ export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
+  // D3: the overview timeline's 去填日期 empty-state button jumps here
+  const [activeTab, setActiveTab] = useState('overview')
   const queryClient = useQueryClient()
 
   // --- Forms ---
@@ -324,12 +326,19 @@ export default function ProjectDetail() {
       {/* === Tabs === */}
       <Tabs
         className="project-tabs"
+        activeKey={activeTab}
+        onChange={setActiveTab}
         items={[
           {
             key: 'overview',
             label: <TabLabel icon={<EyeOutlined />} label="概览" />,
             children: (
-              <OverviewTab projectId={id!} project={project} client={client} />
+              <OverviewTab
+                projectId={id!}
+                project={project}
+                client={client}
+                onGoFillPhaseDates={() => setActiveTab('progress')}
+              />
             ),
           },
           {

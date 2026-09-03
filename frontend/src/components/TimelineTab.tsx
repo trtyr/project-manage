@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Empty, Tag, Typography } from 'antd'
+import { Empty, Tag, Typography, Button } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { phasesApi } from '../api'
@@ -17,9 +17,15 @@ const STATUS_LABEL: Record<string, string> = {
 
 interface Props {
   projectId: string
+  /** D3: shown when phases exist but carry no dates — jumps to 推进/阶段. */
+  onGoFillDates?: () => void
 }
 
-export default function TimelineTab({ projectId }: Props) {
+/**
+ * 阶段甘特图（嵌入「概览」）。只读 phases 数据画条；日期缺失时给
+ * 直达「去填日期」的空状态（D3）。
+ */
+export default function TimelineTab({ projectId, onGoFillDates }: Props) {
   const { data: phases = [] } = useQuery({
     queryKey: ['phases', projectId],
     queryFn: () => phasesApi.listByProject(projectId),
@@ -56,9 +62,15 @@ export default function TimelineTab({ projectId }: Props) {
   if (!start) {
     return (
       <Empty
-        description="阶段还没有计划日期。编辑阶段填入「计划开始」和「计划结束」后查看时间线。"
+        description="阶段还没有计划日期。填入「计划开始」和「计划结束」后查看时间线。"
         image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
+      >
+        {onGoFillDates && (
+          <Button type="primary" onClick={onGoFillDates}>
+            去填阶段日期
+          </Button>
+        )}
+      </Empty>
     )
   }
 

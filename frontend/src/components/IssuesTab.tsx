@@ -151,6 +151,14 @@ export default function IssuesTab({ projectId }: Props) {
             style={{ width: 110 }}
             allowClear
             placeholder="指派"
+            // D2: guide to 成员 when the team side is empty
+            notFoundContent={
+              teamPeople.length === 0 ? (
+                <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                  团队侧暂无成员——到「成员」页添加后可指派
+                </span>
+              ) : undefined
+            }
             options={teamPeople.map((p) => ({ label: p.name, value: p.id }))}
             onChange={(val) =>
               updateIssueMut.mutate({
@@ -246,7 +254,10 @@ export default function IssuesTab({ projectId }: Props) {
         pagination={false}
         scroll={{ x: 'max-content' }}
         columns={columns}
-        locale={{ emptyText: '还没有记录的问题' }}
+        locale={{
+          emptyText:
+            '还没有客户关切。客户在会上提的顾虑、待跟进的问题，随手记一条避免遗忘。',
+        }}
       />
 
       <Modal
@@ -298,6 +309,13 @@ export default function IssuesTab({ projectId }: Props) {
             <Select
               allowClear
               placeholder="选择团队成员"
+              notFoundContent={
+                teamPeople.length === 0 ? (
+                  <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                    团队侧暂无成员——到「成员」页添加后可指派
+                  </span>
+                ) : undefined
+              }
               options={teamPeople.map((p) => ({ label: p.name, value: p.id }))}
             />
           </Form.Item>
