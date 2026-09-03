@@ -130,7 +130,11 @@ function App() {
     queryFn: authApi.status,
     staleTime: 60_000,
   })
-  const { data: me, isLoading: meLoading, isError: meRejected } = useQuery({
+  const {
+    data: me,
+    isLoading: meLoading,
+    isError: meRejected,
+  } = useQuery({
     queryKey: ['auth-me'],
     queryFn: authApi.me,
     enabled: !authStatus?.needs_setup,
@@ -142,15 +146,18 @@ function App() {
     if (authStatus.needs_setup && location.pathname !== '/setup') {
       // Empty users table — bootstrap the first account.
       navigate('/setup', { replace: true })
-    } else if (
-      !authStatus.needs_setup &&
-      meRejected &&
-      !isAuthPage
-    ) {
+    } else if (!authStatus.needs_setup && meRejected && !isAuthPage) {
       // /me settled as 401 and we're not on an auth page → logged out.
       navigate('/login', { replace: true })
     }
-  }, [authStatus, authLoading, meRejected, location.pathname, navigate, isAuthPage])
+  }, [
+    authStatus,
+    authLoading,
+    meRejected,
+    location.pathname,
+    navigate,
+    isAuthPage,
+  ])
 
   const handleLogout = async () => {
     await authApi.logout().catch(() => undefined)

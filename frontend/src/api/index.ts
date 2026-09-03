@@ -123,7 +123,9 @@ export const findingsApi = {
   listByProject: (projectId: string) =>
     http.get<Finding[]>(`/projects/${projectId}/findings`).then((r) => r.data),
   create: (projectId: string, data: CreateFinding) =>
-    http.post<Finding>(`/projects/${projectId}/findings`, data).then((r) => r.data),
+    http
+      .post<Finding>(`/projects/${projectId}/findings`, data)
+      .then((r) => r.data),
   get: (id: string) => http.get<Finding>(`/findings/${id}`).then((r) => r.data),
   update: (id: string, data: UpdateFinding) =>
     http.put<Finding>(`/findings/${id}`, data).then((r) => r.data),
@@ -242,10 +244,18 @@ export interface AuthStatus {
 
 export const authApi = {
   status: () => http.get<AuthStatus>('/auth/status').then((r) => r.data),
-  setup: (data: { username: string; password: string; display_name?: string }) =>
-    http.post<import('../types').UserPublic>('/auth/setup', data).then((r) => r.data),
+  setup: (data: {
+    username: string
+    password: string
+    display_name?: string
+  }) =>
+    http
+      .post<import('../types').UserPublic>('/auth/setup', data)
+      .then((r) => r.data),
   login: (data: { username: string; password: string }) =>
-    http.post<import('../types').UserPublic>('/auth/login', data).then((r) => r.data),
+    http
+      .post<import('../types').UserPublic>('/auth/login', data)
+      .then((r) => r.data),
   logout: () => http.post('/auth/logout').then((r) => r.data),
   me: () =>
     http.get<import('../types').UserPublic>('/auth/me').then((r) => r.data),

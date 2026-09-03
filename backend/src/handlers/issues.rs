@@ -80,7 +80,9 @@ async fn create_for_project(
         return Err(AppError::BadRequest("title must not be empty".into()));
     }
 
-    let status = input.status.unwrap_or_else(|| IssueStatus::OPEN.to_string());
+    let status = input
+        .status
+        .unwrap_or_else(|| IssueStatus::OPEN.to_string());
     if !IssueStatus::is_valid(&status) {
         return Err(AppError::BadRequest(format!(
             "invalid status '{status}', must be one of {:?}",

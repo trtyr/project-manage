@@ -56,8 +56,7 @@ pub fn date_to_time_date(d: chrono::NaiveDate) -> time::Date {
         11 => time::Month::November,
         _ => time::Month::December,
     };
-    time::Date::from_calendar_date(d.year(), month, d.day() as u8)
-        .expect("valid calendar date")
+    time::Date::from_calendar_date(d.year(), month, d.day() as u8).expect("valid calendar date")
 }
 
 /// Verify that a communication exists and belongs to the given project.
@@ -67,13 +66,12 @@ pub async fn ensure_communication_in_project(
     project_id: Uuid,
     communication_id: Uuid,
 ) -> AppResult<()> {
-    let exists: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT id FROM communications WHERE id = $1 AND project_id = $2",
-    )
-    .bind(communication_id)
-    .bind(project_id)
-    .fetch_optional(pool)
-    .await?;
+    let exists: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM communications WHERE id = $1 AND project_id = $2")
+            .bind(communication_id)
+            .bind(project_id)
+            .fetch_optional(pool)
+            .await?;
 
     if exists.is_none() {
         return Err(AppError::BadRequest(format!(

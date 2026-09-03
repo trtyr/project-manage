@@ -1,5 +1,10 @@
 import { Descriptions, Tag, Typography } from 'antd'
-import type { Client, Project, ProjectStatus, TechApprovalStatus } from '../types'
+import type {
+  Client,
+  Project,
+  ProjectStatus,
+  TechApprovalStatus,
+} from '../types'
 import TimelineTab from './TimelineTab'
 
 const { Text } = Typography
@@ -62,7 +67,10 @@ export default function OverviewTab({ projectId, project, client }: Props) {
             key: 'tech',
             label: '技术认可',
             children: project.tech_approval ? (
-              <Tag color={techTagColors[project.tech_approval]} style={{ marginInlineEnd: 0 }}>
+              <Tag
+                color={techTagColors[project.tech_approval]}
+                style={{ marginInlineEnd: 0 }}
+              >
                 {project.tech_approval}
               </Tag>
             ) : (
@@ -91,7 +99,10 @@ export default function OverviewTab({ projectId, project, client }: Props) {
           },
         ]}
       />
-      <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
+      <Text
+        type="secondary"
+        style={{ fontSize: 13, display: 'block', marginBottom: 8 }}
+      >
         时间线
       </Text>
       <TimelineTab projectId={projectId} />

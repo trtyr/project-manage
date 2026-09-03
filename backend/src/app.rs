@@ -32,9 +32,9 @@ use crate::handlers::{
     assets_router, auth_router, clients_router, communications_router, deliverables_router,
     files_router, findings_router, issues_router, people_router, phases_router,
     project_assets_router, project_communications_router, project_deliverables_router,
-    project_files_router, project_findings_router, project_issues_router,
-    project_people_router, project_phases_router, project_tasks_router, projects_router,
-    require_auth, search_router, tasks_router,
+    project_files_router, project_findings_router, project_issues_router, project_people_router,
+    project_phases_router, project_tasks_router, projects_router, require_auth, search_router,
+    tasks_router,
 };
 use crate::state::AppState;
 

@@ -33,10 +33,7 @@ pub fn project_findings_router() -> Router<AppState> {
 }
 
 pub fn findings_router() -> Router<AppState> {
-    Router::new().route(
-        "/findings/{id}",
-        get(get_one).put(update).delete(remove),
-    )
+    Router::new().route("/findings/{id}", get(get_one).put(update).delete(remove))
 }
 
 async fn list_by_project(

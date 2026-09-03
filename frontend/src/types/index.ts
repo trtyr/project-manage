@@ -154,7 +154,23 @@ export type UpdateIssue = Omit<GeneratedUpdateIssue, 'status'> & {
 
 // --- Direct re-exports for the rest ---
 
-export type { CreateAsset, CreateCommunication, CreateFinding, CreatePerson, CreatePhase, FileMeta, FileWithProject, UpdateAsset, UpdateClient, UpdateCommunication, UpdateFile, UpdateFinding, UpdatePerson, UpdatePhase, UserPublic }
+export type {
+  CreateAsset,
+  CreateCommunication,
+  CreateFinding,
+  CreatePerson,
+  CreatePhase,
+  FileMeta,
+  FileWithProject,
+  UpdateAsset,
+  UpdateClient,
+  UpdateCommunication,
+  UpdateFile,
+  UpdateFinding,
+  UpdatePerson,
+  UpdatePhase,
+  UserPublic,
+}
 
 // --- API helpers ---
 

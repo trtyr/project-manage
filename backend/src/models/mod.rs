@@ -19,9 +19,7 @@ pub mod task;
 pub mod user;
 
 pub use client::{Client, CreateClient, UpdateClient};
-pub use deliverable::{
-    CreateDeliverable, Deliverable, DeliverableStatus, UpdateDeliverable,
-};
+pub use deliverable::{CreateDeliverable, Deliverable, DeliverableStatus, UpdateDeliverable};
 pub use communication::{
     Communication, CommunicationWithProject, CreateCommunication, UpdateCommunication,
 };

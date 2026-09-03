@@ -56,9 +56,7 @@ impl AppError {
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "bad_request", msg.clone()),
             AppError::Timeout(msg) => (StatusCode::REQUEST_TIMEOUT, "request_timeout", msg.clone()),
-            AppError::Unauthorized(msg) => {
-                (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone())
-            }
+            AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, "conflict", msg.clone()),
             AppError::Database(sqlx::Error::RowNotFound) => (
                 StatusCode::NOT_FOUND,

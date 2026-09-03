@@ -980,7 +980,9 @@ async fn test_people_reorder() {
     // Reorder team to reverse; client ordering is untouched.
     let reversed: Vec<&str> = team_ids.iter().rev().map(|s| s.as_str()).collect();
     let resp = http
-        .put(format!("{base_url}/api/projects/{project_id}/people/reorder"))
+        .put(format!(
+            "{base_url}/api/projects/{project_id}/people/reorder"
+        ))
         .json(&json!({ "side": "team", "ids": reversed }))
         .send()
         .await
@@ -995,7 +997,11 @@ async fn test_people_reorder() {
         .json()
         .await
         .expect("json");
-    assert_eq!(names(&list, "team"), vec!["丙", "乙", "甲"], "team reordered");
+    assert_eq!(
+        names(&list, "team"),
+        vec!["丙", "乙", "甲"],
+        "team reordered"
+    );
     assert_eq!(names(&list, "client"), vec!["客户A"], "client untouched");
 
     cleanup_project_and_client(&pool, project_id, client_id).await;
@@ -1040,7 +1046,10 @@ async fn test_people_flip_side() {
     assert_eq!(resp.status(), StatusCode::OK);
     let moved: Value = resp.json().await.expect("json");
     assert_eq!(moved["side"], "client", "now on client side");
-    assert_eq!(moved["role"], "技术总监", "role carried verbatim — NO conversion");
+    assert_eq!(
+        moved["role"], "技术总监",
+        "role carried verbatim — NO conversion"
+    );
     assert_eq!(moved["id"], person_id, "same row, same id");
 
     // The person now appears under client, not team.
@@ -1301,7 +1310,10 @@ async fn test_auth_flow() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "bad creds → 401");
     let body: Value = resp.json().await.expect("401 body");
     assert_eq!(body["error"], "unauthorized");
-    assert_eq!(body["message"], "invalid username or password", "no enumeration");
+    assert_eq!(
+        body["message"], "invalid username or password",
+        "no enumeration"
+    );
 
     // 4. Correct login → 200 + cookie; /me resolves the user.
     auth_login(&http, &base_url).await;
@@ -1313,7 +1325,10 @@ async fn test_auth_flow() {
     assert_eq!(resp.status(), StatusCode::OK, "me after login");
     let me: Value = resp.json().await.expect("me JSON");
     assert_eq!(me["username"], SMOKE_USER);
-    assert!(me.get("password_hash").is_none(), "no password material in /me");
+    assert!(
+        me.get("password_hash").is_none(),
+        "no password material in /me"
+    );
 
     // 5. Authenticated business access works.
     let resp = http
@@ -1321,7 +1336,11 @@ async fn test_auth_flow() {
         .send()
         .await
         .expect("GET /api/clients authenticated");
-    assert_eq!(resp.status(), StatusCode::OK, "business access with session");
+    assert_eq!(
+        resp.status(),
+        StatusCode::OK,
+        "business access with session"
+    );
 
     // 6. Logout → 204, and the session is dead afterwards.
     let resp = http
@@ -1335,11 +1354,19 @@ async fn test_auth_flow() {
         .send()
         .await
         .expect("GET /api/auth/me after logout");
-    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "me after logout → 401");
+    assert_eq!(
+        resp.status(),
+        StatusCode::UNAUTHORIZED,
+        "me after logout → 401"
+    );
     let resp = http
         .get(format!("{base_url}/api/clients"))
         .send()
         .await
         .expect("GET /api/clients after logout");
-    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "business after logout → 401");
+    assert_eq!(
+        resp.status(),
+        StatusCode::UNAUTHORIZED,
+        "business after logout → 401"
+    );
 }

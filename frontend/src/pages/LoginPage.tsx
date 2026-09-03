@@ -97,7 +97,12 @@ export default function LoginPage() {
         </Form>
         <Text
           type="secondary"
-          style={{ display: 'block', textAlign: 'center', marginTop: 16, fontSize: 12 }}
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            marginTop: 16,
+            fontSize: 12,
+          }}
         >
           内部工具 · 仅限授权用户
         </Text>

@@ -68,7 +68,10 @@ export default function SetupPage() {
             系统初始化
           </Title>
         </div>
-        <Paragraph type="secondary" style={{ textAlign: 'center', fontSize: 13 }}>
+        <Paragraph
+          type="secondary"
+          style={{ textAlign: 'center', fontSize: 13 }}
+        >
           首次使用，请创建管理员账号。此页面仅出现一次。
         </Paragraph>
         <Form layout="vertical" onFinish={onFinish}>
@@ -116,7 +119,12 @@ export default function SetupPage() {
         </Form>
         <Text
           type="secondary"
-          style={{ display: 'block', textAlign: 'center', marginTop: 16, fontSize: 12 }}
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            marginTop: 16,
+            fontSize: 12,
+          }}
         >
           创建后此接口将永久关闭
         </Text>

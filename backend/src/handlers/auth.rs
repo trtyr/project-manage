@@ -78,7 +78,11 @@ fn hash_password(password: &str) -> AppResult<String> {
 fn verify_password(hash: &str, password: &str) -> bool {
     PasswordHash::new(hash)
         .ok()
-        .and_then(|parsed| Argon2::default().verify_password(password.as_bytes(), &parsed).ok())
+        .and_then(|parsed| {
+            Argon2::default()
+                .verify_password(password.as_bytes(), &parsed)
+                .ok()
+        })
         .is_some()
 }
 
@@ -154,7 +158,9 @@ async fn setup(
         ));
     }
     if input.password.len() < 8 {
-        return Err(AppError::BadRequest("password must be at least 8 characters".into()));
+        return Err(AppError::BadRequest(
+            "password must be at least 8 characters".into(),
+        ));
     }
     let username = normalize_username(&input.username);
     if username.is_empty() {
@@ -175,12 +181,15 @@ async fn setup(
     .map_err(AppError::from)?;
 
     start_session(&session, user.id).await?;
-    Ok((StatusCode::CREATED, Json(UserPublic {
-        id: user.id,
-        username: user.username,
-        display_name: user.display_name,
-        created_at: user.created_at,
-    })))
+    Ok((
+        StatusCode::CREATED,
+        Json(UserPublic {
+            id: user.id,
+            username: user.username,
+            display_name: user.display_name,
+            created_at: user.created_at,
+        }),
+    ))
 }
 
 /// `POST /api/auth/login` — public. Generic 401 (no user enumeration).
@@ -199,7 +208,9 @@ async fn login(
     .await?;
 
     let Some(user) = user.filter(|u| verify_password(&u.password_hash, &input.password)) else {
-        return Err(AppError::Unauthorized("invalid username or password".into()));
+        return Err(AppError::Unauthorized(
+            "invalid username or password".into(),
+        ));
     };
 
     start_session(&session, user.id).await?;

@@ -80,13 +80,12 @@ async fn create_for_project(
 }
 
 async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Asset>> {
-    let row = sqlx::query_as::<_, Asset>(&format!(
-        "SELECT {ASSET_COLUMNS} FROM assets WHERE id = $1"
-    ))
-    .bind(id)
-    .fetch_optional(&pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound(format!("asset {id} not found")))?;
+    let row =
+        sqlx::query_as::<_, Asset>(&format!("SELECT {ASSET_COLUMNS} FROM assets WHERE id = $1"))
+            .bind(id)
+            .fetch_optional(&pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("asset {id} not found")))?;
     Ok(Json(row))
 }
 

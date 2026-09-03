@@ -42,9 +42,10 @@ async fn list(
     Query(q): Query<ListQuery>,
 ) -> AppResult<Json<Vec<Project>>> {
     let rows = match q.client_id {
-        Some(client_id) => sqlx::query_as!(
-            Project,
-            r#"SELECT id,
+        Some(client_id) => {
+            sqlx::query_as!(
+                Project,
+                r#"SELECT id,
                       client_id,
                       name,
                       status,
@@ -57,13 +58,15 @@ async fn list(
                FROM projects
                WHERE client_id = $1
                ORDER BY created_at DESC"#,
-            client_id
-        )
-        .fetch_all(&pool)
-        .await?,
-        None => sqlx::query_as!(
-            Project,
-            r#"SELECT id,
+                client_id
+            )
+            .fetch_all(&pool)
+            .await?
+        }
+        None => {
+            sqlx::query_as!(
+                Project,
+                r#"SELECT id,
                       client_id,
                       name,
                       status,
@@ -75,9 +78,10 @@ async fn list(
                       updated_at AS "updated_at: chrono::DateTime<chrono::Utc>"
                FROM projects
                ORDER BY created_at DESC"#
-        )
-        .fetch_all(&pool)
-        .await?,
+            )
+            .fetch_all(&pool)
+            .await?
+        }
     };
     Ok(Json(rows))
 }

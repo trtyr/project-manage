@@ -12,12 +12,11 @@ use uuid::Uuid;
 
 use crate::db::helpers::ensure_project_exists;
 use crate::error::{AppError, AppResult};
-use crate::models::{
-    CreateDeliverable, Deliverable, DeliverableStatus, UpdateDeliverable,
-};
+use crate::models::{CreateDeliverable, Deliverable, DeliverableStatus, UpdateDeliverable};
 use crate::state::AppState;
 
-const COLS: &str = "id, project_id, name, status, due_date, linked_file_id, sort_order, created_at, updated_at";
+const COLS: &str =
+    "id, project_id, name, status, due_date, linked_file_id, sort_order, created_at, updated_at";
 
 pub fn project_deliverables_router() -> Router<AppState> {
     Router::new().route(
@@ -27,8 +26,10 @@ pub fn project_deliverables_router() -> Router<AppState> {
 }
 
 pub fn deliverables_router() -> Router<AppState> {
-    Router::new()
-        .route("/deliverables/{id}", get(get_one).put(update).delete(remove))
+    Router::new().route(
+        "/deliverables/{id}",
+        get(get_one).put(update).delete(remove),
+    )
 }
 
 async fn list_by_project(
@@ -82,13 +83,12 @@ async fn create_for_project(
 }
 
 async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Deliverable>> {
-    let row = sqlx::query_as::<_, Deliverable>(&format!(
-        "SELECT {COLS} FROM deliverables WHERE id = $1"
-    ))
-    .bind(id)
-    .fetch_optional(&pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound(format!("deliverable {id} not found")))?;
+    let row =
+        sqlx::query_as::<_, Deliverable>(&format!("SELECT {COLS} FROM deliverables WHERE id = $1"))
+            .bind(id)
+            .fetch_optional(&pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("deliverable {id} not found")))?;
     Ok(Json(row))
 }
 
