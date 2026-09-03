@@ -1,43 +1,24 @@
 narrow(390) board: offscreen-clickable=0 []
 narrow(390) files: offscreen-clickable=0 []
 narrow(390) detail: offscreen-clickable=0 []
-desktop board: unnamed icon buttons=3 [
+desktop board: unnamed icon buttons=2 [
   'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
   'ant-input-clear-icon ant-input-clear-ico'
 ]
-desktop files: unnamed icon buttons=4 [
+desktop board: tiny(<24px)=3, first-party=0 []
+desktop files: unnamed icon buttons=3 [
   'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
   'ant-input-clear-icon ant-input-clear-ico',
   'ant-btn css-1acng9q ant-btn-default ant-'
 ]
-desktop detail: unnamed icon buttons=3 [
-  'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
-  'ant-tabs-nav-more'
-]
-desktop detail-推进: unnamed=3 [
-  'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
-  'ant-tabs-nav-more'
-]
-desktop detail-客户: unnamed=3 [
-  'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
-  'ant-tabs-nav-more'
-]
-desktop detail-资料: unnamed=3 [
-  'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
-  'ant-tabs-nav-more'
-]
-desktop detail-成员: unnamed=3 [
-  'ant-input-clear-icon ant-input-clear-ico',
-  'ant-btn css-1acng9q ant-btn-text ant-btn',
-  'ant-tabs-nav-more'
-]
-B2 first-open=2026-09-04 00:49:45 second-open=2026-09-04 00:49:48 refreshed=true
+desktop files: tiny(<24px)=3, first-party=0 []
+desktop detail: unnamed icon buttons=2 [ 'ant-input-clear-icon ant-input-clear-ico', 'ant-tabs-nav-more' ]
+desktop detail: tiny(<24px)=2, first-party=0 []
+desktop detail-推进: unnamed=2 [ 'ant-input-clear-icon ant-input-clear-ico', 'ant-tabs-nav-more' ]
+desktop detail-客户: unnamed=2 [ 'ant-input-clear-icon ant-input-clear-ico', 'ant-tabs-nav-more' ]
+desktop detail-资料: unnamed=2 [ 'ant-input-clear-icon ant-input-clear-ico', 'ant-tabs-nav-more' ]
+desktop detail-成员: unnamed=2 [ 'ant-input-clear-icon ant-input-clear-ico', 'ant-tabs-nav-more' ]
+B2 first-open=2026-09-04 01:16:00 second-open=2026-09-04 01:16:03 refreshed=true
 B4 LIGHT 进行中: bg=rgba(20, 131, 116, 0.1) transparent=false
 B4 LIGHT 已完成: bg=color(srgb 0.176471 0.52549 0.34902 / 0.12) transparent=false
 B4 LIGHT 已完成: bg=color(srgb 0.176471 0.52549 0.34902 / 0.12) transparent=false

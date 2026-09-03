@@ -69,6 +69,26 @@ const unnamedCount = () => {
   return { n, misses }
 }
 
+const tinyTargetList = () => {
+  const out = []
+  document
+    .querySelectorAll('button, a, [role="button"], .ant-switch')
+    .forEach((el) => {
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height >= 24) return
+      const cls = el.className.toString()
+      // antd-internal: shipped by the component library itself
+      const internal = /ant-input-clear-icon|ant-switch|ant-tabs-nav-more|ant-input-search-button|ant-segmented-item/.test(cls)
+      out.push({
+        h: Math.round(r.height),
+        w: Math.round(r.width),
+        cls: cls.slice(0, 44),
+        internal,
+      })
+    })
+  return out
+}
+
 ;(async () => {
   const browser = await chromium.launch()
   const results = { base: BASE, ranAt: new Date().toISOString(), checks: {} }
@@ -116,6 +136,14 @@ const unnamedCount = () => {
     const r = await page.evaluate(unnamedCount)
     results.checks.unnamed[name] = r
     console.log(`desktop ${name}: unnamed icon buttons=${r.n}`, r.misses)
+    const t = await page.evaluate(tinyTargetList)
+    const firstParty = t.filter((x) => !x.internal)
+    results.checks.tinyTarget = results.checks.tinyTarget || {}
+    results.checks.tinyTarget[name] = { total: t.length, firstParty, all: t }
+    console.log(
+      `desktop ${name}: tiny(<24px)=${t.length}, first-party=${firstParty.length}`,
+      t.filter((x) => !x.internal).map((x) => `${x.cls}@${x.h}px`),
+    )
   }
   for (const tab of ['推进', '客户', '资料', '成员']) {
     await page

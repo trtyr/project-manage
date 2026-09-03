@@ -1,6 +1,6 @@
 {
   "base": "http://localhost:3001",
-  "ranAt": "2026-09-03T16:49:04.065Z",
+  "ranAt": "2026-09-03T17:15:36.841Z",
   "checks": {
     "narrow": {
       "board": {
@@ -18,66 +18,127 @@
     },
     "unnamed": {
       "board": {
-        "n": 3,
+        "n": 2,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-input-clear-icon ant-input-clear-ico"
         ]
       },
       "files": {
-        "n": 4,
+        "n": 3,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-input-clear-icon ant-input-clear-ico",
           "ant-btn css-1acng9q ant-btn-default ant-"
         ]
       },
       "detail": {
-        "n": 3,
+        "n": 2,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-tabs-nav-more"
         ]
       },
       "detail-推进": {
-        "n": 3,
+        "n": 2,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-tabs-nav-more"
         ]
       },
       "detail-客户": {
-        "n": 3,
+        "n": 2,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-tabs-nav-more"
         ]
       },
       "detail-资料": {
-        "n": 3,
+        "n": 2,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-tabs-nav-more"
         ]
       },
       "detail-成员": {
-        "n": 3,
+        "n": 2,
         "misses": [
           "ant-input-clear-icon ant-input-clear-ico",
-          "ant-btn css-1acng9q ant-btn-text ant-btn",
           "ant-tabs-nav-more"
         ]
       }
     },
+    "tinyTarget": {
+      "board": {
+        "total": 3,
+        "firstParty": [],
+        "all": [
+          {
+            "h": 12,
+            "w": 12,
+            "cls": "ant-input-clear-icon ant-input-clear-icon-hi",
+            "internal": true
+          },
+          {
+            "h": 22,
+            "w": 48,
+            "cls": "ant-switch css-1acng9q",
+            "internal": true
+          },
+          {
+            "h": 12,
+            "w": 12,
+            "cls": "ant-input-clear-icon ant-input-clear-icon-hi",
+            "internal": true
+          }
+        ]
+      },
+      "files": {
+        "total": 3,
+        "firstParty": [],
+        "all": [
+          {
+            "h": 12,
+            "w": 12,
+            "cls": "ant-input-clear-icon ant-input-clear-icon-hi",
+            "internal": true
+          },
+          {
+            "h": 22,
+            "w": 48,
+            "cls": "ant-switch css-1acng9q",
+            "internal": true
+          },
+          {
+            "h": 12,
+            "w": 12,
+            "cls": "ant-input-clear-icon ant-input-clear-icon-hi",
+            "internal": true
+          }
+        ]
+      },
+      "detail": {
+        "total": 2,
+        "firstParty": [],
+        "all": [
+          {
+            "h": 12,
+            "w": 12,
+            "cls": "ant-input-clear-icon ant-input-clear-icon-hi",
+            "internal": true
+          },
+          {
+            "h": 22,
+            "w": 48,
+            "cls": "ant-switch css-1acng9q",
+            "internal": true
+          }
+        ]
+      }
+    },
     "b2": {
-      "firstOpen": "2026-09-04 00:49:45",
-      "secondOpen": "2026-09-04 00:49:48",
+      "firstOpen": "2026-09-04 01:16:00",
+      "secondOpen": "2026-09-04 01:16:03",
       "refreshed": true
     },
     "b4_light": {

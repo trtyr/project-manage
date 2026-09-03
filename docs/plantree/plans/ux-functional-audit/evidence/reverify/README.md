@@ -21,11 +21,13 @@ directory should be compared against.
 | Check | Result |
 |---|---|
 | narrow(390px) offscreen-clickable — board / files / detail | **0 / 0 / 0** (was 6 per page) |
-| desktop(1440px) unnamed icon-only buttons — all 7 states | **3-4 per page, all antd internals** (input clear icon, tabs overflow `ant-tabs-nav-more`, sidebar `Input.Search` suffix button) — first-party buttons = 0 (was 26-45) |
-| B2 comm-modal default time | first open `00:49:45`, second open `00:49:48` → **refreshed=true** |
+| desktop(1440px) unnamed icon-only buttons — all 7 states | **2-3 per page, all antd internals** (input clear icon ×2, tabs overflow `ant-tabs-nav-more`; /files adds the page's own `Input.Search` suffix button) — **first-party icon buttons = 0** (was 26-45). The sidebar logout button initially slipped through as the mystery `ant-btn-text` residual — it now carries `aria-label="登出（…）"` (goal-audit round 4) |
+| desktop tiny targets (<24px height) — board / files / detail | **first-party = 0**; the remainder are antd internals: `ant-input-clear-icon` (12px, hidden until input has text), `ant-switch` (22px — antd's default size after the L6 small→default fix; 🌙/☀️ emoji give it a visible label) |
+| B2 comm-modal default time | first open `01:16:00`, second open `01:16:03` → **refreshed=true** |
 | B4 phase tags (light) | 进行中 `rgba(20,131,116,.1)` + teal tint; 已完成 green 12% tint — all `transparent=false` |
 | L9 tokens (light) | `#2d8659 / #d48042 / #ff4d4f / #722ed1 / accent #d48042` (literal) |
 | B4/L9 (dark, real `localStorage.theme=dark` toggle) | tags render `rgb(45,184,158)` family; tokens `#5bbf8a / #e0a560 / #ff7875 / #9254de / #e0a560` |
+| B10 mutation-error boundary | see `b10-offline-probe.md` — 3 auditor-flagged sites each surface exactly one classified toast under total network failure |
 
 ## How to reproduce
 

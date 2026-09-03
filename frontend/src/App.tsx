@@ -403,6 +403,7 @@ function App() {
                     type="text"
                     size="small"
                     icon={<LogoutOutlined />}
+                    aria-label={`登出（${me.display_name ?? me.username}）`}
                     onClick={handleLogout}
                   />
                 </Tooltip>
