@@ -18,6 +18,7 @@ import {
   PlusOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  EditOutlined,
   EyeOutlined,
   LinkOutlined,
 } from '@ant-design/icons'
@@ -45,6 +46,10 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file')
   const [linkUrl, setLinkUrl] = useState('')
   const [linkName, setLinkName] = useState('')
+  // B9 fix: editing meta (description/tags) of an existing file.
+  const [metaEdit, setMetaEdit] = useState<ProjectFile | null>(null)
+  const [metaDesc, setMetaDesc] = useState('')
+  const [metaTags, setMetaTags] = useState<string[]>([])
 
   const { data: files } = useQuery({
     queryKey: ['files', projectId],
@@ -106,6 +111,23 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
       message.success('文件已删除')
     },
+    onError: () => message.error('删除失败，请重试'),
+  })
+
+  const updateFileMut = useMutation({
+    mutationFn: ({
+      fileId,
+      data,
+    }: {
+      fileId: string
+      data: Parameters<typeof filesApi.update>[1]
+    }) => filesApi.update(fileId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files', projectId] })
+      message.success('已保存')
+      setMetaEdit(null)
+    },
+    onError: () => message.error('保存失败，请重试'),
   })
 
   const handleDownload = async (file: ProjectFile) => {
@@ -247,7 +269,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       {
         title: '',
         key: 'action',
-        width: 110,
+        width: 140,
         render: (_: unknown, r: ProjectFile) => (
           <Space>
             {r.source_type === 'link' && r.url ? (
@@ -255,6 +277,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                 type="text"
                 size="small"
                 icon={<LinkOutlined />}
+                aria-label={`打开链接 ${r.original_name}`}
                 onClick={() =>
                   window.open(r.url!, '_blank', 'noopener,noreferrer')
                 }
@@ -265,16 +288,29 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                   type="text"
                   size="small"
                   icon={<EyeOutlined />}
+                  aria-label={`预览 ${r.original_name}`}
                   onClick={() => onFilePreview?.(r)}
                 />
                 <Button
                   type="text"
                   size="small"
                   icon={<DownloadOutlined />}
+                  aria-label={`下载 ${r.original_name}`}
                   onClick={() => handleDownload(r)}
                 />
               </>
             )}
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={`编辑描述与标签 ${r.original_name}`}
+              onClick={() => {
+                setMetaDesc(r.description ?? '')
+                setMetaTags(r.tags ?? [])
+                setMetaEdit(r)
+              }}
+            />
             <Popconfirm
               title={r.source_type === 'link' ? '删除该链接？' : '删除该文件？'}
               onConfirm={() => deleteFileMut.mutate(r.id)}
@@ -284,6 +320,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
+                aria-label={`删除 ${r.original_name}`}
               />
             </Popconfirm>
           </Space>
@@ -399,6 +436,41 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
             placeholder="标签（回车添加）"
             value={fileTags}
             onChange={setFileTags}
+          />
+        </div>
+      </Modal>
+
+      {/* B9 fix: edit description/tags of an existing file (PUT /files/{id}
+          existed but had no UI entry). */}
+      <Modal
+        title={`编辑信息 · ${metaEdit?.original_name ?? ''}`}
+        open={!!metaEdit}
+        onCancel={() => setMetaEdit(null)}
+        onOk={() => {
+          if (!metaEdit) return
+          updateFileMut.mutate({
+            fileId: metaEdit.id,
+            data: { description: metaDesc, tags: metaTags },
+          })
+        }}
+        confirmLoading={updateFileMut.isPending}
+        width={440}
+        okText="保存"
+        cancelText="取消"
+      >
+        <div style={{ marginTop: 16 }}>
+          <Input.TextArea
+            rows={2}
+            placeholder="描述（可选）"
+            value={metaDesc}
+            onChange={(e) => setMetaDesc(e.target.value)}
+          />
+          <Select
+            mode="tags"
+            style={{ marginTop: 8, width: '100%' }}
+            placeholder="标签（回车添加）"
+            value={metaTags}
+            onChange={setMetaTags}
           />
         </div>
       </Modal>

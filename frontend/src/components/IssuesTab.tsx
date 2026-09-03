@@ -8,13 +8,14 @@ import {
   DatePicker,
   Modal,
   Popconfirm,
+  Space,
   App,
 } from 'antd'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { issuesApi, peopleApi, communicationsApi } from '../api'
-import type { IssueStatus, IssuePriority } from '../types'
+import type { Issue, IssueStatus, IssuePriority } from '../types'
 
 const STATUS_OPTIONS = [
   { label: '待解决', value: 'open' },
@@ -37,6 +38,7 @@ export default function IssuesTab({ projectId }: Props) {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const [issueOpen, setIssueOpen] = useState(false)
+  const [editing, setEditing] = useState<Issue | null>(null)
   const [issueForm] = Form.useForm()
 
   const { data: issues } = useQuery({
@@ -182,14 +184,38 @@ export default function IssuesTab({ projectId }: Props) {
       {
         title: '操作',
         key: 'action',
-        width: 70,
-        render: (_: unknown, r: { id: string }) => (
-          <Popconfirm
-            title="删除该问题？"
-            onConfirm={() => deleteIssueMut.mutate(r.id)}
-          >
-            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-          </Popconfirm>
+        width: 80,
+        render: (_: unknown, r: Issue) => (
+          <Space size={0}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={`编辑问题 ${r.title}`}
+              onClick={() => {
+                // B8 fix: issues were create-only; edit converts due_date for
+                // the DatePicker (same pattern as PhasesTab).
+                setEditing(r)
+                issueForm.setFieldsValue({
+                  ...r,
+                  due_date: r.due_date ? dayjs(r.due_date) : null,
+                })
+                setIssueOpen(true)
+              }}
+            />
+            <Popconfirm
+              title="删除该问题？"
+              onConfirm={() => deleteIssueMut.mutate(r.id)}
+            >
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                aria-label={`删除问题 ${r.title}`}
+              />
+            </Popconfirm>
+          </Space>
         ),
       },
     ],
@@ -199,7 +225,14 @@ export default function IssuesTab({ projectId }: Props) {
   return (
     <div>
       <div className="tab-action">
-        <Button icon={<PlusOutlined />} onClick={() => setIssueOpen(true)}>
+        <Button
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditing(null)
+            issueForm.resetFields()
+            setIssueOpen(true)
+          }}
+        >
           记录问题
         </Button>
       </div>
@@ -214,20 +247,31 @@ export default function IssuesTab({ projectId }: Props) {
       />
 
       <Modal
-        title="记录客户关切"
+        title={editing ? '编辑客户关切' : '记录客户关切'}
         open={issueOpen}
-        onCancel={() => setIssueOpen(false)}
+        onCancel={() => {
+          setIssueOpen(false)
+          setEditing(null)
+          issueForm.resetFields()
+        }}
         onOk={() =>
           issueForm.validateFields().then((v) => {
-            createIssueMut.mutate({
+            const data = {
               ...v,
               due_date: v.due_date?.format('YYYY-MM-DD'),
-            })
+            }
+            if (editing) {
+              updateIssueMut.mutate({ issueId: editing.id, data })
+              setIssueOpen(false)
+              setEditing(null)
+            } else {
+              createIssueMut.mutate(data)
+            }
           })
         }
-        confirmLoading={createIssueMut.isPending}
+        confirmLoading={createIssueMut.isPending || updateIssueMut.isPending}
         width={480}
-        okText="添加"
+        okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
         <Form form={issueForm} layout="vertical" style={{ marginTop: 16 }}>

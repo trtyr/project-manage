@@ -8,13 +8,14 @@ import {
   DatePicker,
   Modal,
   Popconfirm,
+  Space,
   App,
 } from 'antd'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { findingsApi, communicationsApi } from '../api'
-import type { ProductSource, FeedbackStatus } from '../types'
+import type { Finding, ProductSource, FeedbackStatus } from '../types'
 
 const SOURCE_OPTIONS = [
   { label: '我们的产品', value: 'ours' },
@@ -34,6 +35,7 @@ export default function FindingsTab({ projectId }: Props) {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const [findingOpen, setFindingOpen] = useState(false)
+  const [editing, setEditing] = useState<Finding | null>(null)
   const [findingForm] = Form.useForm()
 
   const { data: findings } = useQuery({
@@ -161,14 +163,38 @@ export default function FindingsTab({ projectId }: Props) {
       {
         title: '操作',
         key: 'action',
-        width: 70,
-        render: (_: unknown, r: { id: string }) => (
-          <Popconfirm
-            title="删除该发现？"
-            onConfirm={() => deleteFindingMut.mutate(r.id)}
-          >
-            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-          </Popconfirm>
+        width: 80,
+        render: (_: unknown, r: Finding) => (
+          <Space size={0}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={`编辑发现 ${r.title}`}
+              onClick={() => {
+                // B8 fix: findings were create-only; observed_at needs dayjs
+                // conversion for the showTime DatePicker.
+                setEditing(r)
+                findingForm.setFieldsValue({
+                  ...r,
+                  observed_at: r.observed_at ? dayjs(r.observed_at) : null,
+                })
+                setFindingOpen(true)
+              }}
+            />
+            <Popconfirm
+              title="删除该发现？"
+              onConfirm={() => deleteFindingMut.mutate(r.id)}
+            >
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                aria-label={`删除发现 ${r.title}`}
+              />
+            </Popconfirm>
+          </Space>
         ),
       },
     ],
@@ -182,6 +208,8 @@ export default function FindingsTab({ projectId }: Props) {
           icon={<PlusOutlined />}
           onClick={() => {
             // B2 fix (same as CommunicationsTab): refresh the default on open.
+            setEditing(null)
+            findingForm.resetFields()
             findingForm.setFieldsValue({ observed_at: dayjs() })
             setFindingOpen(true)
           }}
@@ -200,20 +228,31 @@ export default function FindingsTab({ projectId }: Props) {
       />
 
       <Modal
-        title="记录产品发现"
+        title={editing ? '编辑产品发现' : '记录产品发现'}
         open={findingOpen}
-        onCancel={() => setFindingOpen(false)}
+        onCancel={() => {
+          setFindingOpen(false)
+          setEditing(null)
+          findingForm.resetFields()
+        }}
         onOk={() =>
           findingForm.validateFields().then((v) => {
-            createFindingMut.mutate({
+            const data = {
               ...v,
               observed_at: v.observed_at?.toISOString(),
-            })
+            }
+            if (editing) {
+              updateFindingMut.mutate({ findingId: editing.id, data })
+              setFindingOpen(false)
+              setEditing(null)
+            } else {
+              createFindingMut.mutate(data)
+            }
           })
         }
-        confirmLoading={createFindingMut.isPending}
+        confirmLoading={createFindingMut.isPending || updateFindingMut.isPending}
         width={480}
-        okText="添加"
+        okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
         <Form form={findingForm} layout="vertical" style={{ marginTop: 16 }}>

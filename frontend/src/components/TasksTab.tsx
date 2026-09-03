@@ -7,13 +7,19 @@ import {
   Input,
   DatePicker,
   Modal,
+  Popconfirm,
+  Space,
   App,
 } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { tasksApi, peopleApi } from '../api'
-import type { TaskStatus, TaskPriority } from '../types'
+import type { Task, TaskStatus, TaskPriority } from '../types'
 
 const STATUS_OPTIONS = [
   { label: '当前', value: 'current' },
@@ -36,6 +42,7 @@ export default function TasksTab({ projectId }: Props) {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const [taskOpen, setTaskOpen] = useState(false)
+  const [editing, setEditing] = useState<Task | null>(null)
   const [taskForm] = Form.useForm()
 
   const { data: tasks } = useQuery({
@@ -63,8 +70,10 @@ export default function TasksTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
       message.success('任务已添加')
       setTaskOpen(false)
+      setEditing(null)
       taskForm.resetFields()
     },
+    onError: () => message.error('添加失败，请重试'),
   })
 
   const updateTaskMut = useMutation({
@@ -78,7 +87,33 @@ export default function TasksTab({ projectId }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
     },
+    onError: () => message.error('更新失败，请重试'),
   })
+
+  // B7 fix: tasks used to be create-only — no edit, no delete.
+  const deleteTaskMut = useMutation({
+    mutationFn: tasksApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
+      message.success('已删除')
+    },
+    onError: () => message.error('删除失败，请重试'),
+  })
+
+  function openCreate() {
+    setEditing(null)
+    taskForm.resetFields()
+    setTaskOpen(true)
+  }
+
+  function openEdit(t: Task) {
+    setEditing(t)
+    taskForm.setFieldsValue({
+      ...t,
+      planned_date: t.planned_date ? dayjs(t.planned_date) : null,
+    })
+    setTaskOpen(true)
+  }
 
   const columns = useMemo(
     () => [
@@ -155,6 +190,34 @@ export default function TasksTab({ projectId }: Props) {
           )
         },
       },
+      {
+        title: '操作',
+        key: 'action',
+        width: 80,
+        render: (_: unknown, r: Task) => (
+          <Space size={0}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={`编辑任务 ${r.title}`}
+              onClick={() => openEdit(r)}
+            />
+            <Popconfirm
+              title="删除该任务？"
+              onConfirm={() => deleteTaskMut.mutate(r.id)}
+            >
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                aria-label={`删除任务 ${r.title}`}
+              />
+            </Popconfirm>
+          </Space>
+        ),
+      },
     ],
     [teamPeople],
   )
@@ -162,7 +225,7 @@ export default function TasksTab({ projectId }: Props) {
   return (
     <div>
       <div className="tab-action">
-        <Button icon={<PlusOutlined />} onClick={() => setTaskOpen(true)}>
+        <Button icon={<PlusOutlined />} onClick={openCreate}>
           添加任务
         </Button>
       </div>
@@ -177,20 +240,31 @@ export default function TasksTab({ projectId }: Props) {
       />
 
       <Modal
-        title="添加任务"
+        title={editing ? '编辑任务' : '添加任务'}
         open={taskOpen}
-        onCancel={() => setTaskOpen(false)}
+        onCancel={() => {
+          setTaskOpen(false)
+          setEditing(null)
+          taskForm.resetFields()
+        }}
         onOk={() =>
           taskForm.validateFields().then((v) => {
-            createTaskMut.mutate({
+            const data = {
               ...v,
               planned_date: v.planned_date?.format('YYYY-MM-DD'),
-            })
+            }
+            if (editing) {
+              updateTaskMut.mutate({ taskId: editing.id, data })
+              setTaskOpen(false)
+              setEditing(null)
+            } else {
+              createTaskMut.mutate(data)
+            }
           })
         }
-        confirmLoading={createTaskMut.isPending}
+        confirmLoading={createTaskMut.isPending || updateTaskMut.isPending}
         width={480}
-        okText="添加"
+        okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
         <Form form={taskForm} layout="vertical" style={{ marginTop: 16 }}>
