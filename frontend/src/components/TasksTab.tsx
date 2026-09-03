@@ -171,6 +171,7 @@ export default function TasksTab({ projectId }: Props) {
         rowKey="id"
         size="small"
         pagination={false}
+        scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{ emptyText: '还没有任务' }}
       />

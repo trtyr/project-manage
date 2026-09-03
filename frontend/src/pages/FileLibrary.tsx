@@ -84,6 +84,7 @@ export default function FileLibrary() {
         size="small"
         loading={isLoading}
         pagination={{ pageSize: 20 }}
+        scroll={{ x: 'max-content' }}
         columns={[
           {
             title: '文件名',

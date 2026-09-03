@@ -181,6 +181,7 @@ export default function DeliverablesTab({ projectId }: Props) {
         rowKey="id"
         size="small"
         pagination={false}
+        scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{ emptyText: '还没有交付物' }}
       />

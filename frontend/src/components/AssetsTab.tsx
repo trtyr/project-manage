@@ -456,6 +456,7 @@ export default function AssetsTab({ projectId }: Props) {
             rowKey="id"
             size="small"
             pagination={false}
+            scroll={{ x: 'max-content' }}
             columns={columns}
             components={{ body: { row: SortableRow } }}
             locale={{ emptyText: '还没有记录资产' }}

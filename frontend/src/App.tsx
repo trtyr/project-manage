@@ -288,6 +288,7 @@ function App() {
           </div>
 
           <Input
+            className="search-sidebar"
             size="small"
             placeholder="全局搜索…"
             prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
@@ -298,6 +299,7 @@ function App() {
           />
           {searchOpen && searchHits.length > 0 && (
             <div
+              className="search-sidebar"
               style={{
                 margin: '0 8px 8px',
                 background: 'var(--card-surface)',

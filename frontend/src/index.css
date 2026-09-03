@@ -939,6 +939,60 @@ body {
   cursor: grabbing;
 }
 
+/* === Responsive === */
+/* L1/L2: two breakpoints. ≤960px the sidebar collapses to a 64px icon rail
+   (labels/search/stats hidden — CSS-only, no JS state); ≤640px slims the
+   rail and content padding further. Tables get scroll={{x}} at source
+   (see each *Tab) so columns stop pushing buttons off-viewport. */
+@media (max-width: 960px) {
+  .app-sidebar {
+    width: 64px;
+    padding: 20px 8px;
+  }
+
+  .sidebar-logo {
+    justify-content: center;
+    padding: 0 0 20px;
+  }
+
+  .sidebar-logo__text,
+  .sidebar-nav .sidebar-item > span:not(.sidebar-item__icon),
+  .sidebar-footer__stats,
+  .app-sidebar .search-sidebar {
+    display: none;
+  }
+
+  .sidebar-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .app-content {
+    padding: 20px 20px 40px;
+  }
+
+  .page-header,
+  .detail-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-sidebar {
+    width: 56px;
+  }
+
+  .app-content {
+    padding: 12px 12px 32px;
+  }
+}
+
+/* Modals never exceed the viewport (fixes fixed 480/520px widths on phones) */
+.ant-modal {
+  max-width: calc(100vw - 24px);
+}
+
 /* === Reduced motion === */
 
 @media (prefers-reduced-motion: reduce) {

@@ -305,6 +305,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         rowKey="id"
         size="small"
         pagination={false}
+        scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{ emptyText: '还没有上传文件' }}
       />

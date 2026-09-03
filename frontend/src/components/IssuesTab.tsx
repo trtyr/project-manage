@@ -208,6 +208,7 @@ export default function IssuesTab({ projectId }: Props) {
         rowKey="id"
         size="small"
         pagination={false}
+        scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{ emptyText: '还没有记录的问题' }}
       />
