@@ -155,6 +155,7 @@ export default function FileLibrary() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') setPreviewFile(r)
                     }}
+                    className="table-link"
                     style={{ cursor: 'pointer' }}
                   >
                     {name}
@@ -177,6 +178,7 @@ export default function FileLibrary() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigate(`/projects/${r.project_id}`)
                 }}
+                className="table-link"
                 style={{ cursor: 'pointer' }}
               >
                 {name}

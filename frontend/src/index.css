@@ -1016,3 +1016,10 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* L6: file-name links inside tables rendered at 17px line boxes — pad to a
+   comfortable 23px click target. */
+.table-link {
+  display: inline-block;
+  padding: 3px 0;
+}

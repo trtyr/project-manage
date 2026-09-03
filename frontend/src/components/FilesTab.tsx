@@ -178,6 +178,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onFilePreview?.(r)
                 }}
+                className="table-link"
                 style={{ cursor: 'pointer' }}
               >
                 {name}
@@ -247,6 +248,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                     `/projects/${projectId}/communications/${r.communication_id}`,
                   )
               }}
+              className="table-link"
               style={{ cursor: 'pointer' }}
             >
               沟通 · {preview}
