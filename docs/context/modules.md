@@ -353,9 +353,9 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | Renders a nested antd tab group (inner tabs inside one outer tab). The whole "推进 / 客户 / 资料" grouping of ProjectDetail is built on it. |
-| Public API (TS) | `export default function GroupedTab({ items }: { items: Array<{ key, label, content }> })` |
-| Internal deps | antd `Tabs` only — purely presentational, no data fetching. |
+| Responsibility | Renders a lightweight antd `Segmented` switcher over 2-4 sibling modules (e.g. 阶段 \| 任务 \| 交付物) inside one outer tab — deliberately avoids a second level of Tabs. The whole "推进 / 客户 / 资料" grouping of ProjectDetail is built on it. Optional per-item count renders as `label (n)`. |
+| Public API (TS) | `export default function GroupedTab({ items }: { items: GroupedTabItem[] })` where `GroupedTabItem = { key, label, count?, content }` |
+| Internal deps | antd `Segmented` only — purely presentational, no data fetching. |
 
 ### E.2 `OverviewTab` — 概览
 

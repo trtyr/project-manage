@@ -99,11 +99,13 @@ this section is the operating-contract summary an agent must hold the bar to.
 
 ### Tests
 
-- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 51 tests total:
+- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 52 tests total:
   37 ts-rs TypeScript export bindings (regenerate `frontend/src/types/generated/`)
+  + a session-purge unit test (`#[sqlx::test]`)
   + a 14-case CRUD smoke suite (clients, projects incl. CRM fields,
   communications, tasks, phases, assets, files, issues, findings, people incl.
-  reorder/flip-side, and the auth flow) against a live migrated DB. No dedicated
+  reorder/flip-side, and the auth flow) against an isolated
+  `project_manage_smoke` database (not the dev DB). No dedicated
   smoke test yet for deliverables, global search, or asset reorder.
 - **Frontend**: `cd frontend && npm run test` — vitest (node env); the `classifyApiError`
   contract suite (20 tests) pins [conventions.md §6.1](docs/context/conventions.md).
@@ -115,9 +117,8 @@ this section is the operating-contract summary an agent must hold the bar to.
 - **Lint**: backend `cargo clippy -D warnings` (via `just check`); frontend `oxlint`.
 - **Format**: [backend/rustfmt.toml](backend/rustfmt.toml) +
   [frontend/.prettierrc.json](frontend/.prettierrc.json); code is formatter-adopted;
-  `just fmt` reformats and `cargo fmt --check` + `prettier --check` verify.
-  ⚠️ As of 2026-08-30 `cargo fmt --check` is red (11 files drifted) — run
-  `just fmt` before the next commit.
+  `just fmt` reformats and `cargo fmt --check` + `prettier --check` verify
+  (both green as of 2026-09-04).
 - **Audit**: [docs/context/security-baseline.md](docs/context/security-baseline.md) — frontend
   0 vulnerabilities; backend 1 (`rsa`, no upstream fix) + a `chacha20 0.10.1`
   yanked warning.

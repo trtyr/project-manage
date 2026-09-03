@@ -22,7 +22,7 @@ Updated: 2026-08-27
 
 | Plan | 状态 | 当前阶段 | 最后落地 | 下一步 |
 | --- | --- | --- | --- | --- |
-| [ux-functional-audit](plans/ux-functional-audit/README.md) | Done（档案已交付） | archived | 2026-09-03 全功能审查 + 41 条带证据 findings | 修复排期四批次（见该 plan roadmap） |
+| [ux-functional-audit](plans/ux-functional-audit/README.md) | Done（修复已全部落地） | archived | 2026-09-04 修复 goal 落地全部 41 条 findings（B1-B16 / L1-L16 / D1-D9，D9 按建议不实施），findings 档案全条目已标注状态 | 数据长起来后重评搜索增强（D9） |
 | [detail-ia](plans/detail-ia/README.md) | Done | archived | 2026-08-28 五类聚合上线 | 无 |
 | [authentication](plans/authentication/README.md) | Done | archived | 2026-08-27 全链路上线 | Deferred：用户管理界面 / SSO / 多租户 |
 | [client-issues-tracking](plans/client-issues-tracking/README.md) | Done | archived | 2026-08-26 全链路上线 | 无 |
