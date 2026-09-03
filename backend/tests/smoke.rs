@@ -1,7 +1,8 @@
 //! Smoke tests — full module CRUD + CRM field verification.
 //!
 //! Each test:
-//! 1. Opens its own `PgPool` from `DATABASE_URL`.
+//! 1. Opens its own `PgPool` against the dedicated `<db>_smoke` database
+//!    (B1: isolated from the dev database).
 //! 2. Starts an Axum test server on a random loopback port via
 //!    `project_manage_backend::app::build_app`.
 //! 3. Performs CREATE → READ → UPDATE → DELETE over HTTP and asserts
@@ -18,9 +19,13 @@
 //!
 //! Or via the `just smoke` recipe (sets up env via `.cargo/config.toml`).
 
+use std::str::FromStr;
+
 use reqwest::StatusCode;
 use serde_json::{json, Value};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::PgPool;
+use tokio::sync::OnceCell;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
@@ -137,12 +142,77 @@ async fn auth_login(http: &reqwest::Client, base_url: &str) {
     );
 }
 
-/// Open a fresh pool from `DATABASE_URL`. `cargo test` propagates the
-/// `[env]` section from `.cargo/config.toml` to the test process, so
-/// the variable is normally set without an explicit `export`.
+/// B1 fix: the smoke suite used to connect straight to the dev database,
+/// which is how the shared `smoke@test.local` account leaked into real
+/// `users` tables. All smoke pools now point at a dedicated
+/// `<db>_smoke` database, created + migrated on first use per process.
+fn smoke_db_name(url: &str) -> String {
+    let opts = PgConnectOptions::from_str(url).expect("parse DATABASE_URL");
+    format!("{}_smoke", opts.get_database().unwrap_or("project_manage"))
+}
+
+/// Create the smoke database if missing and apply migrations. Runs once
+/// per test process (`SMOKE_DB_INIT` guards against the parallel tests
+/// racing each other into a duplicate CREATE DATABASE).
+async fn ensure_smoke_database(url: &str) {
+    let name = smoke_db_name(url);
+    let admin_opts = PgConnectOptions::from_str(url)
+        .expect("parse DATABASE_URL")
+        .database("postgres");
+    let admin = PgPoolOptions::new()
+        .max_connections(2)
+        .connect_with(admin_opts)
+        .await
+        .expect("connect to the 'postgres' maintenance database");
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)")
+            .bind(&name)
+            .fetch_one(&admin)
+            .await
+            .expect("check pg_database");
+    if !exists {
+        sqlx::query(&format!("CREATE DATABASE \"{name}\""))
+            .execute(&admin)
+            .await
+            .unwrap_or_else(|e| panic!("create {name}: {e}"));
+    }
+    admin.close().await;
+
+    let pool = PgPool::connect_with(
+        PgConnectOptions::from_str(url)
+            .expect("parse DATABASE_URL")
+            .database(&name),
+    )
+    .await
+    .expect("connect to the smoke database");
+    let migrator = sqlx::migrate::Migrator::new(std::path::Path::new("./migrations"))
+        .await
+        .expect("load migrations for the smoke database");
+    migrator
+        .run(&pool)
+        .await
+        .expect("migrate the smoke database");
+    pool.close().await;
+}
+
+static SMOKE_DB_INIT: OnceCell<()> = OnceCell::const_new();
+
+/// Open a fresh pool against the dedicated smoke database (`<db>_smoke`),
+/// derived from `DATABASE_URL`. `cargo test` propagates the `[env]`
+/// section from `.cargo/config.toml` to the test process, so the variable
+/// is normally set without an explicit `export`.
 async fn connect_pool() -> PgPool {
     let url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set for smoke tests");
-    PgPool::connect(&url).await.expect("connect to PostgreSQL")
+    SMOKE_DB_INIT
+        .get_or_init(|| ensure_smoke_database(&url))
+        .await;
+    let opts = PgConnectOptions::from_str(&url)
+        .expect("parse DATABASE_URL")
+        .database(&smoke_db_name(&url));
+    PgPoolOptions::new()
+        .connect_with(opts)
+        .await
+        .expect("connect to the smoke database")
 }
 
 /// Create a parent client for tests that exercise project-scoped
@@ -1277,7 +1347,10 @@ async fn test_auth_flow() {
         .expect("GET /api/auth/status");
     assert_eq!(resp.status(), StatusCode::OK, "status whitelisted");
 
-    // 1. Setup the shared account (idempotent: 409 if another test won).
+    // 1. Setup the shared account (idempotent). On a fresh smoke DB the
+    //    parallel tests race setup; the loser's INSERT hits a unique
+    //    violation, which `AppError` maps to 400 `conflict` (distinct from
+    //    the deterministic 409 when users is already non-empty) — accept it.
     let http = http_client();
     let resp = http
         .post(format!("{base_url}/api/auth/setup"))
@@ -1285,10 +1358,13 @@ async fn test_auth_flow() {
         .send()
         .await
         .expect("POST setup");
+    let setup_status = resp.status();
+    let setup_body: Value = resp.json().await.unwrap_or(Value::Null);
     assert!(
-        resp.status() == StatusCode::CREATED || resp.status() == StatusCode::CONFLICT,
-        "setup creates or conflicts, got {}",
-        resp.status()
+        setup_status == StatusCode::CREATED
+            || setup_status == StatusCode::CONFLICT
+            || (setup_status == StatusCode::BAD_REQUEST && setup_body["error"] == "conflict"),
+        "setup creates or conflicts, got {setup_status} {setup_body:?}"
     );
 
     // 2. Re-running setup after an account exists → 409.

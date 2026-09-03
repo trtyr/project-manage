@@ -103,6 +103,7 @@ export default function ProjectBoard() {
 
   const createClientMut = useMutation({
     mutationFn: clientsApi.create,
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateProjectMut = useMutation({

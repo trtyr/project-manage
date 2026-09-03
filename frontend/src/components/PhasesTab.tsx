@@ -105,6 +105,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
       setCreateOpen(false)
       form.resetFields()
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateMut = useMutation({
@@ -120,6 +121,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
       message.success('已保存')
       setEditTarget(null)
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const deleteMut = useMutation({
@@ -128,6 +130,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
       queryClient.invalidateQueries({ queryKey: ['phases', projectId] })
       message.success('已删除')
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const linkFileMut = useMutation({
@@ -141,6 +144,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] })
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const uploadFileMut = useMutation({
@@ -166,6 +170,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
       queryClient.invalidateQueries({ queryKey: ['phases', projectId] })
       message.success('七阶段模板已导入')
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const tree = buildTree(phases ?? [])

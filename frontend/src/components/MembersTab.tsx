@@ -169,6 +169,7 @@ export default function MembersTab({ projectId }: Props) {
       setAddingSide(null)
       form.resetFields()
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateMut = useMutation({
@@ -185,6 +186,7 @@ export default function MembersTab({ projectId }: Props) {
       setEditPerson(null)
       form.resetFields()
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const deleteMut = useMutation({
@@ -193,6 +195,7 @@ export default function MembersTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['people', projectId] })
       message.success('已删除')
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const sensors = useSensors(

@@ -76,6 +76,7 @@ export default function IssuesTab({ projectId }: Props) {
       setIssueOpen(false)
       issueForm.resetFields()
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const updateIssueMut = useMutation({
@@ -89,6 +90,7 @@ export default function IssuesTab({ projectId }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['issues', projectId] })
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const deleteIssueMut = useMutation({
@@ -97,6 +99,7 @@ export default function IssuesTab({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['issues', projectId] })
       message.success('已删除')
     },
+    onError: () => message.error('操作失败，请重试'),
   })
 
   const columns = useMemo(

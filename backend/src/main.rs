@@ -251,6 +251,15 @@ async fn main() {
     run_migrations_with_retry(&pool).await;
     info!("✅ database migrations applied");
 
+    // 3.6 Session hygiene — tower-sessions never purges expired rows on its
+    //     own (B15/D1): every login inserts one and the table grew unboundedly.
+    //     Best-effort at boot; failure is non-fatal.
+    match project_manage_backend::handlers::auth::purge_expired_sessions(&pool).await {
+        Ok(n) if n > 0 => info!(removed = n, "purged expired sessions"),
+        Ok(_) => {}
+        Err(err) => warn!(error = %err, "session purge failed (non-fatal)"),
+    }
+
     // 3.5 Session layer — tower-sessions backed by the same Postgres.
     //     The session table is created by migration 00022 (unified under
     //     ./migrations rather than the store's runtime migrate).

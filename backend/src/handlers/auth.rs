@@ -244,6 +244,18 @@ async fn me(State(pool): State<PgPool>, session: Session) -> AppResult<Json<User
 // Middleware — fail-closed guard
 // ---------------------------------------------------------------------------
 
+/// Delete expired rows from the `session` table (B15/D1: tower-sessions
+/// never purges on its own — every login inserts a row and the table grew
+/// unboundedly, 241 rows at audit time). Called once at startup after
+/// migrations; failures are non-fatal (warn + continue). Returns the
+/// number of rows removed.
+pub async fn purge_expired_sessions(pool: &PgPool) -> Result<u64, sqlx::Error> {
+    let res = sqlx::query("DELETE FROM session WHERE expiry_date < now()")
+        .execute(pool)
+        .await?;
+    Ok(res.rows_affected())
+}
+
 /// Route guard: resolve the session to a user_id, or reject with 401.
 /// Mounted over all `/api/*` except the whitelist in `app::build_app`.
 pub async fn require_auth(
@@ -284,4 +296,35 @@ pub fn auth_router() -> axum::Router<AppState> {
         .route("/auth/login", post(login))
         .route("/auth/logout", post(logout))
         .route("/auth/me", get(me))
+}
+
+#[cfg(test)]
+mod purge_tests {
+    use super::purge_expired_sessions;
+
+    /// B15/D1: only expired session rows are removed; fresh ones survive.
+    /// `#[sqlx::test]` provisions an isolated temp database with all
+    /// migrations applied, so this touches no real data.
+    #[sqlx::test]
+    async fn purges_only_expired_sessions(pool: sqlx::PgPool) {
+        sqlx::query(
+            "INSERT INTO session (id, data, expiry_date) VALUES \
+             ('expired', '\\x00'::bytea, now() - interval '1 hour'), \
+             ('fresh',   '\\x00'::bytea, now() + interval '1 hour')",
+        )
+        .execute(&pool)
+        .await
+        .expect("seed session rows");
+
+        let removed = purge_expired_sessions(&pool)
+            .await
+            .expect("purge should succeed");
+        assert_eq!(removed, 1, "exactly the expired row is removed");
+
+        let remaining: String = sqlx::query_scalar("SELECT id FROM session")
+            .fetch_one(&pool)
+            .await
+            .expect("one row remains");
+        assert_eq!(remaining, "fresh", "the fresh session survives");
+    }
 }
