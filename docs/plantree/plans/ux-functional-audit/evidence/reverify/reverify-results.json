@@ -1,0 +1,154 @@
+{
+  "base": "http://localhost:3001",
+  "ranAt": "2026-09-03T16:49:04.065Z",
+  "checks": {
+    "narrow": {
+      "board": {
+        "n": 0,
+        "misses": []
+      },
+      "files": {
+        "n": 0,
+        "misses": []
+      },
+      "detail": {
+        "n": 0,
+        "misses": []
+      }
+    },
+    "unnamed": {
+      "board": {
+        "n": 3,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-input-clear-icon ant-input-clear-ico"
+        ]
+      },
+      "files": {
+        "n": 4,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-default ant-"
+        ]
+      },
+      "detail": {
+        "n": 3,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-tabs-nav-more"
+        ]
+      },
+      "detail-推进": {
+        "n": 3,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-tabs-nav-more"
+        ]
+      },
+      "detail-客户": {
+        "n": 3,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-tabs-nav-more"
+        ]
+      },
+      "detail-资料": {
+        "n": 3,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-tabs-nav-more"
+        ]
+      },
+      "detail-成员": {
+        "n": 3,
+        "misses": [
+          "ant-input-clear-icon ant-input-clear-ico",
+          "ant-btn css-1acng9q ant-btn-text ant-btn",
+          "ant-tabs-nav-more"
+        ]
+      }
+    },
+    "b2": {
+      "firstOpen": "2026-09-04 00:49:45",
+      "secondOpen": "2026-09-04 00:49:48",
+      "refreshed": true
+    },
+    "b4_light": {
+      "tags": [
+        {
+          "label": "进行中",
+          "bg": "rgba(20, 131, 116, 0.1)",
+          "color": "rgb(20, 131, 116)",
+          "transparent": false
+        },
+        {
+          "label": "已完成",
+          "bg": "color(srgb 0.176471 0.52549 0.34902 / 0.12)",
+          "color": "rgb(45, 134, 89)",
+          "transparent": false
+        },
+        {
+          "label": "已完成",
+          "bg": "color(srgb 0.176471 0.52549 0.34902 / 0.12)",
+          "color": "rgb(45, 134, 89)",
+          "transparent": false
+        },
+        {
+          "label": "进行中",
+          "bg": "color(srgb 0.0784314 0.513726 0.454902 / 0.12)",
+          "color": "rgb(20, 131, 116)",
+          "transparent": false
+        }
+      ],
+      "tokens": [
+        "#2d8659",
+        "#d48042",
+        "#ff4d4f",
+        "#722ed1",
+        "#d48042"
+      ]
+    },
+    "b4_dark": {
+      "tags": [
+        {
+          "label": "进行中",
+          "bg": "rgba(45, 184, 158, 0.1)",
+          "color": "rgb(45, 184, 158)",
+          "transparent": false
+        },
+        {
+          "label": "已完成",
+          "bg": "color(srgb 0.356863 0.74902 0.541176 / 0.12)",
+          "color": "rgb(91, 191, 138)",
+          "transparent": false
+        },
+        {
+          "label": "已完成",
+          "bg": "color(srgb 0.356863 0.74902 0.541176 / 0.12)",
+          "color": "rgb(91, 191, 138)",
+          "transparent": false
+        },
+        {
+          "label": "进行中",
+          "bg": "color(srgb 0.176471 0.721569 0.619608 / 0.12)",
+          "color": "rgb(45, 184, 158)",
+          "transparent": false
+        }
+      ],
+      "tokens": [
+        "#5bbf8a",
+        "#e0a560",
+        "#ff7875",
+        "#9254de",
+        "#e0a560"
+      ]
+    }
+  }
+}

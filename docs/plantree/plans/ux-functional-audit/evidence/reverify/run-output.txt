@@ -1,0 +1,52 @@
+narrow(390) board: offscreen-clickable=0 []
+narrow(390) files: offscreen-clickable=0 []
+narrow(390) detail: offscreen-clickable=0 []
+desktop board: unnamed icon buttons=3 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-input-clear-icon ant-input-clear-ico'
+]
+desktop files: unnamed icon buttons=4 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-default ant-'
+]
+desktop detail: unnamed icon buttons=3 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-tabs-nav-more'
+]
+desktop detail-推进: unnamed=3 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-tabs-nav-more'
+]
+desktop detail-客户: unnamed=3 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-tabs-nav-more'
+]
+desktop detail-资料: unnamed=3 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-tabs-nav-more'
+]
+desktop detail-成员: unnamed=3 [
+  'ant-input-clear-icon ant-input-clear-ico',
+  'ant-btn css-1acng9q ant-btn-text ant-btn',
+  'ant-tabs-nav-more'
+]
+B2 first-open=2026-09-04 00:49:45 second-open=2026-09-04 00:49:48 refreshed=true
+B4 LIGHT 进行中: bg=rgba(20, 131, 116, 0.1) transparent=false
+B4 LIGHT 已完成: bg=color(srgb 0.176471 0.52549 0.34902 / 0.12) transparent=false
+B4 LIGHT 已完成: bg=color(srgb 0.176471 0.52549 0.34902 / 0.12) transparent=false
+B4 LIGHT 进行中: bg=color(srgb 0.0784314 0.513726 0.454902 / 0.12) transparent=false
+L9 LIGHT tokens: #2d8659 | #d48042 | #ff4d4f | #722ed1 | #d48042
+B4 DARK 进行中: bg=rgba(45, 184, 158, 0.1) transparent=false
+B4 DARK 已完成: bg=color(srgb 0.356863 0.74902 0.541176 / 0.12) transparent=false
+B4 DARK 已完成: bg=color(srgb 0.356863 0.74902 0.541176 / 0.12) transparent=false
+B4 DARK 进行中: bg=color(srgb 0.176471 0.721569 0.619608 / 0.12) transparent=false
+L9 DARK tokens: #5bbf8a | #e0a560 | #ff7875 | #9254de | #e0a560
+
+wrote reverify-results.json
