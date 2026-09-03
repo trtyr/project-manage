@@ -12,7 +12,7 @@
   --surface-hex: #ffffff;
   --ink-hex: #1a1e1e;
   --primary-hex: #148374;
-  --accent-hex: var(--warning-hex);
+  --accent-hex: #d48042;
   --muted-hex: #5f6868;
 
   /* Typography */
@@ -52,9 +52,12 @@
   --primary-rgb: 20, 131, 116;
   --sidebar-bg: #f7f8f8;
 
-  /* Status tokens (L9: single source for success/warning/danger/info) */
-  --success-hex: var(--success-hex);
-  --warning-hex: var(--warning-hex);
+  /* Status tokens (L9: single source for success/warning/danger/info).
+     NOTE: these must stay literal hexes — an earlier sed pass rewrote the
+     definitions into self-references (`var(--success-hex)`) which the CSS
+     spec treats as guaranteed-invalid, silently breaking light mode. */
+  --success-hex: #2d8659;
+  --warning-hex: #d48042;
   --danger-hex: #ff4d4f;
   --info-hex: #722ed1;
 
