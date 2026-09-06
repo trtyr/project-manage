@@ -423,124 +423,138 @@ export default function ProjectBoard() {
           {/* flexWrap + minWidth floor: on narrow windows the fixed 320px
               activity sidebar must wrap below instead of crushing the
               project list into a sliver. */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 32,
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-            }}
-          >
-            {/* Projects */}
-            <div style={{ flex: '1 1 60%', minWidth: 320 }}>
-              <div
-                className="recent-section__label"
-                style={{ marginBottom: 12 }}
-              >
-                项目列表
-              </div>
-              {isLoading ? (
-                <Skeleton active paragraph={{ rows: 4 }} />
-              ) : !projects?.length ? (
-                <Empty
-                  description="还没有项目"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+          {/* No projects at all → the whole two-column area (whose sidebar
+              would be empty anyway) gives way to one centered empty state
+              in the middle of the content area. */}
+          {isLoading || projects?.length ? (
+            <div
+              style={{
+                display: 'flex',
+                gap: 32,
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+              }}
+            >
+              {/* Projects */}
+              <div style={{ flex: '1 1 60%', minWidth: 320 }}>
+                <div
+                  className="recent-section__label"
+                  style={{ marginBottom: 12 }}
                 >
-                  <Button type="primary" onClick={() => setCreateOpen(true)}>
-                    创建第一个项目
-                  </Button>
-                </Empty>
-              ) : (
-                <div className="project-list">
-                  {filteredProjects.map((p) => (
-                    <ProjectRow
-                      key={p.id}
-                      project={p}
-                      clientName={clientMap.get(p.client_id) ?? '未知客户'}
-                      onClick={() => navigate(`/projects/${p.id}`)}
-                      menuItems={getMenuItems(p)}
-                    />
-                  ))}
+                  项目列表
                 </div>
-              )}
-            </div>
-
-            {/* Activity sidebar */}
-            <div style={{ flex: '0 0 320px' }}>
-              {/* Recent communications */}
-              {recentComms?.length ? (
-                <div style={{ marginBottom: 28 }}>
-                  <div
-                    className="recent-section__label"
-                    style={{ marginBottom: 12 }}
-                  >
-                    最近沟通
+                {isLoading ? (
+                  <Skeleton active paragraph={{ rows: 4 }} />
+                ) : (
+                  <div className="project-list">
+                    {filteredProjects.map((p) => (
+                      <ProjectRow
+                        key={p.id}
+                        project={p}
+                        clientName={clientMap.get(p.client_id) ?? '未知客户'}
+                        onClick={() => navigate(`/projects/${p.id}`)}
+                        menuItems={getMenuItems(p)}
+                      />
+                    ))}
                   </div>
-                  {recentComms.map((c) => (
+                )}
+              </div>
+
+              {/* Activity sidebar */}
+              <div style={{ flex: '0 0 320px' }}>
+                {/* Recent communications */}
+                {recentComms?.length ? (
+                  <div style={{ marginBottom: 28 }}>
                     <div
-                      key={c.id}
-                      className="recent-item"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() =>
-                        navigate(
-                          `/projects/${c.project_id}/communications/${c.id}`,
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter')
+                      className="recent-section__label"
+                      style={{ marginBottom: 12 }}
+                    >
+                      最近沟通
+                    </div>
+                    {recentComms.map((c) => (
+                      <div
+                        key={c.id}
+                        className="recent-item"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
                           navigate(
                             `/projects/${c.project_id}/communications/${c.id}`,
                           )
-                      }}
-                    >
-                      <span className="recent-item__date">
-                        {dayjs(c.occurred_at).format('M月D日')}
-                      </span>
-                      <span className="recent-item__project">
-                        {c.project_name}
-                      </span>
-                      <span className="recent-item__preview">
-                        {c.content.replace(/[#*`>\-]/g, '').substring(0, 60)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              {/* Recent files */}
-              {recentFilesSorted.length ? (
-                <div>
-                  <div
-                    className="recent-section__label"
-                    style={{ marginBottom: 12 }}
-                  >
-                    最近上传
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter')
+                            navigate(
+                              `/projects/${c.project_id}/communications/${c.id}`,
+                            )
+                        }}
+                      >
+                        <span className="recent-item__date">
+                          {dayjs(c.occurred_at).format('M月D日')}
+                        </span>
+                        <span className="recent-item__project">
+                          {c.project_name}
+                        </span>
+                        <span className="recent-item__preview">
+                          {c.content.replace(/[#*`>\-]/g, '').substring(0, 60)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  {recentFilesSorted.map((f) => (
+                ) : null}
+
+                {/* Recent files */}
+                {recentFilesSorted.length ? (
+                  <div>
                     <div
-                      key={f.id}
-                      className="recent-item"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => navigate(`/projects/${f.project_id}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter')
-                          navigate(`/projects/${f.project_id}`)
-                      }}
+                      className="recent-section__label"
+                      style={{ marginBottom: 12 }}
                     >
-                      <span className="recent-item__date">
-                        {dayjs(f.created_at).format('M月D日')}
-                      </span>
-                      <span className="recent-item__preview">
-                        {f.original_name}
-                      </span>
+                      最近上传
                     </div>
-                  ))}
-                </div>
-              ) : null}
+                    {recentFilesSorted.map((f) => (
+                      <div
+                        key={f.id}
+                        className="recent-item"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => navigate(`/projects/${f.project_id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter')
+                            navigate(`/projects/${f.project_id}`)
+                        }}
+                      >
+                        <span className="recent-item__date">
+                          {dayjs(f.created_at).format('M月D日')}
+                        </span>
+                        <span className="recent-item__preview">
+                          {f.original_name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : (
+            // Zero projects: center the empty state in the content area
+            // instead of pinning it to the top-left of a column.
+            <div
+              style={{
+                minHeight: '58vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Empty description="还没有项目">
+                <Button type="primary" onClick={() => setCreateOpen(true)}>
+                  创建第一个项目
+                </Button>
+              </Empty>
+            </div>
+          )}
         </>
       )}
 
