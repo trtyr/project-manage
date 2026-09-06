@@ -11,8 +11,9 @@ backend/.cargo/config.toml
 frontend/node_modules
 frontend/dist
 
-# Runtime artifacts
+# Runtime artifacts (user documents never enter the build context)
 backend/static
+backend/uploads
 
 # Docs / tooling caches (not needed in image)
 docs
