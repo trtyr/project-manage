@@ -86,7 +86,7 @@ export default function FileLibrary() {
         placeholder="搜索文件名、项目名或标签…"
         allowClear
         size="large"
-        style={{ marginBottom: 20, maxWidth: 400 }}
+        style={{ marginBottom: 'var(--space-4)', maxWidth: 400 }}
         onChange={(e) => setSearch(e.target.value)}
       />
       {allTags.length > 0 && (
@@ -200,7 +200,7 @@ export default function FileLibrary() {
             width: 140,
             render: (tags: string[]) =>
               tags.map((t) => (
-                <Tag key={t} style={{ marginBottom: 2 }}>
+                <Tag key={t} style={{ marginBottom: 'var(--space-1)' }}>
                   {t}
                 </Tag>
               )),

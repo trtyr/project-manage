@@ -180,7 +180,7 @@ export default function TimelineTab({ projectId, onGoFillDates }: Props) {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  paddingRight: 10,
+                  paddingRight: 'var(--space-2)',
                   textAlign: 'right',
                 }}
               >

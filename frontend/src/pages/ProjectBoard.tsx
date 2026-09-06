@@ -464,7 +464,7 @@ export default function ProjectBoard() {
               <div style={{ flex: '0 0 320px' }}>
                 {/* Recent communications */}
                 {recentComms?.length ? (
-                  <div style={{ marginBottom: 28 }}>
+                  <div style={{ marginBottom: 'var(--space-6)' }}>
                     <div
                       className="recent-section__label"
                       style={{ marginBottom: 12 }}

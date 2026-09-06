@@ -198,7 +198,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         width: 140,
         render: (tags: string[]) =>
           tags.map((t) => (
-            <Tag key={t} style={{ marginBottom: 2 }}>
+            <Tag key={t} style={{ marginBottom: 'var(--space-1)' }}>
               {t}
             </Tag>
           )),

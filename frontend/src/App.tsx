@@ -368,7 +368,7 @@ function App() {
                     style={{
                       fontSize: 10,
                       color: 'var(--primary-hex)',
-                      marginRight: 6,
+                      marginRight: 'var(--space-1)',
                       textTransform: 'uppercase',
                     }}
                   >

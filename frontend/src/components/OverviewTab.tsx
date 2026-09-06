@@ -39,7 +39,7 @@ export default function OverviewTab({
             label: '目标',
             span: 2,
             children: project.goals.length ? (
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <ul style={{ margin: 0, paddingLeft: 'var(--space-4)' }}>
                 {project.goals.map((g) => (
                   <li key={g}>{g}</li>
                 ))}

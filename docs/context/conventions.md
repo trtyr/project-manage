@@ -275,6 +275,19 @@ hardcoded status colors; when touching a file that still carries raw
 values, migrate the values you touch (incremental, no big-bang refactor
 of the remaining inline styles).
 
+**2026-09-06 spacing audit:** all inline `style={{}}` spacing values
+audited against the token grid — 128 values total, compliance was 80.5%,
+now **98%**. The 2 remaining raw values are exempt structural dimensions
+(TimelineTab's 160px timeline-axis label gutter; `maxWidth: 400` on a
+search input). Container chrome is on-grid too: `.app-content` padding
+`var(--space-8) var(--space-8) var(--space-12)` (tablet `--space-4/-4/-8`,
+phone `--space-3/-3/-8`), `.page-header` margin-bottom `--space-6`. The
+`.app-content__inner` max-width was raised 1100 → **1240px** against real
+data (longest project name 17 CJK chars; two-column 60% + 320px sidebar
+needs ≥1200px to breathe on 1920 screens). Note: `index.css` class rules
+still use raw px (~0 `var(--space-*)` consumers in CSS) — migrating them
+is remaining debt, same incremental rule applies.
+
 ### 6.3 ErrorBoundary
 
 A class-component `ErrorBoundary` is mounted at the App root in

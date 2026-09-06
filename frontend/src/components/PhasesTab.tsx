@@ -282,7 +282,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             marginBottom: 8,
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 'var(--space-1)',
             flexWrap: 'wrap',
           }}
         >
