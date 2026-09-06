@@ -70,6 +70,9 @@ async fn start_test_server(pool: PgPool) -> String {
         .expect("static schema name is valid");
     let session_layer = tower_sessions::SessionManagerLayer::new(session_store)
         .with_same_site(tower_sessions::cookie::SameSite::Lax)
+        // Parity with main.rs: tower-sessions 0.14 defaults secure=true,
+        // which would break cookie flows on plain-HTTP test servers.
+        .with_secure(false)
         .with_expiry(tower_sessions::Expiry::OnSessionEnd);
 
     let app = build_app(

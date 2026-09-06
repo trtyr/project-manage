@@ -264,8 +264,11 @@ async fn main() {
     //     The session table is created by migration 00022 (unified under
     //     ./migrations rather than the store's runtime migrate).
     //     Policy: HttpOnly cookie (tower-sessions default), SameSite=Lax
-    //     (same-origin deploy), 30-day sliding expiry, not Secure (plain
-    //     HTTP on the internal host; revisit when TLS lands).
+    //     (same-origin deploy), 30-day sliding expiry.
+    //     Secure is EXPLICITLY off: tower-sessions 0.14 defaults secure=true,
+    //     which makes browsers drop the cookie on plain-HTTP deployments
+    //     (login 200s but every later request is anonymous → bounced to
+    //     /login). This host serves plain HTTP; flip to true when TLS lands.
     // Official store defaults to a dedicated `tower_sessions` schema
     // (created by its own migrate()). We keep the session table in
     // `public` via migration 00022 instead — unified migration management
@@ -279,6 +282,7 @@ async fn main() {
     // `session` table, so forgery is a no-op and sessions survive restarts.
     let session_layer = tower_sessions::SessionManagerLayer::new(session_store)
         .with_same_site(tower_sessions::cookie::SameSite::Lax)
+        .with_secure(false)
         .with_expiry(tower_sessions::Expiry::OnInactivity(
             tower_sessions::cookie::time::Duration::seconds(
                 project_manage_backend::handlers::auth::SESSION_TTL_SECS,
