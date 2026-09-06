@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Modal, Typography, Skeleton } from 'antd'
+import { Modal, Typography, Skeleton, Tabs } from 'antd'
+import * as XLSX from 'xlsx'
+import mammoth from 'mammoth/mammoth.browser'
+import Markdown from './Markdown'
 import { filesApi } from '../api'
 import type { ProjectFile } from '../types'
 
@@ -54,6 +57,29 @@ function isPdfType(mime: string): boolean {
   return mime === 'application/pdf'
 }
 
+function extOf(filename: string): string {
+  return filename.split('.').pop()?.toLowerCase() ?? ''
+}
+
+/** Rendered as markdown instead of a raw text dump (SOP documents). */
+function isMarkdownType(mime: string, filename: string): boolean {
+  if (mime === 'text/markdown' || mime === 'text/x-markdown') return true
+  return extOf(filename) === 'md'
+}
+
+/** Spreadsheets render as per-sheet HTML tables (SheetJS). */
+function isXlsxType(mime: string, filename: string): boolean {
+  if (/sheet|excel|msexcel/i.test(mime)) return true
+  const ext = extOf(filename)
+  return ext === 'xlsx' || ext === 'xls'
+}
+
+/** Word documents render via mammoth → HTML. */
+function isDocxType(mime: string, filename: string): boolean {
+  if (mime.includes('wordprocessingml')) return true
+  return extOf(filename) === 'docx'
+}
+
 interface Props {
   file: ProjectFile | null
   open: boolean
@@ -63,6 +89,11 @@ interface Props {
 export default function FilePreview({ file, open, onClose }: Props) {
   const [textContent, setTextContent] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [xlsxSheets, setXlsxSheets] = useState<
+    { name: string; html: string }[]
+  >([])
+  const [docxHtml, setDocxHtml] = useState('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   useEffect(() => {
@@ -88,6 +119,10 @@ export default function FilePreview({ file, open, onClose }: Props) {
   useEffect(() => {
     if (!file || !open) return
     setTextContent('')
+    setXlsxSheets([])
+    setDocxHtml('')
+    setLoadFailed(false)
+
     if (isTextType(file.mime_type, file.original_name)) {
       const controller = new AbortController()
       setLoading(true)
@@ -100,7 +135,48 @@ export default function FilePreview({ file, open, onClose }: Props) {
         .catch((err) => {
           // Swallow the abort signal: it's a normal teardown, not a failure.
           if (err?.name === 'AbortError') return
-          setTextContent('加载失败')
+          setLoadFailed(true)
+          setLoading(false)
+        })
+      return () => controller.abort()
+    }
+
+    if (isXlsxType(file.mime_type, file.original_name)) {
+      const controller = new AbortController()
+      setLoading(true)
+      fetch(filesApi.previewUrl(file.id), { signal: controller.signal })
+        .then((r) => r.arrayBuffer())
+        .then((buf) => {
+          const wb = XLSX.read(buf, { type: 'array' })
+          setXlsxSheets(
+            wb.SheetNames.map((name) => ({
+              name,
+              html: XLSX.utils.sheet_to_html(wb.Sheets[name]),
+            })),
+          )
+          setLoading(false)
+        })
+        .catch((err) => {
+          if (err?.name === 'AbortError') return
+          setLoadFailed(true)
+          setLoading(false)
+        })
+      return () => controller.abort()
+    }
+
+    if (isDocxType(file.mime_type, file.original_name)) {
+      const controller = new AbortController()
+      setLoading(true)
+      fetch(filesApi.previewUrl(file.id), { signal: controller.signal })
+        .then((r) => r.arrayBuffer())
+        .then((buf) => mammoth.convertToHtml({ arrayBuffer: buf }))
+        .then((result) => {
+          setDocxHtml(result.value)
+          setLoading(false)
+        })
+        .catch((err) => {
+          if (err?.name === 'AbortError') return
+          setLoadFailed(true)
           setLoading(false)
         })
       return () => controller.abort()
@@ -110,6 +186,16 @@ export default function FilePreview({ file, open, onClose }: Props) {
   if (!file) return null
 
   const previewUrl = filesApi.previewUrl(file.id)
+  const isXlsx = isXlsxType(file.mime_type, file.original_name)
+  const isDocx = isDocxType(file.mime_type, file.original_name)
+  const isMd = isMarkdownType(file.mime_type, file.original_name)
+  const supported =
+    isImageType(file.mime_type) ||
+    isPdfType(file.mime_type) ||
+    isHtmlType(file.mime_type, file.original_name) ||
+    isTextType(file.mime_type, file.original_name) ||
+    isXlsx ||
+    isDocx
 
   return (
     <Modal
@@ -157,6 +243,10 @@ export default function FilePreview({ file, open, onClose }: Props) {
             <div style={{ padding: 24 }}>
               <Skeleton active paragraph={{ rows: 8 }} />
             </div>
+          ) : loadFailed ? (
+            <Text type="secondary">加载失败，请重试或下载查看</Text>
+          ) : isMd ? (
+            <Markdown>{textContent}</Markdown>
           ) : (
             <pre
               style={{
@@ -190,14 +280,51 @@ export default function FilePreview({ file, open, onClose }: Props) {
           )}
         </div>
       )}
-      {!isImageType(file.mime_type) &&
-        !isPdfType(file.mime_type) &&
-        !isHtmlType(file.mime_type, file.original_name) &&
-        !isTextType(file.mime_type, file.original_name) && (
-          <div style={{ textAlign: 'center', padding: 48 }}>
-            <Text type="secondary">此文件类型不支持在线预览，请下载查看</Text>
-          </div>
-        )}
+      {isXlsx && (
+        <div style={{ padding: 16 }}>
+          {loading ? (
+            <div style={{ padding: 24 }}>
+              <Skeleton active paragraph={{ rows: 8 }} />
+            </div>
+          ) : xlsxSheets.length ? (
+            <Tabs
+              items={xlsxSheets.map((s) => ({
+                key: s.name,
+                label: s.name,
+                children: (
+                  <div
+                    className="sheet-preview"
+                    dangerouslySetInnerHTML={{ __html: s.html }}
+                  />
+                ),
+              }))}
+            />
+          ) : (
+            <Text type="secondary">加载失败，请重试或下载查看</Text>
+          )}
+        </div>
+      )}
+      {isDocx && (
+        <div style={{ padding: 16 }}>
+          {loading ? (
+            <div style={{ padding: 24 }}>
+              <Skeleton active paragraph={{ rows: 8 }} />
+            </div>
+          ) : loadFailed ? (
+            <Text type="secondary">加载失败，请重试或下载查看</Text>
+          ) : (
+            <div
+              className="docx-preview"
+              dangerouslySetInnerHTML={{ __html: docxHtml }}
+            />
+          )}
+        </div>
+      )}
+      {!supported && (
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Text type="secondary">此文件类型不支持在线预览，请下载查看</Text>
+        </div>
+      )}
     </Modal>
   )
 }

@@ -1026,3 +1026,29 @@ body {
   display: inline-block;
   padding: var(--space-1) 0;
 }
+
+/* === File preview: spreadsheet / docx rendered content === */
+
+.sheet-preview table,
+.docx-preview table {
+  border-collapse: collapse;
+}
+
+.sheet-preview td,
+.sheet-preview th,
+.docx-preview td,
+.docx-preview th {
+  border: 1px solid var(--hairline);
+  padding: var(--space-1) var(--space-2);
+  font-size: 13px;
+}
+
+.docx-preview img {
+  max-width: 100%;
+}
+
+.docx-preview h1,
+.docx-preview h2,
+.docx-preview h3 {
+  margin: var(--space-4) 0 var(--space-2);
+}

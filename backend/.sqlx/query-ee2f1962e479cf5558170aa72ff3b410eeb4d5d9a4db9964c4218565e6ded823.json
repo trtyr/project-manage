@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, project_id, name, asset_type, value FROM assets\n           WHERE name ILIKE $1 OR value ILIKE $1\n              OR description ILIKE $1 OR asset_type ILIKE $1\n           LIMIT 10",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "asset_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "value",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "ee2f1962e479cf5558170aa72ff3b410eeb4d5d9a4db9964c4218565e6ded823"
+}

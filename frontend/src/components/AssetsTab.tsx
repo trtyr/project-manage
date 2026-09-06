@@ -13,6 +13,7 @@ import {
   Typography,
   Drawer,
   List,
+  Tooltip,
 } from 'antd'
 import {
   PlusOutlined,
@@ -23,6 +24,8 @@ import {
   KeyOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
+  ScissorOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -51,22 +54,29 @@ import type {
 const { Text, Paragraph } = Typography
 
 const ASSET_TYPE_SUGGESTIONS = [
-  '监控系统',
-  '数据管理系统',
-  '日志系统',
-  'SOAR',
-  'NDR',
   '防火墙',
-  '网关',
+  'WAF',
   'IDS/IPS',
+  'NDR',
+  'EDR',
+  'DLP',
+  'SOC',
+  'SIEM',
+  'SOAR',
   '威胁情报',
   '暴露面检测',
-  '应用',
+  '蜜罐',
+  '零信任',
+  '堡垒机',
   'VPN',
+  '网关',
+  '监控系统',
+  '日志系统',
   '数据库',
   '服务器',
+  '应用',
+  '数据管理系统',
   '域名',
-  '数据库',
   '云平台',
 ]
 
@@ -81,6 +91,14 @@ const ASSET_TYPE_COLOR: Record<string, string> = {
   日志系统: 'geekblue',
   SOAR: 'magenta',
   NDR: 'gold',
+  EDR: 'geekblue',
+  DLP: 'gold',
+  SOC: 'blue',
+  SIEM: 'purple',
+  零信任: 'cyan',
+  堡垒机: 'red',
+  WAF: 'volcano',
+  蜜罐: 'magenta',
 }
 
 const ACCESS_METHODS = ['VPN', '直连', '拨号', '内网', '远程桌面']
@@ -247,6 +265,33 @@ interface CredentialDrawerProps {
   onCopy: (text: string) => void
 }
 
+/** Parse a migrated multi-account blob (blank-line separated chunks) into
+ * structured parts. Recognises 账号/用户名/user and 密码/password lines.
+ * Returns [] when there is nothing to split (fewer than 2 chunks). */
+function parseCredentialChunks(
+  blob: string,
+): { label: string; username?: string; secret?: string }[] {
+  const chunks = blob
+    .split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (chunks.length < 2) return []
+  const USER = /^(?:账号|用户名|user(?:name)?)\s*[:：]\s*(.+)$/im
+  const PASS = /^(?:密码|password|pass)\s*[:：]\s*(.+)$/im
+  return chunks.map((chunk, i) => {
+    const username = chunk.match(USER)?.[1]?.trim()
+    const pass = chunk.match(PASS)?.[1]?.trim()
+    const rest = chunk
+      .split('\n')
+      .filter((l) => !USER.test(l) && !PASS.test(l))
+      .join('\n')
+      .trim()
+    const label =
+      username || (chunk.split('\n')[0] || `凭据 ${i + 1}`).slice(0, 24)
+    return { label, username, secret: pass ?? (rest || undefined) }
+  })
+}
+
 /** Manage one asset's credentials: list + add/edit/delete, each entry with
  * a typed label and separately copyable username / secret. */
 function CredentialDrawer({
@@ -261,6 +306,8 @@ function CredentialDrawer({
   const [credForm] = Form.useForm()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<AssetCredential | null>(null)
+  const [splitTarget, setSplitTarget] = useState<AssetCredential | null>(null)
+  const [splitting, setSplitting] = useState(false)
   const assetId = asset?.id ?? ''
 
   const { data: credentials, isLoading } = useQuery({
@@ -326,6 +373,35 @@ function CredentialDrawer({
     setFormOpen(true)
   }
 
+  const splitParts = splitTarget
+    ? parseCredentialChunks(splitTarget.secret ?? splitTarget.username ?? '')
+    : []
+
+  /** Split a migrated blob: create one structured credential per chunk,
+   * then drop the original row. */
+  async function doSplit() {
+    if (!splitTarget || splitParts.length < 2) return
+    setSplitting(true)
+    try {
+      for (const p of splitParts) {
+        await assetCredentialsApi.create(projectId, assetId, {
+          label: p.label,
+          cred_type: splitTarget.cred_type,
+          username: p.username,
+          secret: p.secret,
+        })
+      }
+      await assetCredentialsApi.delete(splitTarget.id)
+      invalidate()
+      message.success(`已拆分为 ${splitParts.length} 条凭据`)
+      setSplitTarget(null)
+    } catch {
+      message.error('拆分失败，请手动处理')
+    } finally {
+      setSplitting(false)
+    }
+  }
+
   function submit() {
     credForm.validateFields().then((v) => {
       // Empty strings stay absent so untouched fields never overwrite data.
@@ -366,46 +442,87 @@ function CredentialDrawer({
         locale={{
           emptyText: '还没有凭据。给这台资产的每个账号 / 密钥单独建一条。',
         }}
-        renderItem={(c) => (
-          <List.Item
-            actions={[
-              <Button
-                key="edit"
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                aria-label={`编辑凭据 ${c.label}`}
-                onClick={() => openEdit(c)}
-              />,
-              <Popconfirm
-                key="delete"
-                title="删除该凭据？"
-                onConfirm={() => deleteMut.mutate(c.id)}
-              >
+        renderItem={(c) => {
+          const parts = parseCredentialChunks(c.secret ?? c.username ?? '')
+          return (
+            <List.Item
+              actions={[
+                ...(parts.length >= 2
+                  ? [
+                      <Tooltip key="split" title="按空行拆分为多条凭据">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ScissorOutlined />}
+                          aria-label={`拆分凭据 ${c.label}`}
+                          onClick={() => setSplitTarget(c)}
+                        />
+                      </Tooltip>,
+                    ]
+                  : []),
                 <Button
+                  key="edit"
                   type="text"
-                  danger
                   size="small"
-                  icon={<DeleteOutlined />}
-                  aria-label={`删除凭据 ${c.label}`}
-                />
-              </Popconfirm>,
-            ]}
-          >
-            <List.Item.Meta
-              title={
-                <Space size={6}>
-                  <span>{c.label}</span>
-                  <Tag color={credTypeColor(c.cred_type)}>
-                    {credTypeLabel(c.cred_type)}
-                  </Tag>
-                </Space>
-              }
-              description={<CredentialRows cred={c} onCopy={onCopy} />}
-            />
-          </List.Item>
-        )}
+                  icon={<EditOutlined />}
+                  aria-label={`编辑凭据 ${c.label}`}
+                  onClick={() => openEdit(c)}
+                />,
+                <Popconfirm
+                  key="delete"
+                  title="删除该凭据？"
+                  onConfirm={() => deleteMut.mutate(c.id)}
+                >
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    aria-label={`删除凭据 ${c.label}`}
+                  />
+                </Popconfirm>,
+              ]}
+            >
+              <List.Item.Meta
+                title={
+                  <Space size={6}>
+                    <span>{c.label}</span>
+                    <Tag color={credTypeColor(c.cred_type)}>
+                      {credTypeLabel(c.cred_type)}
+                    </Tag>
+                  </Space>
+                }
+                description={<CredentialRows cred={c} onCopy={onCopy} />}
+              />
+            </List.Item>
+          )
+        }}
       />
+
+      <Modal
+        title={`拆分「${splitTarget?.label ?? ''}」`}
+        open={!!splitTarget}
+        onCancel={() => setSplitTarget(null)}
+        onOk={doSplit}
+        confirmLoading={splitting}
+        okText={`拆分为 ${splitParts.length} 条`}
+        cancelText="取消"
+        width={480}
+      >
+        <Paragraph type="secondary">
+          按空行拆分为 {splitParts.length} 条独立凭据（无法识别的行归入密钥），
+          原条目删除：
+        </Paragraph>
+        {splitParts.map((p, i) => (
+          <div key={i} style={{ marginBottom: 8 }}>
+            <Text strong>
+              {i + 1}. {p.label}
+            </Text>
+            {p.username && <Text type="secondary"> · 账号 {p.username}</Text>}
+            {p.secret && <Text type="secondary"> · 密钥已解析</Text>}
+          </div>
+        ))}
+      </Modal>
 
       <Modal
         title={editing ? '编辑凭据' : '添加凭据'}
@@ -492,6 +609,8 @@ export default function AssetsTab({ projectId }: Props) {
   const [assetOpen, setAssetOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
   const [credentialAsset, setCredentialAsset] = useState<Asset | null>(null)
+  const [filterText, setFilterText] = useState('')
+  const [filterType, setFilterType] = useState<string | null>(null)
   const [assetForm] = Form.useForm()
 
   const { data: assets } = useQuery({
@@ -499,6 +618,23 @@ export default function AssetsTab({ projectId }: Props) {
     queryFn: () => assetsApi.listByProject(projectId),
     enabled: !!projectId,
   })
+
+  const assetTypes = useMemo(
+    () => [...new Set((assets ?? []).map((a) => a.asset_type))].sort(),
+    [assets],
+  )
+
+  const filtersActive = !!filterType || !!filterText.trim()
+  const filteredAssets = useMemo(() => {
+    const kw = filterText.trim().toLowerCase()
+    return (assets ?? []).filter((a) => {
+      if (filterType && a.asset_type !== filterType) return false
+      if (!kw) return true
+      return [a.name, a.value, a.description, a.vendor].some((f) =>
+        (f ?? '').toLowerCase().includes(kw),
+      )
+    })
+  }, [assets, filterText, filterType])
 
   const createAssetMut = useMutation({
     mutationFn: (data: Parameters<typeof assetsApi.create>[1]) =>
@@ -551,6 +687,12 @@ export default function AssetsTab({ projectId }: Props) {
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
+    if (filtersActive) {
+      // A filtered subset can't express a full-list order — reordering
+      // while filtering would silently corrupt sort_order.
+      message.warning('筛选中不可拖拽排序，请先清除筛选')
+      return
+    }
     const ids = (assets ?? []).map((a) => a.id)
     const oldIndex = ids.indexOf(String(active.id))
     const newIndex = ids.indexOf(String(over.id))
@@ -733,6 +875,26 @@ export default function AssetsTab({ projectId }: Props) {
         >
           添加资产
         </Button>
+        {(assets?.length ?? 0) > 1 && (
+          <Space style={{ marginLeft: 'var(--space-3)' }}>
+            <Input
+              allowClear
+              prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
+              placeholder="搜名称 / 地址 / 描述"
+              style={{ width: 220 }}
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+            />
+            <Select
+              allowClear
+              placeholder="全部类型"
+              style={{ minWidth: 140 }}
+              value={filterType ?? undefined}
+              onChange={(v) => setFilterType(v ?? null)}
+              options={assetTypes.map((t) => ({ label: t, value: t }))}
+            />
+          </Space>
+        )}
       </div>
       <DndContext
         sensors={sensors}
@@ -740,11 +902,11 @@ export default function AssetsTab({ projectId }: Props) {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={(assets ?? []).map((a) => a.id)}
+          items={filteredAssets.map((a) => a.id)}
           strategy={verticalListSortingStrategy}
         >
           <Table
-            dataSource={assets}
+            dataSource={filteredAssets}
             rowKey="id"
             size="small"
             pagination={false}
@@ -752,8 +914,9 @@ export default function AssetsTab({ projectId }: Props) {
             columns={columns}
             components={{ body: { row: SortableRow } }}
             locale={{
-              emptyText:
-                '还没有记录资产。把账号、平台入口、凭据集中登记在这里。',
+              emptyText: filtersActive
+                ? '没有匹配筛选条件的资产。'
+                : '还没有记录资产。把账号、平台入口、凭据集中登记在这里。',
             }}
           />
         </SortableContext>

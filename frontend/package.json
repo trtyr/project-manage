@@ -18,11 +18,13 @@
     "@tanstack/react-query": "^5.101.2",
     "antd": "^5.29.3",
     "axios": "^1.18.1",
+    "mammoth": "^1.12.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.1",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@dnd-kit/core": "^6.3.1",

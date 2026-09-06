@@ -794,6 +794,9 @@ const HIT_RESOURCE_LABEL: Record<string, string> = {
   issue: '关切',
   finding: '发现',
   person: '人员',
+  asset: '资产',
+  deliverable: '交付物',
+  file: '文件',
 }
 
 function SearchHitRow({ hit }: { hit: SearchHit }) {

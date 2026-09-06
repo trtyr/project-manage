@@ -454,7 +454,7 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/vendor fields, plus per-asset credential management: the 凭据 column shows a read-only count and opens a `CredentialDrawer` (in-file component) that lists the asset's credentials — typed tags, per-field username/secret copy, eye-toggle reveal — with add/edit/delete via a nested form modal. |
+| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/vendor fields, keyword + type filters (drag-reorder disabled while filtering), plus per-asset credential management: the 凭据 column shows a read-only count and opens a `CredentialDrawer` (in-file component) that lists the asset's credentials — typed tags, per-field username/secret copy, eye-toggle reveal — with add/edit/delete via a nested form modal and a 拆分 assist that parses migrated multi-account blobs (blank-line chunks; 账号/密码 line recognition) into separate credential rows. Asset type suggestions cover the security-hardware domain (EDR/DLP/SOC/零信任/堡垒机/WAF/蜜罐/SIEM…); `asset_type` itself stays free TEXT. |
 | Public API (TS) | `export default function AssetsTab({ projectId }: Props)` |
 | Calls | `assetsApi.*` including `reorder`; `assetCredentialsApi.{listByAsset, create, update, delete}` (query key `['asset-credentials', assetId]`; mutations also invalidate `['assets', projectId]` to refresh `credential_count`). |
 
@@ -486,7 +486,7 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | Modal that previews any file by mime type: text→`<pre>`, image→`<img>`, PDF→`<iframe>`, html→`<iframe srcdoc>`, other→download prompt. |
+| Responsibility | Modal that previews any file by mime type: text→`<pre>` (with line numbers), markdown→rendered via `Markdown`, image→`<img>`, PDF→`<iframe>`, html→`<iframe srcdoc>`, xlsx/xls→per-sheet HTML tables (SheetJS `xlsx@0.20.3` from the official CDN build), docx→HTML (mammoth browser build), other→download prompt. |
 | Public API (TS) | `export default function FilePreview({ file, open, onClose }: Props)` |
 | Behaviour | Fetches `filesApi.previewUrl(file.id)` for text types via `fetch` + `AbortController`. Closes on `Escape`. Local helpers `isTextType`, `isHtmlType`, `isImageType`, `isPdfType`. |
 

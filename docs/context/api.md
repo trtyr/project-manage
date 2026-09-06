@@ -278,8 +278,10 @@ Validation: `title` non-empty; `product_source ∈ ["ours", "third_party"]`
 Searches **projects** (`name`/`phase`/`competitors`), **clients**
 (`name`/`contact_person`), **communications** (`content`/`participants`, 80-char
 preview), **tasks** (`title`), **issues** (`title`/`description`),
-**findings** (`title`/`description`/`product`/`vendor`), and **people**
-(`name`/`role`). Each hit is
+**findings** (`title`/`description`/`product`/`vendor`), **people**
+(`name`/`role`), **assets** (`name`/`value`/`description`/`asset_type` —
+credential secrets are deliberately NOT searchable), **deliverables**
+(`name`), and **files/links** (`original_name`/`description`). Each hit is
 `{ resource, id, title, subtitle?, project_id? }`. Not project-scoped — no
 `ensure_project_exists`; per-resource query failures are swallowed so one bad
 hit doesn't blank the result.
