@@ -78,6 +78,7 @@ time = "0.3"
 # `no-serde-warnings` keeps `#[derive(ts_rs::TS)]` quiet on DTOs that
 # only derive `Deserialize` (no `Serialize`).
 ts-rs = { version = "10", features = ["chrono-impl", "uuid-impl", "no-serde-warnings"] }
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 # smoke tests need the cookie jar (session auth round-trips); the main

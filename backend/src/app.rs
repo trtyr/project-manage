@@ -30,9 +30,9 @@ use tower_sessions::SessionManagerLayer;
 use crate::error::AppError;
 use crate::handlers::auth::LoginThrottle;
 use crate::handlers::{
-    asset_credentials_router, assets_router, auth_router, clients_router, communications_router,
-    deliverables_router, files_router, findings_router, issues_router, people_router,
-    phases_router, project_asset_credentials_router, project_assets_router,
+    asset_credentials_router, assets_router, auth_router, backup_router, clients_router,
+    communications_router, deliverables_router, files_router, findings_router, issues_router,
+    people_router, phases_router, project_asset_credentials_router, project_assets_router,
     project_communications_router, project_deliverables_router, project_files_router,
     project_findings_router, project_issues_router, project_people_router, project_phases_router,
     project_tasks_router, projects_router, require_auth, search_router, tasks_router,
@@ -142,6 +142,7 @@ pub fn build_app(
         .nest("/api", search_router())
         .nest("/api", project_deliverables_router())
         .nest("/api", deliverables_router())
+        .nest("/api", backup_router())
         .route("/api", axum::routing::any(api_not_found))
         .route("/api/", axum::routing::any(api_not_found))
         .route("/api/{*path}", axum::routing::any(api_not_found))

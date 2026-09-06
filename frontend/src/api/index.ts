@@ -346,6 +346,41 @@ export const deliverablesApi = {
     http.delete(`/deliverables/${id}`).then((r) => r.data),
 }
 
+// --- Backup (import/export) ---
+
+export interface ImportReport {
+  clients: number
+  projects: number
+  phases: number
+  people: number
+  communications: number
+  tasks: number
+  issues: number
+  findings: number
+  assets: number
+  asset_credentials: number
+  project_files: number
+  deliverables: number
+  files_written: number
+  files_missing: string[]
+}
+
+export const backupApi = {
+  // Downloads rely on the session cookie, so plain links work (same-origin).
+  exportJsonUrl: '/api/export',
+  exportArchiveUrl: '/api/export/archive',
+  importJson: async (manifest: unknown) => {
+    const resp = await http.post<ImportReport>('/import', manifest)
+    return resp.data
+  },
+  importArchive: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const resp = await http.post<ImportReport>('/import/archive', formData)
+    return resp.data
+  },
+}
+
 // --- Error classification ---
 
 export type ApiErrorKind =

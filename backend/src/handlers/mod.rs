@@ -6,6 +6,7 @@
 pub mod asset_credentials;
 pub mod assets;
 pub mod auth;
+pub mod backup;
 pub mod clients;
 pub mod communications;
 pub mod deliverables;
@@ -32,3 +33,4 @@ pub use deliverables::{deliverables_router, project_deliverables_router};
 pub use findings::{findings_router, project_findings_router};
 pub use issues::{issues_router, project_issues_router};
 pub use auth::{auth_router, require_auth};
+pub use backup::backup_router;

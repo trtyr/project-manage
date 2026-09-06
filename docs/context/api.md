@@ -284,6 +284,30 @@ preview), **tasks** (`title`), **issues** (`title`/`description`),
 `ensure_project_exists`; per-resource query failures are swallowed so one bad
 hit doesn't blank the result.
 
+### 2.15 Backup / import-export (`backend/src/handlers/backup.rs`)
+
+All four endpoints are authenticated (mounted on `guarded_api`).
+
+| Method | Path | Purpose | Body | Response |
+|---|---|---|---|---|
+| GET  | `/api/export` | JSON snapshot of every business table (12 resources, original IDs preserved), `Content-Disposition: attachment` | — | `200` + `application/json` download |
+| GET  | `/api/export/archive` | ZIP backup: `manifest.json` + every uploaded file under `uploads/{project_id}/{stored_name}` | — | `200` + `application/zip` download |
+| POST | `/api/import` | **Replace-all** restore from a JSON snapshot — transactional (wipe in FK-safe order, re-insert; any failure rolls back) | `BackupManifest` | `200` + `ImportReport` (per-table row counts) |
+| POST | `/api/import/archive` | Replace-all restore from a ZIP archive (multipart field `file`); after the DB commit, `./uploads` is reset to exactly the archive's contents | `multipart/form-data` | `200` + `ImportReport` (adds `files_written`, `files_missing[]`) |
+
+Manifest schema: `{ format: "project-manage-backup", version: 1,
+confirm_replace_all: true, exported_at, app_version, data: { clients,
+projects, phases, people, communications, tasks, issues, findings, assets,
+asset_credentials, project_files, deliverables } }`. The importer rejects
+wrong `format` / `version` / missing `confirm_replace_all` with `400`
+(bodies that cannot deserialize at all get axum's `422`). The auth domain
+(`users`/`session`/`user_sessions`) is never exported or wiped. Manifests
+contain asset-credential secrets in plain text — treat backup files as
+sensitive. JSON restore preserves IDs, so existing `./uploads` files stay
+matched; full fidelity (file bytes) requires the archive pair. Archive
+restores that reference a file missing from the ZIP still succeed, with
+the row listed in `files_missing`.
+
 ---
 
 ## 3. Request Body Schemas (DTOs)
@@ -546,6 +570,7 @@ and the tab `components/` (`OverviewTab`, `GroupedTab`, `PhasesTab`,
 |---|---|---|---|
 | Health        | `/health`                                     | `healthApi`            | none in hooks (probe only) |
 | Auth          | `/auth/*` (status/setup/login/logout/me/password) | `authApi`              | `['auth-status']`, `['auth-me']` (`App.tsx` bootstrap gate) |
+| Backup        | `/export`, `/export/archive`, `/import`, `/import/archive` | `backupApi` | no react-query hooks (plain links + one-shot POSTs from `BackupPage`) |
 | Clients       | `/clients`                                    | `clientsApi`           | `['clients']` (`ProjectBoard.tsx`, `ProjectDetail.tsx`), `['client', client_id]` (`ProjectDetail.tsx`) |
 | Projects      | `/projects`                                   | `projectsApi`          | `['projects']` (`App.tsx` sidebar, `ProjectBoard.tsx`), `['project', id]` (`ProjectDetail.tsx`) |
 | Communications (nested) | `/projects/{project_id}/communications` | `communicationsApi.listByProject` / `.create` | `['communications', id]` (`ProjectDetail.tsx`, `FilesTab`, `IssuesTab`, `FindingsTab`), `['communications-recent']` (`ProjectBoard.tsx`), `['communications-search', debouncedSearch]` (`ProjectBoard.tsx`) |

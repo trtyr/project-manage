@@ -11,15 +11,15 @@
 | Item | Value (2026-09-06) |
 |---|---|
 | Branch | `main` (default, tracks `origin/main`) |
-| Working tree | asset-credentials + auth-hardening batches (uncommitted at snapshot time) |
+| Working tree | asset-credentials + auth-hardening batches committed (17e7ddd, pushed); backup system in the working tree at snapshot time |
 | HEAD | ux-functional-audit fix-goal batch + working tree (see `git log`) |
-| Recent feature landings | **Asset credentials (2026-09-06)**: `asset_credentials` child table (migration 023) replacing the single free-text `assets.credentials` column; new handler/model + `ensure_asset_in_project` guard; read-only `credential_count` on every `Asset` row; frontend credential drawer; ts-rs + smoke coverage. **Auth hardening (2026-09-06)**: `POST /api/auth/password` (change password, requires current one, revokes the user's other sessions via `user_sessions` — migration 024); login throttle (5 failures → 15-min lockout, `429 rate_limited`); session-id cycling at login/setup/password-change (fixation defense); dummy-hash timing equalizer on unknown usernames; frontend `ChangePasswordModal` + 429-aware login/classifier. |
+| Recent feature landings | **Asset credentials (2026-09-06)**: `asset_credentials` child table (migration 023) replacing the single free-text `assets.credentials` column; new handler/model + `ensure_asset_in_project` guard; read-only `credential_count` on every `Asset` row; frontend credential drawer; ts-rs + smoke coverage. **Auth hardening (2026-09-06)**: `POST /api/auth/password` (change password, requires current one, revokes the user's other sessions via `user_sessions` — migration 024); login throttle (5 failures → 15-min lockout, `429 rate_limited`); session-id cycling at login/setup/password-change (fixation defense); dummy-hash timing equalizer on unknown usernames; frontend `ChangePasswordModal` + 429-aware login/classifier. **Import/export system (2026-09-06)**: `handlers/backup.rs` — `GET /api/export` (JSON snapshot of all 12 business tables, original IDs), `GET /api/export/archive` (ZIP: manifest + uploads), `POST /api/import` / `POST /api/import/archive` (transactional replace-all restores; auth tables untouched; `confirm_replace_all` guard); frontend `/backup` page with destructive-import confirmation; zip 8.x dependency (deflate-only). |
 
 ## 2. Verified commands
 
 | Command | Result | Evidence |
 |---|---|---|
-| `cargo test --manifest-path backend/Cargo.toml` | ✅ **59 passed, 0 failed** (exit 0) | lib unittests (ts-rs bindings + session-purge test) 42 passed; `tests/smoke.rs` 17 passed against the isolated `project_manage_smoke` DB |
+| `cargo test --manifest-path backend/Cargo.toml` | ✅ **61 passed, 0 failed** (exit 0) | lib unittests (ts-rs bindings + session-purge test) 42 passed; `tests/smoke.rs` 19 passed against the isolated `project_manage_smoke` DB (backup roundtrips use dedicated `<db>_smoke_backup_{json,archive}` databases) |
 | `cargo clippy --manifest-path backend/Cargo.toml --all-targets -- -D warnings` | ✅ clean | "Finished" with no diagnostics |
 | `cd frontend && npx tsc --noEmit` | ✅ clean | exit 0 |
 | `cd frontend && npm run test` (vitest) | ✅ **21 passed** (1 file) | `classifyApiError` contract suite (incl. the 429 → `rate_limited` pin) |
@@ -47,7 +47,7 @@ migrations by hand.
 | Suite | Count | What it covers |
 |---|---|---|
 | Backend lib tests | 42 | ts-rs TypeScript export bindings (41 `.ts` files) + `purges_only_expired_sessions` (`#[sqlx::test]`, isolated temp DB) |
-| Backend smoke (`tests/smoke.rs`) | 17 | health; clients; projects (incl. CRM fields); communications; tasks; phases (tree); assets; asset credentials (typed CRUD, sort-order append, COALESCE update, empty-label/`cred_type` 400s, foreign-asset 404, cascade on asset delete, `credential_count` tracking); files (link type); issues; findings; people CRUD + reorder + flip-side; auth flow (setup gate → 401 → login → guarded access → logout); **password change** (wrong current → 400, short new → 400, success → 204, other session revoked → 401, current session survives, old password dead); **login rate limit** (5 failures → lockout, correct creds while locked → `429 rate_limited`, business surface unaffected) |
+| Backend smoke (`tests/smoke.rs`) | 19 | health; clients; projects (incl. CRM fields); communications; tasks; phases (tree); assets; asset credentials (typed CRUD, sort-order append, COALESCE update, empty-label/`cred_type` 400s, foreign-asset 404, cascade on asset delete, `credential_count` tracking); files (link type); issues; findings; people CRUD + reorder + flip-side; auth flow (setup gate → 401 → login → guarded access → logout); **password change** (wrong current → 400, short new → 400, success → 204, other session revoked → 401, current session survives, old password dead); **login rate limit** (5 failures → lockout, correct creds while locked → `429 rate_limited`, business surface unaffected); **backup JSON roundtrip** (export → wipe → import restores identical IDs incl. credentials, tampered/unconfirmed manifests → 400); **backup archive roundtrip** (ZIP with uploads → wipe → import restores rows + file bytes, download byte-identical) |
 | Frontend vitest | 21 | `classifyApiError` contract (offline/server/validation/conflict/rate_limited/unknown mapping) |
 
 Not covered by any automated test (known gaps, exercised manually /

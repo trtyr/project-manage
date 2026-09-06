@@ -96,14 +96,14 @@ Vite dev proxy in the middle.
 
 ## 3. Module dependency graph
 
-### 3.1 Backend — 24 routers wired into `/api`
+### 3.1 Backend — 25 routers wired into `/api`
 
 Verified by counting `.nest("/api", …)` calls in
-`backend/src/app.rs::build_app` (24 hits; `GET /api/health` is a plain
-route). The breakdown: **13 flat** resource routers (clients, projects,
+`backend/src/app.rs::build_app` (25 hits; `GET /api/health` is a plain
+route). The breakdown: **14 flat** resource routers (clients, projects,
 communications, tasks, issues, findings, assets, asset-credentials, files,
 phases, people,
-deliverables, search) + **10 project-scoped** routers (communications,
+deliverables, search, backup) + **10 project-scoped** routers (communications,
 tasks, issues, findings, assets, asset-credentials, files, phases, people,
 deliverables) +
 **1 public `auth_router`** (status/setup/login/logout/me/password). The split is
@@ -138,6 +138,7 @@ guard, §5.7). `logout`/`me`/`password` self-guard inside their handlers
 | 22| `project_deliverables_router`| `handlers/deliverables.rs`          | `/projects/{id}/deliverables`                             |
 | 23| `deliverables_router`        |                                     | `/deliverables/{id}`                                      |
 | 24| `search_router`              | `handlers/search.rs`                | `/search?q=…`                                             |
+| 25| `backup_router`              | `handlers/backup.rs`                | `/export`, `/export/archive`, `/import`, `/import/archive` |
 
 Plus `GET /api/health` mounted as a route (not a nest) inside `public_api`
 (`app.rs::health`). Unmatched `/api/*` requests stay on the API's empty
@@ -172,7 +173,7 @@ main.rs ── mod db, mod error, mod handlers, mod models, mod state
    │
    ├── handlers/{clients,projects,communications,tasks,issues,findings,
    │             assets,asset_credentials,files,phases,people,deliverables,
-   │             search,auth}.rs
+   │             search,backup,auth}.rs
    │             (one *_router() each, except search = flat only,
    │              auth = public + require_auth middleware)
    ├── models/   {client,project,communication,task,issue,finding,asset,
@@ -445,7 +446,7 @@ parameters go through `db::helpers::{dt_to_offset, date_to_time_date}`
 | AppError envelope   | `backend/src/error.rs`                                             |
 | Pool + helpers      | `backend/src/db/pool.rs`, `backend/src/db/helpers.rs`              |
 | Auth (guard + session) | `backend/src/handlers/auth.rs`, `main.rs` (session layer)       |
-| Resource handlers   | `backend/src/handlers/{clients,projects,communications,tasks,issues,findings,assets,asset_credentials,files,phases,people,deliverables,search}.rs` |
+| Resource handlers   | `backend/src/handlers/{clients,projects,communications,tasks,issues,findings,assets,asset_credentials,files,phases,people,deliverables,search,backup}.rs` |
 | Migrations          | `backend/migrations/20250714000001_*.sql` … `…00024_*.sql` (24 files) |
 | Frontend entrypoint | `frontend/src/main.tsx`, `frontend/src/App.tsx`                    |
 | Routing             | `frontend/src/App.tsx:386-396`                                     |

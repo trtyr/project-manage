@@ -11,7 +11,11 @@ import {
 import { SearchOutlined, LogoutOutlined, KeyOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { FolderOutlined, DatabaseOutlined } from '@ant-design/icons'
+import {
+  FolderOutlined,
+  DatabaseOutlined,
+  SafetyCertificateOutlined,
+} from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { lightTheme, darkTheme } from './theme'
@@ -23,11 +27,13 @@ import CommunicationDetail from './pages/CommunicationDetail'
 import FileLibrary from './pages/FileLibrary'
 import LoginPage from './pages/LoginPage'
 import SetupPage from './pages/SetupPage'
+import BackupPage from './pages/BackupPage'
 import ChangePasswordModal from './components/ChangePasswordModal'
 
 const navItems = [
   { path: '/', label: '项目', icon: FolderOutlined },
   { path: '/files', label: '资料库', icon: DatabaseOutlined },
+  { path: '/backup', label: '备份', icon: SafetyCertificateOutlined },
 ] as const
 
 function SidebarItem({
@@ -441,6 +447,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<ProjectBoard />} />
                 <Route path="/files" element={<FileLibrary />} />
+                <Route path="/backup" element={<BackupPage />} />
                 <Route path="/projects/:id" element={<ProjectDetail />} />
                 <Route
                   path="/projects/:id/communications/:commId"

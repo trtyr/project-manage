@@ -175,6 +175,18 @@ free-text `assets.credentials` column)
 | Non-trivial behaviour | `status` probes `users` empty → `{needs_setup}` (a not-yet-migrated table counts as empty). `setup` only works while users is empty (else `AppError::Conflict` → 409); password ≥ 8 chars; username normalized (trim + lowercase). `login` verifies argon2id and returns a deliberately generic 401 on bad creds (no user enumeration — unknown usernames still burn one argon2 verification against a dummy hash). **`LoginThrottle`**: 5 consecutive failures lock logins for 15 min → `429 rate_limited` (process-global, in `AppState`). Session ids are cycled at login/setup (`cycle_id()` — session-fixation defense) and after a password change. `POST /auth/password` requires the current password, then revokes every OTHER session of the user via the `user_sessions` index (migration 024; written by `require_auth`/`me` because tower-sessions hides the post-cycle id from handlers). Sessions are tower-sessions cookies holding only `user_id`; `SESSION_TTL_SECS = 30 days` sliding. `require_auth` resolves the session to a user_id, re-checks the user exists, and 401s otherwise — fail-closed. |
 | Internal deps | `argon2` (hash/verify), `tower_sessions::Session`, `crate::models::user::{ChangePasswordRequest, SetupRequest, User, UserPublic}`, `crate::state::AppState`. |
 
+### A.14 `backup` — `backend/src/handlers/backup.rs`
+(import/export; flat-only, no row model of its own — manifest DTOs live here)
+
+| Field | Value |
+|---|---|
+| Responsibility | Whole-workspace export/import: JSON data snapshot (`GET /api/export`), full ZIP backup incl. uploaded files (`GET /api/export/archive`), and their replace-all restores (`POST /api/import`, `POST /api/import/archive`). |
+| Router exported | `backup_router()` — flat-only, mounted on `guarded_api` (authenticated). |
+| Routes | `GET /export`, `GET /export/archive`, `POST /import`, `POST /import/archive` |
+| Calls `ensure_project_exists` | **No** — not a project resource; operates on the whole workspace. |
+| Non-trivial behaviour | Manifest = `{format: "project-manage-backup", version: 1, confirm_replace_all, exported_at, app_version, data{12 tables}}`; `validate_manifest` rejects wrong format/version/missing confirm with 400 (undecodable JSON gets axum's 422). Import is transactional replace-all: business tables wiped in FK-safe order then re-inserted with original IDs — auth tables (`users`/`session`/`user_sessions`) are never touched. Archive export adds one ZIP entry per `source_type = "file"` row that still exists on disk; archive import resets `./uploads` to exactly the archive contents and reports `files_written` / `files_missing[]` (entries are looked up by reconstructed name — no zip-slip path handling). |
+| Internal deps | `zip` (8.x, deflate-only features), `serde_json`, all 12 row models (Serialize+Deserialize), `crate::state::AppState`. |
+
 ---
 
 ## B. Backend models (`backend/src/models/`)
@@ -509,6 +521,14 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | Public API (TS) | `export default function ChangePasswordModal({ open, onClose }: Props)` |
 | Internal deps | `authApi`; antd `Modal`/`Form`. |
 
+### E.19 `BackupPage` — 备份与恢复
+
+| Field | Value |
+|---|---|
+| Responsibility | Export/import console at `/backup` (third sidebar item). Export card: plain links to `/api/export` (JSON snapshot) and `/api/export/archive` (full ZIP) — session-cookie downloads. Import card: `Upload.Dragger` accepting `.json`/`.zip`; `customRequest` intercepts the file and opens a destructive-action `modal.confirm` (替换全部数据) before calling `backupApi.importJson` / `importArchive`; shows the returned `ImportReport` (per-table counts + files restored/missing). Notes that manifests contain credential secrets in plain text. |
+| Public API (TS) | `export default function BackupPage()` |
+| Internal deps | `backupApi`; antd `Upload`/`Card`/`modal.confirm`. |
+
 ---
 
 ## F. Frontend shared (`frontend/src/`)
@@ -518,7 +538,7 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | Field | Value |
 |---|---|
 | Responsibility | Single axios instance (`baseURL: '/api'`, `timeout: 30000`) + one API object per resource + error classifier + 401 interceptor. |
-| Exports (15 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`, `findingsApi`, `assetsApi` (incl. `reorder`), `assetCredentialsApi`, `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `searchApi`, `healthApi`, `authApi` (status/setup/login/logout/me/changePassword) |
+| Exports (16 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`, `findingsApi`, `assetsApi` (incl. `reorder`), `assetCredentialsApi`, `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `backupApi` (export URLs + `importJson`/`importArchive`), `searchApi`, `healthApi`, `authApi` (status/setup/login/logout/me/changePassword) |
 | Extra exports | `ApiErrorKind` type (`'offline' \| 'server' \| 'validation' \| 'conflict' \| 'unknown'`), `ApiErrorInfo` interface, `classifyApiError(err: unknown): ApiErrorInfo`, `AuthStatus` + `SearchHit` interfaces |
 | Behaviour | `classifyApiError`: no `response` → `offline`; 5xx → `server`; 400/422 → `validation`; 409 → `conflict`; else `unknown`. **401 interceptor**: any non-`/auth/*` 401 redirects `window.location.href = '/login'` (guarded against self-reload loops — only navigates when actually elsewhere). |
 | Internal deps | `axios`; every `*Api` consumes a typed interface from `../types` (row types hand-written in `types/index.ts`, DTOs codegen'd by ts-rs into `types/generated/`). |
@@ -589,3 +609,4 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | deliverables | Deliverable, CreateDeliverable, UpdateDeliverable, DeliverableStatus | **yes** (nested) | — |
 | search | (none — inline `SearchHit`) | no | — |
 | auth | User, UserPublic, SetupRequest | no | argon2id hash/verify; tower-sessions writes |
+| backup | (none — manifest structs `BackupManifest`/`BackupData`/`ImportReport` stay in the handler module) | no | zip 8.x archive write/read; transactional replace-all import |

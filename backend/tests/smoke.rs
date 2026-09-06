@@ -19,6 +19,7 @@
 //!
 //! Or via the `just smoke` recipe (sets up env via `.cargo/config.toml`).
 
+use std::io::Cursor;
 use std::str::FromStr;
 
 use reqwest::StatusCode;
@@ -151,11 +152,10 @@ fn smoke_db_name(url: &str) -> String {
     format!("{}_smoke", opts.get_database().unwrap_or("project_manage"))
 }
 
-/// Create the smoke database if missing and apply migrations. Runs once
-/// per test process (`SMOKE_DB_INIT` guards against the parallel tests
+/// Create the named database if missing and apply migrations. Runs once
+/// per test process (`*_DB_INIT` OnceCells guard against parallel tests
 /// racing each other into a duplicate CREATE DATABASE).
-async fn ensure_smoke_database(url: &str) {
-    let name = smoke_db_name(url);
+async fn ensure_database_with_migrations(url: &str, name: &str) {
     let admin_opts = PgConnectOptions::from_str(url)
         .expect("parse DATABASE_URL")
         .database("postgres");
@@ -166,7 +166,7 @@ async fn ensure_smoke_database(url: &str) {
         .expect("connect to the 'postgres' maintenance database");
     let exists: bool =
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)")
-            .bind(&name)
+            .bind(name)
             .fetch_one(&admin)
             .await
             .expect("check pg_database");
@@ -181,7 +181,7 @@ async fn ensure_smoke_database(url: &str) {
     let pool = PgPool::connect_with(
         PgConnectOptions::from_str(url)
             .expect("parse DATABASE_URL")
-            .database(&name),
+            .database(name),
     )
     .await
     .expect("connect to the smoke database");
@@ -193,6 +193,10 @@ async fn ensure_smoke_database(url: &str) {
         .await
         .expect("migrate the smoke database");
     pool.close().await;
+}
+
+async fn ensure_smoke_database(url: &str) {
+    ensure_database_with_migrations(url, &smoke_db_name(url)).await;
 }
 
 static SMOKE_DB_INIT: OnceCell<()> = OnceCell::const_new();
@@ -213,6 +217,25 @@ async fn connect_pool() -> PgPool {
         .connect_with(opts)
         .await
         .expect("connect to the smoke database")
+}
+
+/// Backup tests run replace-all imports that wipe every business table —
+/// on the shared smoke database that would destroy parallel tests' data
+/// mid-run. Each backup test gets its own fully isolated database
+/// (`<db>_smoke_backup_<suffix>`), created + migrated on first use. The
+/// per-test suffix means distinct names, so the two backup tests cannot
+/// race each other into a duplicate CREATE DATABASE.
+async fn connect_backup_pool(suffix: &str) -> PgPool {
+    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set for smoke tests");
+    let name = format!("{}_backup_{suffix}", smoke_db_name(&url));
+    ensure_database_with_migrations(&url, &name).await;
+    let opts = PgConnectOptions::from_str(&url)
+        .expect("parse DATABASE_URL")
+        .database(&name);
+    PgPoolOptions::new()
+        .connect_with(opts)
+        .await
+        .expect("connect to the backup smoke database")
 }
 
 /// Create a parent client for tests that exercise project-scoped
@@ -1802,4 +1825,298 @@ async fn test_auth_flow() {
         StatusCode::UNAUTHORIZED,
         "business after logout → 401"
     );
+}
+
+// =========================================================================
+// 19. backup_json_roundtrip — export → wipe → import restores everything
+// =========================================================================
+
+#[tokio::test]
+async fn test_backup_json_roundtrip() {
+    let pool = connect_backup_pool("json").await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = http_client();
+    let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
+
+    // Deterministic slate on the dedicated database (a previous failed run
+    // may have left rows behind). Projects first, then clients — same
+    // FK-safe order the importer uses.
+    sqlx::query("DELETE FROM projects")
+        .execute(&pool)
+        .await
+        .expect("clean projects");
+    sqlx::query("DELETE FROM clients")
+        .execute(&pool)
+        .await
+        .expect("clean clients");
+
+    // Build a small chain: client → project → asset → credential.
+    let client_row = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client_row);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/assets"))
+        .json(&json!({ "name": "__SMOKE_ASSET__", "asset_type": "server" }))
+        .send()
+        .await
+        .expect("POST asset");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let asset: Value = resp.json().await.expect("asset JSON");
+    let asset_id = json_id(&asset);
+
+    let resp = http
+        .post(format!(
+            "{base_url}/api/projects/{project_id}/assets/{asset_id}/credentials"
+        ))
+        .json(&json!({
+            "label": "SSH root",
+            "cred_type": "password",
+            "username": "root",
+            "secret": "pw",
+        }))
+        .send()
+        .await
+        .expect("POST credential");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+
+    // 1. Export a JSON snapshot.
+    let resp = http
+        .get(format!("{base_url}/api/export"))
+        .send()
+        .await
+        .expect("GET /api/export");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let manifest: Value = resp.json().await.expect("export JSON");
+    assert_eq!(manifest["format"], "project-manage-backup");
+    assert_eq!(manifest["version"], 1);
+    assert_eq!(manifest["confirm_replace_all"], true);
+    let exported_clients = manifest["data"]["clients"]
+        .as_array()
+        .expect("clients array");
+    assert!(
+        exported_clients
+            .iter()
+            .any(|c| c["id"] == client_id.to_string()),
+        "the test client is in the snapshot"
+    );
+
+    // 2. Wipe: project delete cascades to assets/credentials, then the client.
+    let resp = http
+        .delete(format!("{base_url}/api/projects/{project_id}"))
+        .send()
+        .await
+        .expect("DELETE project");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    let resp = http
+        .delete(format!("{base_url}/api/clients/{client_id}"))
+        .send()
+        .await
+        .expect("DELETE client");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    let resp = http
+        .get(format!("{base_url}/api/clients/{client_id}"))
+        .send()
+        .await
+        .expect("GET deleted client");
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+    // 3. Guards: no confirm flag → 400; not a backup file → 400.
+    let mut tampered = manifest.clone();
+    tampered["confirm_replace_all"] = Value::Bool(false);
+    let resp = http
+        .post(format!("{base_url}/api/import"))
+        .json(&tampered)
+        .send()
+        .await
+        .expect("POST import without confirm");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST, "tampered → 400");
+    let resp = http
+        .post(format!("{base_url}/api/import"))
+        .json(&json!({ "foo": 1 }))
+        .send()
+        .await
+        .expect("POST import junk");
+    // axum's Json extractor rejects undecodable bodies with 422 before
+    // the handler (and its 400 envelope) ever runs.
+    assert_eq!(
+        resp.status(),
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "junk → 422"
+    );
+
+    // 4. Import the pristine export → everything returns with the same ids.
+    let resp = http
+        .post(format!("{base_url}/api/import"))
+        .json(&manifest)
+        .send()
+        .await
+        .expect("POST /api/import");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let report: Value = resp.json().await.expect("import report");
+    assert_eq!(report["clients"], 1);
+    assert_eq!(report["projects"], 1);
+    assert_eq!(report["assets"], 1);
+    assert_eq!(report["asset_credentials"], 1);
+
+    let resp = http
+        .get(format!("{base_url}/api/clients/{client_id}"))
+        .send()
+        .await
+        .expect("GET restored client");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let restored: Value = resp.json().await.expect("restored client");
+    assert_eq!(restored["name"], client_row["name"], "same client restored");
+
+    let resp = http
+        .get(format!("{base_url}/api/projects/{project_id}/assets"))
+        .send()
+        .await
+        .expect("GET restored assets");
+    let assets: Vec<Value> = resp.json().await.expect("assets list");
+    assert_eq!(assets.len(), 1);
+    assert_eq!(
+        assets[0]["credential_count"], 1,
+        "credential survived the restore"
+    );
+
+    // 5. CLEANUP.
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 20. backup_archive_roundtrip — ZIP with uploads: export → wipe →
+//      import restores rows AND file bytes on disk
+// =========================================================================
+
+#[tokio::test]
+async fn test_backup_archive_roundtrip() {
+    let pool = connect_backup_pool("archive").await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = http_client();
+    let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
+
+    // Deterministic slate on the dedicated database.
+    sqlx::query("DELETE FROM projects")
+        .execute(&pool)
+        .await
+        .expect("clean projects");
+    sqlx::query("DELETE FROM clients")
+        .execute(&pool)
+        .await
+        .expect("clean clients");
+
+    let client_row = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client_row);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // Upload a real file so the archive carries bytes.
+    const FILE_CONTENT: &str = "backup-archive-test-content";
+    let boundary = "----smokebackupboundary";
+    let upload_body = format!(
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"note.txt\"\r\nContent-Type: text/plain\r\n\r\n{FILE_CONTENT}\r\n--{boundary}--\r\n"
+    );
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/files"))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={boundary}"),
+        )
+        .body(upload_body)
+        .send()
+        .await
+        .expect("POST upload");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let file_row: Value = resp.json().await.expect("file JSON");
+    let file_id = json_id(&file_row);
+    assert_eq!(file_row["source_type"], "file");
+    // FileMeta hides stored_name on the wire — read it from the DB.
+    let stored_name: String =
+        sqlx::query_scalar("SELECT stored_name FROM project_files WHERE id = $1")
+            .bind(file_id)
+            .fetch_one(&pool)
+            .await
+            .expect("stored_name");
+
+    // Export the archive; it must contain manifest.json + the upload.
+    let resp = http
+        .get(format!("{base_url}/api/export/archive"))
+        .send()
+        .await
+        .expect("GET /api/export/archive");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let zip_bytes = resp.bytes().await.expect("zip bytes").to_vec();
+    {
+        let mut archive = zip::ZipArchive::new(Cursor::new(zip_bytes.clone())).expect("open zip");
+        assert!(archive.by_name("manifest.json").is_ok(), "manifest present");
+        let entry_name = format!("uploads/{project_id}/{stored_name}");
+        assert!(archive.by_name(&entry_name).is_ok(), "upload entry present");
+    }
+
+    // Wipe: project delete cascades rows AND removes the upload dir.
+    let resp = http
+        .delete(format!("{base_url}/api/projects/{project_id}"))
+        .send()
+        .await
+        .expect("DELETE project");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    let resp = http
+        .delete(format!("{base_url}/api/clients/{client_id}"))
+        .send()
+        .await
+        .expect("DELETE client");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+    // Import the archive (multipart field "file").
+    let boundary2 = "----smokebackupimport";
+    let mut body: Vec<u8> = Vec::new();
+    body.extend_from_slice(
+        format!(
+            "--{boundary2}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"backup.zip\"\r\nContent-Type: application/zip\r\n\r\n"
+        )
+        .as_bytes(),
+    );
+    body.extend_from_slice(&zip_bytes);
+    body.extend_from_slice(format!("\r\n--{boundary2}--\r\n").as_bytes());
+    let resp = http
+        .post(format!("{base_url}/api/import/archive"))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={boundary2}"),
+        )
+        .body(body)
+        .send()
+        .await
+        .expect("POST /api/import/archive");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let report: Value = resp.json().await.expect("report");
+    assert_eq!(report["clients"], 1);
+    assert_eq!(report["files_written"], 1, "the upload came back");
+    assert_eq!(
+        report["files_missing"]
+            .as_array()
+            .expect("missing list")
+            .len(),
+        0
+    );
+
+    // The restored file downloads with identical bytes.
+    let resp = http
+        .get(format!("{base_url}/api/files/{file_id}/download"))
+        .send()
+        .await
+        .expect("GET download");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let text = resp.text().await.expect("download body");
+    assert_eq!(text, FILE_CONTENT, "restored bytes are identical");
+
+    // CLEANUP — rows via the shared helper, disk via the uploads dir.
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+    let _ = tokio::fs::remove_dir_all(format!("./uploads/{project_id}")).await;
 }

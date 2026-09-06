@@ -32,8 +32,8 @@ The system is a layered fullstack application: the Vite-served React SPA uses
 React Query and Axios, proxies `/api` requests to Axum during development, and
 the backend persists resource data through SQLx to PostgreSQL. Axum mounts flat
 and project-scoped routers for clients, projects, communications, tasks, issues,
-findings, assets, asset credentials, files, phases, people, deliverables, and
-search — all behind
+findings, assets, asset credentials, files, phases, people, deliverables,
+search, and backup (import/export) — all behind
 a fail-closed session guard (`require_auth`); only `/api/health` and
 `/api/auth/*` are public. Runtime migrations, bounded startup retries, request
 timeouts, tracing, CORS, session management, static SPA serving, and upload
@@ -76,7 +76,8 @@ this section is the operating-contract summary an agent must hold the bar to.
   `backend/src/models/<r>.rs` (fixed set: clients, projects, communications, tasks,
   issues, findings, assets, asset_credentials, files, phases, people, deliverables;
   plus a flat-only
-  `search` handler with no row model, and `auth` — public router + `require_auth`
+  `search` handler with no row model, a flat-only `backup` handler
+  (import/export — manifest DTOs only, no table), and `auth` — public router + `require_auth`
   middleware + `user` model). Frontend mirrors it: `frontend/src/api/index.ts`
   (one `<r>Api` each) + `frontend/src/types/` (hand-written + ts-rs `generated/`).
 - **Dependency direction**: handlers → models → db (no cross-resource handler imports);
@@ -103,15 +104,18 @@ this section is the operating-contract summary an agent must hold the bar to.
 
 ### Tests
 
-- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 59 tests total:
+- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 61 tests total:
   41 ts-rs TypeScript export bindings (regenerate `frontend/src/types/generated/`)
   + a session-purge unit test (`#[sqlx::test]`)
-  + a 17-case CRUD smoke suite (clients, projects incl. CRM fields,
+  + a 19-case CRUD smoke suite (clients, projects incl. CRM fields,
   communications, tasks, phases, assets, asset credentials incl. validation/
   cascade, files, issues, findings, people incl.
   reorder/flip-side, the auth flow, password change with other-session
-  revocation, and the login rate limit) against an isolated
-  `project_manage_smoke` database (not the dev DB). No dedicated
+  revocation, the login rate limit, and JSON + ZIP backup
+  export/import roundtrips on dedicated isolated databases) against an
+  isolated `project_manage_smoke` database (not the dev DB; the two backup
+  roundtrip tests use their own `<db>_smoke_backup_*` databases because
+  replace-all imports would wipe parallel tests' data). No dedicated
   smoke test yet for deliverables, global search, or asset reorder.
 - **Frontend**: `cd frontend && npm run test` — vitest (node env); the `classifyApiError`
   contract suite (21 tests) pins [conventions.md §6.1](docs/context/conventions.md).
@@ -141,6 +145,11 @@ this section is the operating-contract summary an agent must hold the bar to.
 - Asset credentials (`asset_credentials` table) are plain TEXT and cascade on
   asset delete; the UI masks them but nothing encrypts them at rest — treat
   them like the rest of the internal dataset, not like a secrets vault.
+- Backup manifests (`GET /api/export*`) contain credential secrets and all
+  business data in plain text; import (`POST /api/import*`) is REPLACE-ALL
+  on business tables (transactional, auth domain untouched). Never loosen
+  the `confirm_replace_all` / format / version guards in
+  `handlers/backup.rs::validate_manifest`.
 - All `/api/*` business endpoints require a session (fail-closed `require_auth`).
   Only `/api/health`, `/api/auth/status`, `/api/auth/setup`, `/api/auth/login`
   are public. New public endpoints must be mounted on `public_api` explicitly —

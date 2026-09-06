@@ -16,11 +16,12 @@ a more general rule on the wider web, this file wins for project-manage.
 - Handler files live in `backend/src/handlers/<resource>.rs`, one per resource.
   The set is fixed: `clients`, `projects`, `communications`, `tasks`,
   `issues`, `findings`, `assets`, `asset_credentials`, `files`, `phases`,
-  `people`, `deliverables`, `search`, `auth`. All names are lowercase,
+  `people`, `deliverables`, `search`, `backup`, `auth`. All names are lowercase,
   singular, no underscores — `asset_credentials` is the one deliberate
   exception (a compound child resource of `assets`; its flat route is
   hyphenated `/asset-credentials/{id}`). (`search` is flat-only — no row
-  model. `auth` is
+  model. `backup` is flat-only too — manifest DTOs instead of row models.
+  `auth` is
   public-only and exports the `require_auth` middleware in addition to its
   router.)
 - Model files live in `backend/src/models/<resource>.rs`, one per resource,
@@ -92,7 +93,7 @@ pub mod ProjectStatus {
   `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`,
   `findingsApi`, `assetsApi`, `assetCredentialsApi`, `filesApi`,
   `phasesApi`, `peopleApi`,
-  `deliverablesApi`, `searchApi`, `healthApi`, `authApi`.
+  `deliverablesApi`, `backupApi`, `searchApi`, `healthApi`, `authApi`.
 - API methods return the unwrapped body: `http.get<X>(...).then(r => r.data)`.
   Every method takes an explicit `string` id where applicable; no opaque
   type wrappers.
