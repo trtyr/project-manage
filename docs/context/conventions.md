@@ -284,9 +284,15 @@ search input). Container chrome is on-grid too: `.app-content` padding
 phone `--space-3/-3/-8`), `.page-header` margin-bottom `--space-6`. The
 `.app-content__inner` max-width was raised 1100 → **1240px** against real
 data (longest project name 17 CJK chars; two-column 60% + 320px sidebar
-needs ≥1200px to breathe on 1920 screens). Note: `index.css` class rules
-still use raw px (~0 `var(--space-*)` consumers in CSS) — migrating them
-is remaining debt, same incremental rule applies.
+needs ≥1200px to breathe on 1920 screens).
+
+**2026-09-06 index.css debt cleared:** every `margin`/`padding`/`gap`
+declaration in `index.css` (75 declarations) now consumes `var(--space-*)`
+— zero raw-px spacing declarations remain. Off-grid legacy values were
+snapped to the nearest token (≤2–4px deltas): 2/6/9/10→8, 14→12, 18/20→16,
+28→24, 36/40→32, 56→48. Exempt: `0`/`auto` and negative alignment margins.
+The token grid is now the single spacing authority in both CSS and inline
+styles.
 
 ### 6.3 ErrorBoundary
 
