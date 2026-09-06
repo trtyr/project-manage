@@ -1052,3 +1052,30 @@ body {
 .docx-preview h3 {
   margin: var(--space-4) 0 var(--space-2);
 }
+
+/* === Mermaid diagrams in markdown === */
+
+.mermaid-render svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-render {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.mermaid-error {
+  border: 1px solid var(--danger-hex);
+  border-radius: 8px;
+  padding: var(--space-3) var(--space-4);
+  color: var(--danger-hex);
+  font-size: 13px;
+}
+
+.mermaid-error pre {
+  margin: var(--space-2) 0 0;
+  white-space: pre-wrap;
+  color: var(--ink);
+}

@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Modal, Typography, Skeleton, Tabs } from 'antd'
-import * as XLSX from 'xlsx'
-import mammoth from 'mammoth/mammoth.browser'
 import Markdown from './Markdown'
 import { filesApi } from '../api'
 import type { ProjectFile } from '../types'
@@ -144,9 +142,11 @@ export default function FilePreview({ file, open, onClose }: Props) {
     if (isXlsxType(file.mime_type, file.original_name)) {
       const controller = new AbortController()
       setLoading(true)
+      // SheetJS is heavy (~1MB) — load it on demand, not in the main bundle.
       fetch(filesApi.previewUrl(file.id), { signal: controller.signal })
         .then((r) => r.arrayBuffer())
-        .then((buf) => {
+        .then(async (buf) => {
+          const XLSX = await import('xlsx')
           const wb = XLSX.read(buf, { type: 'array' })
           setXlsxSheets(
             wb.SheetNames.map((name) => ({
@@ -169,8 +169,9 @@ export default function FilePreview({ file, open, onClose }: Props) {
       setLoading(true)
       fetch(filesApi.previewUrl(file.id), { signal: controller.signal })
         .then((r) => r.arrayBuffer())
-        .then((buf) => mammoth.convertToHtml({ arrayBuffer: buf }))
-        .then((result) => {
+        .then(async (buf) => {
+          const mammoth = await import('mammoth/mammoth.browser')
+          const result = await mammoth.convertToHtml({ arrayBuffer: buf })
           setDocxHtml(result.value)
           setLoading(false)
         })

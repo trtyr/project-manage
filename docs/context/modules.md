@@ -501,9 +501,17 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | Thin wrapper around `react-markdown` + `remark-gfm` for GitHub-flavoured markdown rendering inside a `.md-render` container. |
+| Responsibility | Thin wrapper around `react-markdown` + `remark-gfm` for GitHub-flavoured markdown rendering inside a `.md-render` container. Fenced ` ```mermaid ` blocks render as diagrams via the lazy-loaded `Mermaid` component (mermaid v11, strict security level, theme follows the app's light/dark mode; parse failures show the source with an error notice instead of a broken graph). |
 | Public API (TS) | `export default function Markdown({ children }: Props)` |
-| Internal deps | `react-markdown`, `remark-gfm`. |
+| Internal deps | `react-markdown`, `remark-gfm`, `Mermaid` (lazy `import('mermaid')` — kept out of the main bundle). |
+
+### E.16b `Mermaid`
+
+| Field | Value |
+|---|---|
+| Responsibility | Renders a Mermaid diagram definition to SVG on demand. |
+| Public API (TS) | `export default function Mermaid({ chart }: Props)` |
+| Internal deps | `mermaid` v11 loaded via dynamic `import()` on first use (split chunk, not in the main bundle); render id is sanitized from `useId` + random suffix so the same chart can appear multiple times. |
 
 ### E.17 `ParticipantsInput`
 
