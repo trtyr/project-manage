@@ -811,6 +811,168 @@ async fn test_project_assets_crud() {
 }
 
 // =========================================================================
+// 9b. asset_credentials_crud — multi-credential rows under an asset,
+//      typed (password/api_key/...), individually updatable, cascade on
+//      asset delete
+// =========================================================================
+
+#[tokio::test]
+async fn test_asset_credentials_crud() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let http = http_client();
+    let suffix = Uuid::new_v4();
+
+    auth_login(&http, &base_url).await;
+
+    let client = create_test_client(&http, &base_url, &suffix).await;
+    let client_id = json_id(&client);
+    let project = create_test_project(&http, &base_url, &client_id.to_string(), &suffix).await;
+    let project_id = json_id(&project);
+
+    // Parent asset.
+    let resp = http
+        .post(format!("{base_url}/api/projects/{project_id}/assets"))
+        .json(&json!({ "name": "堡垒机", "asset_type": "server" }))
+        .send()
+        .await
+        .expect("POST asset");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let asset: Value = resp.json().await.expect("asset JSON");
+    let asset_id = json_id(&asset);
+
+    // 1. CREATE password credential.
+    let resp = http
+        .post(format!(
+            "{base_url}/api/projects/{project_id}/assets/{asset_id}/credentials"
+        ))
+        .json(&json!({
+            "label": "SSH root",
+            "cred_type": "password",
+            "username": "root",
+            "secret": "s3cret-pw",
+        }))
+        .send()
+        .await
+        .expect("POST credential");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let created: Value = resp.json().await.expect("create JSON");
+    let cred_id = json_id(&created);
+    assert_eq!(created["label"], "SSH root");
+    assert_eq!(created["cred_type"], "password");
+    assert_eq!(created["username"], "root");
+    assert_eq!(created["secret"], "s3cret-pw");
+    assert_eq!(created["asset_id"], asset_id.to_string());
+
+    // 2. LIST — one row so far.
+    let list_url = format!("{base_url}/api/projects/{project_id}/assets/{asset_id}/credentials");
+    let resp = http.get(&list_url).send().await.expect("GET credentials");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let list: Vec<Value> = resp.json().await.expect("list JSON");
+    assert_eq!(list.len(), 1);
+
+    // 3. Second credential (api_key) appends after the first.
+    let resp = http
+        .post(&list_url)
+        .json(&json!({
+            "label": "监控 API Key",
+            "cred_type": "api_key",
+            "secret": "ak-live-123",
+        }))
+        .send()
+        .await
+        .expect("POST second credential");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let second: Value = resp.json().await.expect("second JSON");
+    assert_eq!(second["cred_type"], "api_key");
+    assert!(second["username"].is_null(), "username omitted → null");
+
+    let resp = http.get(&list_url).send().await.expect("GET credentials");
+    let list: Vec<Value> = resp.json().await.expect("list JSON");
+    assert_eq!(list.len(), 2);
+    assert_eq!(list[0]["label"], "SSH root");
+    assert_eq!(list[1]["label"], "监控 API Key");
+
+    // 4. UPDATE — change label + secret; username round-trips unchanged.
+    let resp = http
+        .put(format!("{base_url}/api/asset-credentials/{cred_id}"))
+        .json(&json!({ "label": "SSH 管理", "secret": "rotated-pw" }))
+        .send()
+        .await
+        .expect("PUT credential");
+    assert_eq!(resp.status(), StatusCode::OK);
+    let updated: Value = resp.json().await.expect("update JSON");
+    assert_eq!(updated["label"], "SSH 管理");
+    assert_eq!(updated["secret"], "rotated-pw");
+    assert_eq!(updated["username"], "root");
+    assert_eq!(updated["cred_type"], "password");
+
+    // 5. Validation: empty label and unknown cred_type are 400s.
+    let resp = http
+        .post(&list_url)
+        .json(&json!({ "label": "   " }))
+        .send()
+        .await
+        .expect("POST empty label");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    let resp = http
+        .post(&list_url)
+        .json(&json!({ "label": "x", "cred_type": "magic" }))
+        .send()
+        .await
+        .expect("POST bad cred_type");
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+    // 6. Credentials under an unknown asset → 404.
+    let bogus = Uuid::new_v4();
+    let resp = http
+        .get(format!(
+            "{base_url}/api/projects/{project_id}/assets/{bogus}/credentials"
+        ))
+        .send()
+        .await
+        .expect("GET unknown asset credentials");
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+    // 7. DELETE one credential, then verify the asset delete cascades the rest.
+    let resp = http
+        .delete(format!("{base_url}/api/asset-credentials/{cred_id}"))
+        .send()
+        .await
+        .expect("DELETE credential");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    let resp = http.get(&list_url).send().await.expect("GET credentials");
+    let list: Vec<Value> = resp.json().await.expect("list JSON");
+    assert_eq!(list.len(), 1);
+
+    // The read-only asset credential_count tracks the remaining row.
+    let resp = http
+        .get(format!("{base_url}/api/assets/{asset_id}"))
+        .send()
+        .await
+        .expect("GET asset for count");
+    let asset_after: Value = resp.json().await.expect("asset JSON");
+    assert_eq!(asset_after["credential_count"], 1, "count tracks deletes");
+
+    let resp = http
+        .delete(format!("{base_url}/api/assets/{asset_id}"))
+        .send()
+        .await
+        .expect("DELETE asset");
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+    let remaining: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM asset_credentials WHERE asset_id = $1")
+            .bind(asset_id)
+            .fetch_one(&pool)
+            .await
+            .expect("count credentials");
+    assert_eq!(remaining, 0, "asset delete cascades to credentials");
+
+    // 8. CLEANUP.
+    cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
 // 10. project_files_crud — LINK type only (avoids multipart upload complexity)
 //      exercises source_type="link", url, phase_id linking
 // =========================================================================
@@ -1311,6 +1473,201 @@ async fn test_findings_crud() {
 
     // 6. CLEANUP.
     cleanup_project_and_client(&pool, project_id, client_id).await;
+}
+
+// =========================================================================
+// 17. auth_password_change — dedicated user, password change revokes the
+//      user's OTHER sessions but keeps the current one; old password dies
+// =========================================================================
+
+#[tokio::test]
+async fn test_auth_password_change() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+    let suffix = Uuid::new_v4();
+
+    // Dedicated user (setup only allows one account, so insert directly).
+    // argon2id PHC via the same crate the backend uses.
+    use argon2::{
+        password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+        Argon2,
+    };
+    let username = format!("pw-change-{suffix}@test.local");
+    let old_pass = "old-password-123";
+    let hash = Argon2::default()
+        .hash_password(old_pass.as_bytes(), &SaltString::generate(&mut OsRng))
+        .expect("hash old password")
+        .to_string();
+    sqlx::query(
+        "INSERT INTO users (username, password_hash, display_name) VALUES ($1, $2, 'pw test')",
+    )
+    .bind(&username)
+    .bind(&hash)
+    .execute(&pool)
+    .await
+    .expect("insert dedicated user");
+
+    // Two independent sessions for the same user.
+    let client1 = http_client();
+    let client2 = http_client();
+    let login = |client: &reqwest::Client, password: &str| {
+        let client = client.clone();
+        let username = username.clone();
+        let password = password.to_string();
+        let base_url = base_url.clone();
+        async move {
+            client
+                .post(format!("{base_url}/api/auth/login"))
+                .json(&json!({ "username": username, "password": password }))
+                .send()
+                .await
+                .expect("POST login")
+        }
+    };
+    let resp = login(&client1, old_pass).await;
+    assert_eq!(resp.status(), StatusCode::OK, "session A login");
+    let resp = login(&client2, old_pass).await;
+    assert_eq!(resp.status(), StatusCode::OK, "session B login");
+
+    // Both sessions make one authenticated call (the SPA's /me probe) —
+    // this anchors their ownership rows in `user_sessions`, which is what
+    // lets the password change revoke them precisely.
+    for client in [&client1, &client2] {
+        let resp = client
+            .get(format!("{base_url}/api/auth/me"))
+            .send()
+            .await
+            .expect("GET me");
+        assert_eq!(resp.status(), StatusCode::OK, "me before change");
+    }
+
+    let change = |client: &reqwest::Client, current: &str, next: &str| {
+        let client = client.clone();
+        let current = current.to_string();
+        let next = next.to_string();
+        let base_url = base_url.clone();
+        async move {
+            client
+                .post(format!("{base_url}/api/auth/password"))
+                .json(&json!({
+                    "current_password": current,
+                    "new_password": next,
+                }))
+                .send()
+                .await
+                .expect("POST /api/auth/password")
+        }
+    };
+
+    // 0. Unauthenticated call → 401 (route self-guards on the public router).
+    let resp = reqwest::Client::new()
+        .post(format!("{base_url}/api/auth/password"))
+        .json(&json!({ "current_password": "x", "new_password": "y1234567" }))
+        .send()
+        .await
+        .expect("POST password anonymous");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "anon → 401");
+
+    // 1. Wrong current password → 400.
+    let resp = change(&client1, "not-the-password", "brand-new-pw-456").await;
+    assert_eq!(
+        resp.status(),
+        StatusCode::BAD_REQUEST,
+        "wrong current → 400"
+    );
+
+    // 2. Too-short new password → 400.
+    let resp = change(&client1, old_pass, "short").await;
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST, "short new → 400");
+
+    // 3. Correct change → 204.
+    let new_pass = "brand-new-pw-456";
+    let resp = change(&client1, old_pass, new_pass).await;
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT, "change → 204");
+
+    // 4. The OTHER session is revoked; the current one survives.
+    let resp = client2
+        .get(format!("{base_url}/api/auth/me"))
+        .send()
+        .await
+        .expect("GET me on session B");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "session B revoked");
+    let resp = client1
+        .get(format!("{base_url}/api/auth/me"))
+        .send()
+        .await
+        .expect("GET me on session A");
+    assert_eq!(resp.status(), StatusCode::OK, "current session survives");
+
+    // 5. Old password no longer logs in; the new one does.
+    let resp = login(&client2, old_pass).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "old password dead");
+    let resp = login(&client2, new_pass).await;
+    assert_eq!(resp.status(), StatusCode::OK, "new password works");
+
+    // CLEANUP — dedicated user row only.
+    sqlx::query("DELETE FROM users WHERE username = $1")
+        .bind(&username)
+        .execute(&pool)
+        .await
+        .expect("delete dedicated user");
+}
+
+// =========================================================================
+// 18. login_rate_limit — 5 consecutive failures lock logins for a while,
+//      even for correct credentials afterwards
+// =========================================================================
+
+#[tokio::test]
+async fn test_login_rate_limit() {
+    let pool = connect_pool().await;
+    let base_url = start_test_server(pool.clone()).await;
+
+    // Warm the shared account (idempotent) so "correct credentials" below
+    // genuinely are correct.
+    let http = http_client();
+    auth_login(&http, &base_url).await;
+
+    // 1. Burn the failure budget: 5 × wrong password → 401 each. The fifth
+    //    failure trips the lockout (it still answers 401 for that attempt).
+    for i in 0..5 {
+        let resp = http
+            .post(format!("{base_url}/api/auth/login"))
+            .json(&json!({ "username": SMOKE_USER, "password": format!("wrong-{i}") }))
+            .send()
+            .await
+            .expect("POST login failure");
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "attempt {i}");
+    }
+
+    // 2. While locked, even CORRECT credentials are rejected with 429.
+    let resp = http
+        .post(format!("{base_url}/api/auth/login"))
+        .json(&json!({ "username": SMOKE_USER, "password": SMOKE_PASS }))
+        .send()
+        .await
+        .expect("POST login while locked");
+    assert_eq!(resp.status(), StatusCode::TOO_MANY_REQUESTS, "locked → 429");
+    let body: Value = resp.json().await.expect("429 body");
+    assert_eq!(body["error"], "rate_limited", "rate_limited code");
+
+    // 3. Even CORRECT credentials are rejected while locked.
+    let resp = http
+        .post(format!("{base_url}/api/auth/login"))
+        .json(&json!({ "username": SMOKE_USER, "password": SMOKE_PASS }))
+        .send()
+        .await
+        .expect("POST login while locked");
+    assert_eq!(resp.status(), StatusCode::TOO_MANY_REQUESTS, "locked → 429");
+
+    // 4. Anonymous business endpoint still fails closed with 401 (not 429):
+    //    the throttle guards login only, never the authenticated surface.
+    let resp = reqwest::Client::new()
+        .get(format!("{base_url}/api/clients"))
+        .send()
+        .await
+        .expect("GET clients during lockout");
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
 // =========================================================================

@@ -16,10 +16,12 @@
 //     is intentionally not exported).
 
 import type { Asset as GeneratedAsset } from './generated/Asset'
+import type { AssetCredential as GeneratedAssetCredential } from './generated/AssetCredential'
 import type { Client as GeneratedClient } from './generated/Client'
 import type { Communication as GeneratedCommunication } from './generated/Communication'
 import type { CommunicationWithProject as GeneratedCommunicationWithProject } from './generated/CommunicationWithProject'
 import type { CreateAsset } from './generated/CreateAsset'
+import type { CreateAssetCredential } from './generated/CreateAssetCredential'
 import type { CreateClient as GeneratedCreateClient } from './generated/CreateClient'
 import type { CreateCommunication } from './generated/CreateCommunication'
 import type { CreateLink as GeneratedCreateLink } from './generated/CreateLink'
@@ -35,6 +37,7 @@ import type { Project as GeneratedProject } from './generated/Project'
 import type { Task as GeneratedTask } from './generated/Task'
 import type { UpdateProject as GeneratedUpdateProject } from './generated/UpdateProject'
 import type { UpdateAsset } from './generated/UpdateAsset'
+import type { UpdateAssetCredential } from './generated/UpdateAssetCredential'
 import type { UpdateClient } from './generated/UpdateClient'
 import type { UpdateCommunication } from './generated/UpdateCommunication'
 import type { UpdateFile } from './generated/UpdateFile'
@@ -74,6 +77,11 @@ export type ProductSource = 'ours' | 'third_party'
 
 export type FeedbackStatus = 'unreported' | 'reported'
 
+// Credential types on an asset credential (validated in Rust
+// `CredentialType::is_valid`).
+export type CredentialType =
+  'password' | 'api_key' | 'certificate' | 'token' | 'other'
+
 // `source_type` is a `String` in Rust; keep the narrow union here so call
 // sites that construct a `ProjectFile` get autocomplete and typo detection.
 // Reads (e.g. `r.source_type === 'link'`) keep working because `'link'`
@@ -88,6 +96,7 @@ export type CommunicationWithProject = GeneratedCommunicationWithProject
 export type Project = GeneratedProject
 export type Task = GeneratedTask
 export type Asset = GeneratedAsset
+export type AssetCredential = GeneratedAssetCredential
 export type Phase = GeneratedPhase
 export type Person = GeneratedPerson
 export type Issue = GeneratedIssue
@@ -156,6 +165,7 @@ export type UpdateIssue = Omit<GeneratedUpdateIssue, 'status'> & {
 
 export type {
   CreateAsset,
+  CreateAssetCredential,
   CreateCommunication,
   CreateFinding,
   CreatePerson,
@@ -163,6 +173,7 @@ export type {
   FileMeta,
   FileWithProject,
   UpdateAsset,
+  UpdateAssetCredential,
   UpdateClient,
   UpdateCommunication,
   UpdateFile,

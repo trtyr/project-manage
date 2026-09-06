@@ -64,8 +64,22 @@ Each handler module exports one or more `*_router()` functions that `app::build_
 | Project-scoped routes | `GET /projects/{project_id}/assets`, `POST /projects/{project_id}/assets`, `PUT /projects/{project_id}/assets/reorder` (body `{asset_ids: [...]}`, rewrites `sort_order`) |
 | Flat-by-id routes | `GET /assets/{id}`, `PUT /assets/{id}`, `DELETE /assets/{id}` |
 | Calls `ensure_project_exists` | **Yes** — both nested handlers. |
-| Non-trivial behaviour | `asset_type` defaults to `"other"` if omitted. No status enum — `asset_type` is free-form text. `name` non-empty guard on create. `sort_order` (migration 016) supports drag-and-drop reorder via the project-scoped `PUT .../assets/reorder`. |
+| Non-trivial behaviour | `asset_type` defaults to `"other"` if omitted. No status enum — `asset_type` is free-form text. `name` non-empty guard on create. `sort_order` (migration 016) supports drag-and-drop reorder via the project-scoped `PUT .../assets/reorder`. Every `Asset` row carries a read-only `credential_count` (correlated subquery; migration 023). Deleting an asset cascades to its credentials. |
 | Internal deps | `crate::models::{Asset, CreateAsset, UpdateAsset}`. |
+
+**A.5b `asset_credentials` — `backend/src/handlers/asset_credentials.rs`**
+(asset child resource; credential rows formerly lived in the dropped
+free-text `assets.credentials` column)
+
+| Field | Value |
+|---|---|
+| Responsibility | Multi-entry credentials per asset (SSH / admin console / API key…), each with a label, a validated `cred_type`, and separately copyable `username` / `secret`. |
+| Routers exported | `project_asset_credentials_router()`, `asset_credentials_router()` |
+| Project-scoped routes | `GET /projects/{project_id}/assets/{asset_id}/credentials`, `POST …/credentials` |
+| Flat-by-id routes | `PUT /asset-credentials/{id}`, `DELETE /asset-credentials/{id}` |
+| Calls `ensure_project_exists` | **Yes** — plus `ensure_asset_in_project` (new shared guard in `db/helpers.rs`) on both nested handlers; `404` when the asset is missing or foreign. |
+| Non-trivial behaviour | `label` non-empty; `cred_type` validated via `CredentialType::is_valid` (default `"password"`), one of `["password", "api_key", "certificate", "token", "other"]`. Create appends `sort_order`; update is COALESCE-based. Secrets are plain TEXT — masking is frontend-only. |
+| Internal deps | `crate::models::{AssetCredential, CreateAssetCredential, CredentialType, UpdateAssetCredential}`. |
 
 ### A.6 `files` — `backend/src/handlers/files.rs`
 
@@ -154,12 +168,12 @@ Each handler module exports one or more `*_router()` functions that `app::build_
 
 | Field | Value |
 |---|---|
-| Responsibility | Local-account authentication (setup/login/logout/me) + the fail-closed `require_auth` route guard mounted over every business router. |
+| Responsibility | Local-account authentication (setup/login/logout/me/password change) + the fail-closed `require_auth` route guard mounted over every business router + the `LoginThrottle` brute-force guard. |
 | Router exported | `auth_router()` — **mounted on the unguarded `public_api`**, unlike every other handler module |
-| Routes | `GET /auth/status`, `POST /auth/setup`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` |
+| Routes | `GET /auth/status`, `POST /auth/setup`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password` |
 | Calls `ensure_project_exists` | **No** — not a project resource. |
-| Non-trivial behaviour | `status` probes `users` empty → `{needs_setup}` (a not-yet-migrated table counts as empty). `setup` only works while users is empty (else `AppError::Conflict` → 409); password ≥ 8 chars; username normalized (trim + lowercase). `login` verifies argon2id and returns a deliberately generic 401 on bad creds (no user enumeration). Sessions are tower-sessions cookies holding only `user_id`; `SESSION_TTL_SECS = 30 days` sliding. `require_auth` resolves the session to a user_id, re-checks the user exists, and 401s otherwise — fail-closed. |
-| Internal deps | `argon2` (hash/verify), `tower_sessions::Session`, `crate::models::user::{SetupRequest, User, UserPublic}`, `crate::state::AppState`. |
+| Non-trivial behaviour | `status` probes `users` empty → `{needs_setup}` (a not-yet-migrated table counts as empty). `setup` only works while users is empty (else `AppError::Conflict` → 409); password ≥ 8 chars; username normalized (trim + lowercase). `login` verifies argon2id and returns a deliberately generic 401 on bad creds (no user enumeration — unknown usernames still burn one argon2 verification against a dummy hash). **`LoginThrottle`**: 5 consecutive failures lock logins for 15 min → `429 rate_limited` (process-global, in `AppState`). Session ids are cycled at login/setup (`cycle_id()` — session-fixation defense) and after a password change. `POST /auth/password` requires the current password, then revokes every OTHER session of the user via the `user_sessions` index (migration 024; written by `require_auth`/`me` because tower-sessions hides the post-cycle id from handlers). Sessions are tower-sessions cookies holding only `user_id`; `SESSION_TTL_SECS = 30 days` sliding. `require_auth` resolves the session to a user_id, re-checks the user exists, and 401s otherwise — fail-closed. |
+| Internal deps | `argon2` (hash/verify), `tower_sessions::Session`, `crate::models::user::{ChangePasswordRequest, SetupRequest, User, UserPublic}`, `crate::state::AppState`. |
 
 ---
 
@@ -182,7 +196,7 @@ One module per row struct + `Create`/`Update` DTO pair. All row structs derive `
 | `phase.rs` | `Phase` | `CreatePhase` | `UpdatePhase` | — |
 | `person.rs` | `Person` | `CreatePerson` | `UpdatePerson` | **`PersonSide` const-module** (see B.4); `side: String` |
 | `deliverable.rs` | `Deliverable` | `CreateDeliverable` | `UpdateDeliverable` | **`DeliverableStatus` const-module** (see B.5); `due_date: Option<NaiveDate>`, `linked_file_id: Option<Uuid>` |
-| `user.rs` | `User` (**not serialized**, keeps `password_hash` private) | `SetupRequest` (also aliased `LoginRequest`) | — | `UserPublic` (safe projection, ts-rs exported) |
+| `user.rs` | `User` (**not serialized**, keeps `password_hash` private) | `SetupRequest` (also aliased `LoginRequest`), `ChangePasswordRequest` | — | `UserPublic` (safe projection, ts-rs exported) |
 
 Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `updated_at: DateTime<Utc>` (maintained by DB trigger `set_updated_at()` from migration 001). `Create` DTOs omit id/timestamps; `Update` DTOs mark every field `Option` + `#[serde(default)]` for partial updates.
 
@@ -329,7 +343,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Field | Value |
 |---|---|
 | Route | `/login` (rendered standalone, no app shell) |
-| Responsibility | Username + password form → `authApi.login`. On success it **seeds the `['auth-me']` query cache** with the login response (nobody refetches it on SPA navigation), shows 登录成功, and navigates to `/`. 401 → "用户名或密码错误" toast. |
+| Responsibility | Username + password form → `authApi.login`. On success it **seeds the `['auth-me']` query cache** with the login response (nobody refetches it on SPA navigation), shows 登录成功, and navigates to `/`. 401 → "用户名或密码错误" toast; `429 rate_limited` → "尝试次数过多，登录已被临时锁定" toast. |
 | Internal deps | `authApi`; antd form components. |
 
 ### D.6 `SetupPage` — `frontend/src/pages/SetupPage.tsx`
@@ -428,9 +442,9 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/credentials/vendor fields. |
+| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/vendor fields, plus per-asset credential management: the 凭据 column shows a read-only count and opens a `CredentialDrawer` (in-file component) that lists the asset's credentials — typed tags, per-field username/secret copy, eye-toggle reveal — with add/edit/delete via a nested form modal. |
 | Public API (TS) | `export default function AssetsTab({ projectId }: Props)` |
-| Calls | `assetsApi.*` including `reorder`. |
+| Calls | `assetsApi.*` including `reorder`; `assetCredentialsApi.{listByAsset, create, update, delete}` (query key `['asset-credentials', assetId]`; mutations also invalidate `['assets', projectId]` to refresh `credential_count`). |
 
 ### E.11 `MembersTab` — 成员
 
@@ -487,6 +501,14 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | Public API (TS) | `export default function ParticipantsInput({ value, onChange, placeholder }: Props)` |
 | Behaviour | Splits on `,` `，` `、` `;` `；`. `Select` `open={false}` (acts like a token input, not a dropdown). |
 
+### E.18 `ChangePasswordModal`
+
+| Field | Value |
+|---|---|
+| Responsibility | 修改密码 modal (opened from the sidebar footer key icon): requires current password, new ≥ 8 chars + confirm-field match, calls `authApi.changePassword` (`POST /api/auth/password`). Success toast notes that other devices are logged out (server revokes the user's other sessions). Backend 400 messages (wrong current password / too short) surface directly. |
+| Public API (TS) | `export default function ChangePasswordModal({ open, onClose }: Props)` |
+| Internal deps | `authApi`; antd `Modal`/`Form`. |
+
 ---
 
 ## F. Frontend shared (`frontend/src/`)
@@ -496,7 +518,7 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | Field | Value |
 |---|---|
 | Responsibility | Single axios instance (`baseURL: '/api'`, `timeout: 30000`) + one API object per resource + error classifier + 401 interceptor. |
-| Exports (14 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`, `findingsApi`, `assetsApi` (incl. `reorder`), `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `searchApi`, `healthApi`, `authApi` (status/setup/login/logout/me) |
+| Exports (15 API objects + helpers) | `clientsApi`, `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`, `findingsApi`, `assetsApi` (incl. `reorder`), `assetCredentialsApi`, `filesApi`, `phasesApi`, `peopleApi` (incl. `reorder` + `flipSide`), `deliverablesApi`, `searchApi`, `healthApi`, `authApi` (status/setup/login/logout/me/changePassword) |
 | Extra exports | `ApiErrorKind` type (`'offline' \| 'server' \| 'validation' \| 'conflict' \| 'unknown'`), `ApiErrorInfo` interface, `classifyApiError(err: unknown): ApiErrorInfo`, `AuthStatus` + `SearchHit` interfaces |
 | Behaviour | `classifyApiError`: no `response` → `offline`; 5xx → `server`; 400/422 → `validation`; 409 → `conflict`; else `unknown`. **401 interceptor**: any non-`/auth/*` 401 redirects `window.location.href = '/login'` (guarded against self-reload loops — only navigates when actually elsewhere). |
 | Internal deps | `axios`; every `*Api` consumes a typed interface from `../types` (row types hand-written in `types/index.ts`, DTOs codegen'd by ts-rs into `types/generated/`). |
@@ -506,7 +528,7 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | Field | Value |
 |---|---|
 | Responsibility | TS mirrors of backend row structs + Create/Update DTOs; aliases `UUID`, `ISODateTime`, `ISODate`. |
-| Public API (TS) | Interfaces: `Client`, `Project`, `ProjectStatus`, `Communication`, `CommunicationWithProject`, `Task`, `TaskStatus`, `Issue` (+ `IssueStatus` / `IssuePriority` unions), `Finding` (+ `ProductSource` / `FeedbackStatus` unions), `Asset`, `ProjectFile`, `FileWithProject`, `Phase`, `Person` (+ `PersonSide`), `Deliverable` (+ `DeliverableStatus`), `UserPublic` + matching `Create*`/`Update*` interfaces + `SearchHit` + `ApiError`. (Backend DTOs are codegen'd into `types/generated/` by ts-rs at test time — 37 files, incl. `Issue`, `Finding`, `UserPublic`, `SetupRequest`.) |
+| Public API (TS) | Interfaces: `Client`, `Project`, `ProjectStatus`, `Communication`, `CommunicationWithProject`, `Task`, `TaskStatus`, `Issue` (+ `IssueStatus` / `IssuePriority` unions), `Finding` (+ `ProductSource` / `FeedbackStatus` unions), `Asset`, `AssetCredential` (+ `CredentialType` union), `ProjectFile`, `FileWithProject`, `Phase`, `Person` (+ `PersonSide`), `Deliverable` (+ `DeliverableStatus`), `UserPublic` + matching `Create*`/`Update*` interfaces + `SearchHit` + `ApiError`. (Backend DTOs are codegen'd into `types/generated/` by ts-rs at test time — 40 files, incl. `Issue`, `Finding`, `UserPublic`, `SetupRequest`, `AssetCredential`.) |
 | Notable | `ProjectStatus = 'in_progress' \| 'completed' \| 'paused'` (TS union mirrors `ProjectStatus` const-module on backend). `TaskStatus = 'current' \| 'next' \| 'todo'`. `ProjectFile.source_type: 'file' \| 'link'`. |
 | Internal deps | None. |
 
@@ -559,7 +581,8 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 | tasks | Task, CreateTask, UpdateTask, TaskStatus | **yes** (nested) | — |
 | issues | Issue, CreateIssue, UpdateIssue, IssueStatus, IssuePriority | **yes** (nested; + `ensure_communication_in_project`) | — |
 | findings | Finding, CreateFinding, UpdateFinding, ProductSource, FeedbackStatus | **yes** (nested; + `ensure_communication_in_project`) | — |
-| assets | Asset, CreateAsset, UpdateAsset | **yes** (nested) | — |
+| assets | Asset, CreateAsset, UpdateAsset | **yes** (nested) | read-only `credential_count` subquery on every row |
+| asset_credentials | AssetCredential, CreateAssetCredential, UpdateAssetCredential, CredentialType | **yes** (nested under asset; + `ensure_asset_in_project`) | cascade-deleted with the parent asset |
 | files | ProjectFile, FileMeta, FileWithProject, CreateLink, UpdateFile | **yes** (nested) | **writes to `./uploads/{project_id}/{uuid}{ext}` on upload; removes file on delete; removes dir on parent project delete (via projects::remove)** |
 | phases | Phase, CreatePhase, UpdatePhase | **yes** (nested) | — |
 | people | Person, CreatePerson, UpdatePerson, PersonSide | **yes** (nested) | — |

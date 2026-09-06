@@ -50,13 +50,27 @@ Implemented in `app.rs` (`health()` + `HealthResponse`).
 | POST | `/api/auth/login`  | Verify credentials (argon2id), start a session | `{ username, password }` | `200` + `UserPublic` |
 | POST | `/api/auth/logout` | Destroy the server-side session (authenticated) | — | `204` |
 | GET  | `/api/auth/me`     | Current user projection (authenticated) | — | `200` + `UserPublic` |
+| POST | `/api/auth/password` | Change the caller's password; requires the current one and **revokes every other session of the user** | `{ current_password, new_password }` | `204` |
 
 Behaviour: usernames are normalized (trim + lowercase); passwords must be
-≥ 8 chars at setup; login failure is a deliberately generic
+≥ 8 chars at setup and on change; login failure is a deliberately generic
 `401 unauthorized` ("invalid username or password") — no user
-enumeration. `UserPublic` never contains password material. The session
+enumeration, and unknown usernames still run one argon2 verification
+against a dummy hash so response timing reveals nothing. `UserPublic`
+never contains password material. The session
 cookie (HttpOnly, SameSite=Lax, 30-day sliding) is issued by setup and
-login; see `architecture.md §5.7` for the guard mechanics.
+login; the session id is cycled at login/setup and after a password
+change (session-fixation defense); see `architecture.md §5.7` for the
+guard mechanics.
+
+**Login throttle:** 5 consecutive failed logins (process-global counter —
+adequate for a single account) lock logins for 15 minutes; attempts while
+locked — including correct credentials — get
+`429 rate_limited`. The counter resets on success and clears on restart.
+`logout`/`me`/`password` sit on the public auth router but self-guard
+(401 without a valid session). Session ownership is indexed in
+`user_sessions` (migration 024), written by `require_auth`/`me` on
+authenticated use — that index is what makes per-user revocation precise.
 
 ### 2.3 Clients (`backend/src/handlers/clients.rs`)
 
@@ -119,14 +133,33 @@ Validation: `title` non-empty; `status ∈ TaskStatus::ALL =
 
 | Method | Path | Purpose | Path params | Body | Response |
 |---|---|---|---|---|---|
-| GET    | `/api/projects/{project_id}/assets` | List for a project, `ORDER BY created_at DESC` | `project_id` | — | `200` + `Asset[]` |
+| GET    | `/api/projects/{project_id}/assets` | List for a project, `ORDER BY sort_order ASC, created_at ASC` | `project_id` | — | `200` + `Asset[]` |
 | POST   | `/api/projects/{project_id}/assets` | Create asset (default `asset_type = "other"`) | `project_id` | `CreateAsset` | `201` + `Asset` |
 | PUT    | `/api/projects/{project_id}/assets/reorder` | Rewrite the project's asset `sort_order` to the given order | `project_id` | `{ asset_ids: Uuid[] }` | `204` |
 | GET    | `/api/assets/{id}` | Read one asset | `id` | — | `200` + `Asset` |
 | PUT    | `/api/assets/{id}` | Partial update | `id` | `UpdateAsset` | `200` + `Asset` |
-| DELETE | `/api/assets/{id}` | Remove | `id` | — | `204` |
+| DELETE | `/api/assets/{id}` | Remove (cascades to its credentials) | `id` | — | `204` |
 
 `asset_type` is free-form TEXT (no enum). Validation: `name` non-empty.
+Every `Asset` row carries a read-only `credential_count` (correlated
+subquery at query time — not a physical column; migration 023).
+
+**Asset credentials** (`backend/src/handlers/asset_credentials.rs`) —
+one asset holds several credentials (SSH / admin console / API key…),
+each its own row. Secrets are stored as plain TEXT; masking is a
+frontend display concern only.
+
+| Method | Path | Purpose | Path params | Body | Response |
+|---|---|---|---|---|---|
+| GET    | `/api/projects/{project_id}/assets/{asset_id}/credentials` | List the asset's credentials, `ORDER BY sort_order ASC, created_at ASC` | `project_id`, `asset_id` | — | `200` + `AssetCredential[]` |
+| POST   | `/api/projects/{project_id}/assets/{asset_id}/credentials` | Create a credential (appends `sort_order`) | `project_id`, `asset_id` | `CreateAssetCredential` | `201` + `AssetCredential` |
+| PUT    | `/api/asset-credentials/{id}` | Partial update (COALESCE — `None` keeps old value) | `id` | `UpdateAssetCredential` | `200` + `AssetCredential` |
+| DELETE | `/api/asset-credentials/{id}` | Remove | `id` | — | `204` |
+
+Validation: `label` non-empty; `cred_type ∈ CredentialType::ALL =
+["password", "api_key", "certificate", "token", "other"]` (else `400`).
+Guards: `ensure_project_exists`, then `ensure_asset_in_project`
+(`404` when the asset is missing or belongs to another project).
 
 ### 2.8 Files / Links (`backend/src/handlers/files.rs`)
 
@@ -310,8 +343,16 @@ their row structs. All `Update*` DTOs make every field `Option<T>` with
 | `value` | `Option<String>` | optional | optional | Could be IP, domain, hostname, etc. |
 | `description` | `Option<String>` | optional | optional | |
 | `access_method` | `Option<String>` | optional | optional | How the asset is reached (migration 015) |
-| `credentials` | `Option<String>` | optional | optional | Access creds (migration 015) |
 | `vendor` | `Option<String>` | optional | optional | Vendor/manufacturer (migration 015) |
+
+### 3.5b `CreateAssetCredential` / `UpdateAssetCredential`
+
+| Field | Type | Create | Update | Notes |
+|---|---|:---:|:---:|---|
+| `label` | `String` | ✅ required | optional | Non-empty else `400`; e.g. `SSH root`, `后台管理员` |
+| `cred_type` | `Option<String>` | optional (default `"password"`) | optional | `CredentialType::ALL`; validated in Rust |
+| `username` | `Option<String>` | optional | optional | Absent for key-only credentials |
+| `secret` | `Option<String>` | optional | optional | Password / key body / token, stored as plain TEXT |
 
 ### 3.6 `CreateLink` (no `UpdateLink` — use `PUT /files/{id}`)
 
@@ -504,7 +545,7 @@ and the tab `components/` (`OverviewTab`, `GroupedTab`, `PhasesTab`,
 | Backend resource group | HTTP prefix (mounted at `/api`) | Frontend `*Api` object | React Query keys |
 |---|---|---|---|
 | Health        | `/health`                                     | `healthApi`            | none in hooks (probe only) |
-| Auth          | `/auth/*` (status/setup/login/logout/me)       | `authApi`              | `['auth-status']`, `['auth-me']` (`App.tsx` bootstrap gate) |
+| Auth          | `/auth/*` (status/setup/login/logout/me/password) | `authApi`              | `['auth-status']`, `['auth-me']` (`App.tsx` bootstrap gate) |
 | Clients       | `/clients`                                    | `clientsApi`           | `['clients']` (`ProjectBoard.tsx`, `ProjectDetail.tsx`), `['client', client_id]` (`ProjectDetail.tsx`) |
 | Projects      | `/projects`                                   | `projectsApi`          | `['projects']` (`App.tsx` sidebar, `ProjectBoard.tsx`), `['project', id]` (`ProjectDetail.tsx`) |
 | Communications (nested) | `/projects/{project_id}/communications` | `communicationsApi.listByProject` / `.create` | `['communications', id]` (`ProjectDetail.tsx`, `FilesTab`, `IssuesTab`, `FindingsTab`), `['communications-recent']` (`ProjectBoard.tsx`), `['communications-search', debouncedSearch]` (`ProjectBoard.tsx`) |
@@ -513,6 +554,7 @@ and the tab `components/` (`OverviewTab`, `GroupedTab`, `PhasesTab`,
 | Issues        | `/projects/{id}/issues`, `/issues/{id}`       | `issuesApi`            | `['issues', id]` (`ProjectDetail.tsx`, `IssuesTab`) |
 | Findings      | `/projects/{id}/findings`, `/findings/{id}`   | `findingsApi`          | `['findings', id]` (`ProjectDetail.tsx`, `FindingsTab`) |
 | Assets        | `/projects/{id}/assets`, `/assets/{id}`       | `assetsApi`            | `['assets', id]` (`ProjectDetail.tsx`, `AssetsTab`) |
+| Asset credentials (nested) | `/projects/{id}/assets/{asset_id}/credentials`, `/asset-credentials/{id}` | `assetCredentialsApi` | `['asset-credentials', assetId]` (`AssetsTab` credential drawer); invalidates `['assets', id]` to refresh `credential_count` |
 | Files / Links | `/projects/{id}/files`, `/projects/{id}/links`, `/files`, `/files/{id}`, `/files/{id}/{download,preview,link,link-phase}` | `filesApi` | `['files', id]` (`ProjectDetail.tsx`, `FilesTab`), `['files-all']` (`FileLibrary.tsx`) |
 | Phases        | `/projects/{id}/phases`, `/phases/{id}`       | `phasesApi`            | `['phases', projectId]` (`PhasesTab`, `FilesTab`) |
 | People        | `/projects/{id}/people`, `/people/{id}`, `/projects/{id}/people/reorder`, `/people/{id}/flip-side` | `peopleApi`            | `['people', projectId]` (`MembersTab`, `IssuesTab`) |

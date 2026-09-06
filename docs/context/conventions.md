@@ -15,9 +15,12 @@ a more general rule on the wider web, this file wins for project-manage.
 
 - Handler files live in `backend/src/handlers/<resource>.rs`, one per resource.
   The set is fixed: `clients`, `projects`, `communications`, `tasks`,
-  `issues`, `findings`, `assets`, `files`, `phases`, `people`,
-  `deliverables`, `search`, `auth`. All names are lowercase, singular,
-  no underscores. (`search` is flat-only — no row model. `auth` is
+  `issues`, `findings`, `assets`, `asset_credentials`, `files`, `phases`,
+  `people`, `deliverables`, `search`, `auth`. All names are lowercase,
+  singular, no underscores — `asset_credentials` is the one deliberate
+  exception (a compound child resource of `assets`; its flat route is
+  hyphenated `/asset-credentials/{id}`). (`search` is flat-only — no row
+  model. `auth` is
   public-only and exports the `require_auth` middleware in addition to its
   router.)
 - Model files live in `backend/src/models/<resource>.rs`, one per resource,
@@ -87,7 +90,8 @@ pub mod ProjectStatus {
 - `frontend/src/api/index.ts` exposes one axios-based object per resource,
   named exactly `<resource>Api` (camelCase, no separator): `clientsApi`,
   `projectsApi`, `communicationsApi`, `tasksApi`, `issuesApi`,
-  `findingsApi`, `assetsApi`, `filesApi`, `phasesApi`, `peopleApi`,
+  `findingsApi`, `assetsApi`, `assetCredentialsApi`, `filesApi`,
+  `phasesApi`, `peopleApi`,
   `deliverablesApi`, `searchApi`, `healthApi`, `authApi`.
 - API methods return the unwrapped body: `http.get<X>(...).then(r => r.data)`.
   Every method takes an explicit `string` id where applicable; no opaque
@@ -98,7 +102,7 @@ pub mod ProjectStatus {
 ### 2.1 The single error type
 
 Every handler returns `AppResult<T>` (alias for `std::result::Result<T, AppError>`)
-from `backend/src/error.rs`. There are exactly six variants:
+from `backend/src/error.rs`. There are exactly seven variants:
 
 | Variant                | Caused by                              |
 |------------------------|----------------------------------------|
@@ -108,6 +112,7 @@ from `backend/src/error.rs`. There are exactly six variants:
 | `Timeout(String)`      | `tower::timeout` middleware rejection  |
 | `Unauthorized(String)` | Auth middleware / bad login creds (401)|
 | `Conflict(String)`     | State conflict, e.g. re-running setup  |
+| `RateLimited(String)`  | Login throttled after repeated failures (429) |
 
 `sqlx::Error::RowNotFound` is intercepted in `AppError::parts()` and remapped
 to `404 not_found`, so handlers do not need to catch it themselves.
@@ -134,6 +139,7 @@ with these mappings:
 | `Timeout`                            |    408 | `request_timeout`   | original message                       |
 | `Unauthorized`                       |    401 | `unauthorized`      | original message (generic on login)    |
 | `Conflict`                           |    409 | `conflict`          | original message                       |
+| `RateLimited`                        |    429 | `rate_limited`      | original message (login lockout)       |
 
 ### 2.3 5xx rules
 
@@ -153,11 +159,13 @@ Any handler routed under `/api/projects/:project_id/...` calls
 if the project is missing, so the cascade is `404 → 400 → ...` instead of
 `500 → 400 → ...` on FK violations.
 
-The 9 handlers that share this guard today:
-`communications`, `tasks`, `issues`, `findings`, `assets`, `files`,
+The 10 handlers that share this guard today:
+`communications`, `tasks`, `issues`, `findings`, `assets`,
+`asset_credentials`, `files`,
 `phases`, `people`, `deliverables`. Issues and findings additionally call
 `ensure_communication_in_project` when an optional `communication_id` link
-is supplied.
+is supplied; asset credentials additionally call `ensure_asset_in_project`
+(their parent asset must exist inside the path's project).
 
 If you add a new project-scoped resource, add the call here too — do not
 rely on the FK to do it.
@@ -205,7 +213,7 @@ application-side timestamps.
 ### 5.2 Migration conventions
 
 - Naming: uniform `<timestamp>_<name>.sql` using UTC seconds
-  (`20250714000001_init_clients.sql` … `20250714000022_users_and_sessions.sql`).
+  (`20250714000001_init_clients.sql` … `20250714000023_asset_credentials.sql`).
   sqlx applies migrations sorted by the numeric version parsed from the prefix,
   so the timestamp MUST stay monotonic with dependency order — base tables
   (clients / projects / communications / tasks) before the tables that reference
@@ -230,7 +238,7 @@ application-side timestamps.
 Components must never parse HTTP status codes directly. They use
 `classifyApiError(err): ApiErrorInfo` from `frontend/src/api/index.ts`,
 which returns `{ kind, message, status? }` with
-`kind ∈ 'offline' | 'server' | 'validation' | 'conflict' | 'unknown'`:
+`kind ∈ 'offline' | 'server' | 'validation' | 'conflict' | 'rate_limited' | 'unknown'`:
 
 - `!err.response` → `'offline'` (network / DNS / CORS / timeout).
 - `status` in `[500, 600)` → `'server'`.
@@ -238,6 +246,8 @@ which returns `{ kind, message, status? }` with
 - `status === 409` → `'conflict'` (the backend now emits real 409s via
   `AppError::Conflict`, e.g. re-running setup; DB unique violations remain
   `400 conflict` and classify as `'validation'`).
+- `status === 429` → `'rate_limited'` (login lockout after repeated
+  failures — surfaced as a friendly "try again later" message).
 - otherwise → `'unknown'`.
 
 ### 6.2 React Query configuration

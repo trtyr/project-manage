@@ -45,7 +45,7 @@ and operational notes.
 
 ## 2. Migration inventory
 
-Twenty-two SQL files in `backend/migrations/`, applied in lexicographic order.
+Twenty-four SQL files in `backend/migrations/`, applied in lexicographic order.
 Each row below lists the table created (or altered), key columns, foreign
 keys, ON DELETE behavior, and indexes.
 
@@ -73,6 +73,8 @@ keys, ON DELETE behavior, and indexes.
 | 020 | `020_issues.sql` | **creates `issues`** | `project_id`, `title`, `description`, `status TEXT DEFAULT 'open'`, `communication_id`, `assignee_id`, `priority TEXT DEFAULT 'normal'`, `due_date DATE`, timestamps | `project_id ... CASCADE`; `communication_id ... SET NULL`; `assignee_id REFERENCES people(id) ON DELETE SET NULL` | `idx_issues_project_id`, `idx_issues_status`; `trg_issues_updated_at` |
 | 021 | `021_findings.sql` | **creates `findings`** | `project_id`, `title`, `description`, `product`, `product_source TEXT NOT NULL` (no default), `vendor`, `observed_at TIMESTAMPTZ`, `communication_id`, `feedback_status TEXT DEFAULT 'unreported'`, timestamps | `project_id ... CASCADE`; `communication_id ... SET NULL` | `idx_findings_project_id`, `idx_findings_feedback_status`; `trg_findings_updated_at` |
 | 022 | `022_users_and_sessions.sql` | **creates `users` + `session`** | `users`: `username TEXT UNIQUE` (lowercase), `password_hash TEXT` (argon2id PHC), `display_name`, `organization_id UUID` (FUTURE tenancy placeholder, no FK, not modeled in Rust). `session`: `id TEXT PK`, `data BYTEA`, `expiry_date` | none | `trg_users_updated_at`; `idx_session_expiry_date`. Session table is hand-written to match tower-sessions-sqlx-store, unified under `./migrations` instead of the store's own migrate. |
+| 023 | `023_asset_credentials.sql` | **creates `asset_credentials`** + drops `assets.credentials` | `asset_id`, `label`, `cred_type TEXT DEFAULT 'password'`, `username`, `secret`, `sort_order INTEGER DEFAULT 0`, timestamps | `asset_id REFERENCES assets(id) ON DELETE CASCADE` | `asset_credentials_asset_id_idx`; `trg_asset_credentials_updated_at`. Copies each asset's legacy `credentials` text into one labeled row (`凭据（迁移）`, type `other`) before dropping the column. |
+| 024 | `024_user_sessions.sql` | **creates `user_sessions`** | `session_id TEXT PK`, `user_id`, `created_at` | `user_id REFERENCES users(id) ON DELETE CASCADE` | `idx_user_sessions_user_id`. Session-ownership index for per-user revocation on password change; rows written by `require_auth`/`me`, orphans swept by the startup purge. |
 
 ### Highlights
 
@@ -119,7 +121,8 @@ keys, ON DELETE behavior, and indexes.
   it whole.
 - **015–016 — asset enrichment.** `access_method` / `credentials` /
   `vendor` pull structured detail out of the overloaded `description`;
-  `sort_order` enables drag-and-drop.
+  `sort_order` enables drag-and-drop. (`credentials` was later promoted
+  out of `assets` by 023.)
 - **017 — task PM fields.** `assignee_id` (nullable FK to `people`,
   `SET NULL`) + `priority` (default `'normal'`, free TEXT, not yet
   validated by an enum).
@@ -140,6 +143,21 @@ keys, ON DELETE behavior, and indexes.
   tenancy lands) + `session` (tower-sessions MessagePack blobs, hand-written
   DDL so all schema stays under `./migrations`; verify against the crate
   docs when bumping `tower-sessions-sqlx-store`).
+- **023 — asset credentials.** Promotes the single free-text
+  `assets.credentials` column to a proper `asset_credentials` child table:
+  one row per credential (label + `cred_type` + `username`/`secret`),
+  cascading on asset delete, with the shared `set_updated_at()` trigger.
+  Existing text is carried over as one labeled
+  row per asset, then the column is dropped — no data loss, no dead
+  duplicate source of truth. Secrets are plain TEXT by design; the
+  frontend masks them for display only.
+- **024 — session ownership.** `user_sessions` maps `session_id → user_id`
+  (tower-sessions' own `session` table has no user column and its writes
+  are store-owned). This index makes "revoke all other sessions of user X"
+  on password change a precise two-table delete instead of a full wipe —
+  which also keeps it correct for the future multi-user/tenancy path.
+  Orphaned mappings (session deleted before logout) are swept by the same
+  startup purge that removes expired sessions.
 
 ## 3. Schema conventions
 
@@ -148,11 +166,13 @@ keys, ON DELETE behavior, and indexes.
   anywhere — IDs stay portable and client-generable.
 - **Timestamps:** `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` on every
   table. `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` is present on
-  `clients`, `projects`, `tasks`, `assets`, `phases`, `deliverables`,
+  `clients`, `projects`, `tasks`, `assets`, `asset_credentials`,
+  `phases`, `deliverables`,
   `issues`, `findings`, `users`. The `set_updated_at()` trigger created in
   migration 001 is attached in 001, 002, 004 and — since migration 018 — in
   every table that introduces `updated_at` (018 `deliverables`, 020
-  `issues`, 021 `findings`, 022 `users` all install their trigger).
+  `issues`, 021 `findings`, 022 `users`, 023 `asset_credentials` all
+  install their trigger).
 - **Tables without `updated_at`:** `communications`, `project_files`,
   `people`, `session`. Each is append-mostly or log-shaped, so
   the trigger would be redundant. `communications` omits `updated_at` by
@@ -228,6 +248,7 @@ clients  ──<  projects                      (ON DELETE RESTRICT)
 projects ──<  communications                (ON DELETE CASCADE)
 projects ──<  tasks                         (ON DELETE CASCADE)
 projects ──<  assets                        (ON DELETE CASCADE)
+assets    ──<  asset_credentials            (ON DELETE CASCADE)  (migration 023)
 projects ──<  project_files                 (ON DELETE CASCADE)
 projects ──<  phases                        (ON DELETE CASCADE)
 projects ──<  people                        (ON DELETE CASCADE)
@@ -247,7 +268,8 @@ Cross-table optional FKs (all ON DELETE SET NULL):
 ```
 
 Every project-scoped resource is `N:1` under `projects`. Only `phases` is
-recursive (self-FK on `parent_id`). `project_files`, `issues`, and
+recursive (self-FK on `parent_id`), and only `asset_credentials` nests
+two levels deep (under `assets`). `project_files`, `issues`, and
 `findings` carry secondary optional FKs to `communications`/`phases`/
 `people`/`project_files`. `users` and `session` stand apart — no FK into
 the business graph.

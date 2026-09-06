@@ -28,13 +28,14 @@ use tower_http::{
 use tower_sessions::SessionManagerLayer;
 
 use crate::error::AppError;
+use crate::handlers::auth::LoginThrottle;
 use crate::handlers::{
-    assets_router, auth_router, clients_router, communications_router, deliverables_router,
-    files_router, findings_router, issues_router, people_router, phases_router,
-    project_assets_router, project_communications_router, project_deliverables_router,
-    project_files_router, project_findings_router, project_issues_router, project_people_router,
-    project_phases_router, project_tasks_router, projects_router, require_auth, search_router,
-    tasks_router,
+    asset_credentials_router, assets_router, auth_router, clients_router, communications_router,
+    deliverables_router, files_router, findings_router, issues_router, people_router,
+    phases_router, project_asset_credentials_router, project_assets_router,
+    project_communications_router, project_deliverables_router, project_files_router,
+    project_findings_router, project_issues_router, project_people_router, project_phases_router,
+    project_tasks_router, projects_router, require_auth, search_router, tasks_router,
 };
 use crate::state::AppState;
 
@@ -129,7 +130,9 @@ pub fn build_app(
         .nest("/api", project_issues_router())
         .nest("/api", project_findings_router())
         .nest("/api", project_assets_router())
+        .nest("/api", project_asset_credentials_router())
         .nest("/api", assets_router())
+        .nest("/api", asset_credentials_router())
         .nest("/api", project_files_router())
         .nest("/api", files_router())
         .nest("/api", project_phases_router())
@@ -157,6 +160,9 @@ pub fn build_app(
         .layer(DefaultBodyLimit::max(body_limit_bytes))
         .layer(session_layer);
 
-    let state = AppState { pool };
+    let state = AppState {
+        pool,
+        login_throttle: LoginThrottle::new(),
+    };
     app.with_state(state)
 }

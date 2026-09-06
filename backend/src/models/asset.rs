@@ -3,6 +3,9 @@
 //! Flexible: asset_type is free TEXT. The frontend offers common options
 //! (server, web_app, domain, ip, firewall, waf, ids, etc.) but users can
 //! type anything. No enum constraint — "don't over-categorise".
+//!
+//! Credentials are NOT stored here — each is a row in `asset_credentials`
+//! (see `asset_credential.rs`); a single asset carries several of them.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -18,11 +21,14 @@ pub struct Asset {
     pub value: Option<String>,
     pub description: Option<String>,
     pub access_method: Option<String>,
-    pub credentials: Option<String>,
     pub vendor: Option<String>,
     pub sort_order: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    /// Read-only count joined in at query time (see `ASSET_COLUMNS` in
+    /// `handlers/assets.rs`) — not a physical column.
+    #[ts(type = "number")]
+    pub credential_count: i64,
 }
 
 #[derive(Debug, Deserialize, ts_rs::TS)]
@@ -41,9 +47,6 @@ pub struct CreateAsset {
     #[serde(default)]
     #[ts(optional)]
     pub access_method: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
-    pub credentials: Option<String>,
     #[serde(default)]
     #[ts(optional)]
     pub vendor: Option<String>,
@@ -67,9 +70,6 @@ pub struct UpdateAsset {
     #[serde(default)]
     #[ts(optional)]
     pub access_method: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
-    pub credentials: Option<String>,
     #[serde(default)]
     #[ts(optional)]
     pub vendor: Option<String>,

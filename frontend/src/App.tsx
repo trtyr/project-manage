@@ -8,7 +8,7 @@ import {
   Spin,
   App as AntApp,
 } from 'antd'
-import { SearchOutlined, LogoutOutlined } from '@ant-design/icons'
+import { SearchOutlined, LogoutOutlined, KeyOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { FolderOutlined, DatabaseOutlined } from '@ant-design/icons'
@@ -23,6 +23,7 @@ import CommunicationDetail from './pages/CommunicationDetail'
 import FileLibrary from './pages/FileLibrary'
 import LoginPage from './pages/LoginPage'
 import SetupPage from './pages/SetupPage'
+import ChangePasswordModal from './components/ChangePasswordModal'
 
 const navItems = [
   { path: '/', label: '项目', icon: FolderOutlined },
@@ -191,6 +192,8 @@ function App() {
     queryClient.clear()
     navigate('/login', { replace: true })
   }
+
+  const [passwordOpen, setPasswordOpen] = useState(false)
 
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme')
@@ -398,15 +401,28 @@ function App() {
             </div>
             <div className="sidebar-footer__toggle">
               {me && (
-                <Tooltip title={`登出（${me.display_name ?? me.username}）`}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<LogoutOutlined />}
-                    aria-label={`登出（${me.display_name ?? me.username}）`}
-                    onClick={handleLogout}
-                  />
-                </Tooltip>
+                <>
+                  <Tooltip
+                    title={`修改密码（${me.display_name ?? me.username}）`}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<KeyOutlined />}
+                      aria-label={`修改密码（${me.display_name ?? me.username}）`}
+                      onClick={() => setPasswordOpen(true)}
+                    />
+                  </Tooltip>
+                  <Tooltip title={`登出（${me.display_name ?? me.username}）`}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<LogoutOutlined />}
+                      aria-label={`登出（${me.display_name ?? me.username}）`}
+                      onClick={handleLogout}
+                    />
+                  </Tooltip>
+                </>
               )}
               <Switch
                 checked={isDark}
@@ -437,6 +453,11 @@ function App() {
           </div>
         </main>
       </div>
+
+      <ChangePasswordModal
+        open={passwordOpen}
+        onClose={() => setPasswordOpen(false)}
+      />
     </ConfigProvider>
   )
 }

@@ -32,7 +32,8 @@ The system is a layered fullstack application: the Vite-served React SPA uses
 React Query and Axios, proxies `/api` requests to Axum during development, and
 the backend persists resource data through SQLx to PostgreSQL. Axum mounts flat
 and project-scoped routers for clients, projects, communications, tasks, issues,
-findings, assets, files, phases, people, deliverables, and search — all behind
+findings, assets, asset credentials, files, phases, people, deliverables, and
+search — all behind
 a fail-closed session guard (`require_auth`); only `/api/health` and
 `/api/auth/*` are public. Runtime migrations, bounded startup retries, request
 timeouts, tracing, CORS, session management, static SPA serving, and upload
@@ -73,42 +74,47 @@ this section is the operating-contract summary an agent must hold the bar to.
 
 - **Module map**: one Rust file per resource across `backend/src/handlers/<r>.rs` +
   `backend/src/models/<r>.rs` (fixed set: clients, projects, communications, tasks,
-  issues, findings, assets, files, phases, people, deliverables; plus a flat-only
+  issues, findings, assets, asset_credentials, files, phases, people, deliverables;
+  plus a flat-only
   `search` handler with no row model, and `auth` — public router + `require_auth`
   middleware + `user` model). Frontend mirrors it: `frontend/src/api/index.ts`
   (one `<r>Api` each) + `frontend/src/types/` (hand-written + ts-rs `generated/`).
 - **Dependency direction**: handlers → models → db (no cross-resource handler imports);
   frontend pages/components → api → types. Deep modules — do not widen a file into a grab-bag.
 - **Seams**: `AppError` (single error type at the handler boundary), `ensure_project_exists`
-  guard (first await of every project-scoped handler; `ensure_communication_in_project`
+  guard (first await of every project-scoped handler; `ensure_asset_in_project`
+  guards asset credentials' parent asset; `ensure_communication_in_project`
   guards issues'/findings' optional comm link), ts-rs codegen (backend DTOs →
   `frontend/src/types/generated/` at test time). See [architecture](docs/context/architecture.md)
   and [module map](docs/context/modules.md).
 
 ### Error handling
 
-- Single typed `AppError` (6 variants: `NotFound`, `BadRequest`, `Database`,
-  `Timeout`, `Unauthorized`, `Conflict`) →
+- Single typed `AppError` (7 variants: `NotFound`, `BadRequest`, `Database`,
+  `Timeout`, `Unauthorized`, `Conflict`, `RateLimited`) →
   `IntoResponse` emits `{ "error": <stable_code>, "message": <text> }`. 5xx is logged once
   at the boundary (`tracing::error!`) with a generic client message — no internal detail
   leaks. Conflict / FK / check violations map to 400; missing sessions → 401;
-  state conflicts (e.g. re-setup) → 409. Frontend classifies via
-  `classifyApiError` (offline / server / validation / conflict / unknown), never by raw
+  state conflicts (e.g. re-setup) → 409; login throttling → 429. Frontend classifies via
+  `classifyApiError` (offline / server / validation / conflict / rate_limited / unknown),
+  never by raw
   status. Full table in [conventions.md §2](docs/context/conventions.md) and
   [error.rs](backend/src/error.rs).
 
 ### Tests
 
-- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 52 tests total:
-  37 ts-rs TypeScript export bindings (regenerate `frontend/src/types/generated/`)
+- **Backend**: `cargo test --manifest-path backend/Cargo.toml` — 59 tests total:
+  41 ts-rs TypeScript export bindings (regenerate `frontend/src/types/generated/`)
   + a session-purge unit test (`#[sqlx::test]`)
-  + a 14-case CRUD smoke suite (clients, projects incl. CRM fields,
-  communications, tasks, phases, assets, files, issues, findings, people incl.
-  reorder/flip-side, and the auth flow) against an isolated
+  + a 17-case CRUD smoke suite (clients, projects incl. CRM fields,
+  communications, tasks, phases, assets, asset credentials incl. validation/
+  cascade, files, issues, findings, people incl.
+  reorder/flip-side, the auth flow, password change with other-session
+  revocation, and the login rate limit) against an isolated
   `project_manage_smoke` database (not the dev DB). No dedicated
   smoke test yet for deliverables, global search, or asset reorder.
 - **Frontend**: `cd frontend && npm run test` — vitest (node env); the `classifyApiError`
-  contract suite (20 tests) pins [conventions.md §6.1](docs/context/conventions.md).
+  contract suite (21 tests) pins [conventions.md §6.1](docs/context/conventions.md).
 - New behavior ships with a test that verifies it — not a vacuous one.
 - Verified baseline with real command output: [current-state.md](docs/context/current-state.md).
 
@@ -128,16 +134,30 @@ this section is the operating-contract summary an agent must hold the bar to.
 - Projects require an existing client; deleting a client with projects is
   restricted, while project-owned rows cascade on project deletion.
 - Every project-scoped handler must call `ensure_project_exists` before accessing
-  child resources; issues/findings must additionally guard their optional
+  child resources; asset-credential handlers must additionally guard their parent
+  asset via `ensure_asset_in_project`; issues/findings must additionally guard
+  their optional
   `communication_id` via `ensure_communication_in_project`.
+- Asset credentials (`asset_credentials` table) are plain TEXT and cascade on
+  asset delete; the UI masks them but nothing encrypts them at rest — treat
+  them like the rest of the internal dataset, not like a secrets vault.
 - All `/api/*` business endpoints require a session (fail-closed `require_auth`).
   Only `/api/health`, `/api/auth/status`, `/api/auth/setup`, `/api/auth/login`
   are public. New public endpoints must be mounted on `public_api` explicitly —
-  anything added to `guarded_api` inherits the guard.
+  anything added to `guarded_api` inherits the guard. `logout`/`me`/`password`
+  also live on the public auth router but self-guard inside their handlers —
+  keep that pattern if you touch them.
+- Auth hardening in `handlers/auth.rs`: 5 consecutive failed logins lock
+  login for 15 min (`429 rate_limited`, process-global `LoginThrottle`);
+  session ids are cycled at login and after `POST /api/auth/password`;
+  a password change revokes the user's other sessions via the
+  `user_sessions` index (migration 024). Don't bypass the throttle or the
+  dummy-hash timing equalizer when touching login.
 - `/api/auth/setup` only works while the `users` table is empty (else 409);
   `users.organization_id` is a future-tenancy placeholder — do not query it.
 - Project, task, issue, and finding status/priority values are validated in Rust;
-  phase status remains free-form text.
+  phase status remains free-form text, as is `asset_type`; asset-credential
+  `cred_type` is validated (`CredentialType::ALL`).
 - File uploads and project deletion have separate best-effort disk cleanup paths
   in `./uploads/{project_id}/`; database cascades do not remove files from disk.
 - Preserve the deliberate PostgreSQL `TEXT`/`TEXT[]` trade-offs and error-envelope
@@ -152,7 +172,7 @@ this section is the operating-contract summary an agent must hold the bar to.
   See [security-baseline.md](docs/context/security-baseline.md).
 - **`chacha20` 0.10.1 yanked** (observed 2026-08-30): transitive, no advisory;
   clear with a `cargo update` once dependents re-pin.
-- **Formatting drift**: `cargo fmt --check` red on 11 files as of 2026-08-30 —
-  run `just fmt`. Tracked in [current-state.md](docs/context/current-state.md).
+- **Formatting drift**: resolved 2026-09-06 — `cargo fmt --check` and
+  `prettier --check` (with CRLF checkout, use `--end-of-line=auto`) are green.
 - Verified baseline (commands, exit codes, open risks):
   [current-state.md](docs/context/current-state.md).

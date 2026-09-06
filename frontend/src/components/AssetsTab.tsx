@@ -11,6 +11,8 @@ import {
   App,
   Space,
   Typography,
+  Drawer,
+  List,
 } from 'antd'
 import {
   PlusOutlined,
@@ -18,6 +20,9 @@ import {
   DeleteOutlined,
   CopyOutlined,
   HolderOutlined,
+  KeyOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -35,8 +40,13 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { assetsApi } from '../api'
-import type { Asset } from '../types'
+import { assetsApi, assetCredentialsApi } from '../api'
+import type {
+  Asset,
+  AssetCredential,
+  CreateAssetCredential,
+  UpdateAssetCredential,
+} from '../types'
 
 const { Text, Paragraph } = Typography
 
@@ -74,6 +84,30 @@ const ASSET_TYPE_COLOR: Record<string, string> = {
 }
 
 const ACCESS_METHODS = ['VPN', '直连', '拨号', '内网', '远程桌面']
+
+const CRED_TYPES: { value: string; label: string }[] = [
+  { value: 'password', label: '密码' },
+  { value: 'api_key', label: 'API Key' },
+  { value: 'certificate', label: '证书/密钥' },
+  { value: 'token', label: '令牌' },
+  { value: 'other', label: '其他' },
+]
+
+const CRED_TYPE_COLOR: Record<string, string> = {
+  password: 'blue',
+  api_key: 'purple',
+  certificate: 'gold',
+  token: 'cyan',
+  other: 'default',
+}
+
+function credTypeLabel(t: string | null | undefined): string {
+  return CRED_TYPES.find((x) => x.value === t)?.label ?? t ?? '其他'
+}
+
+function credTypeColor(t: string | null | undefined): string {
+  return (t && CRED_TYPE_COLOR[t]) || 'default'
+}
 
 // Vendor is free-form. Keep no hardcoded vendor list — avoids leaking any
 // real vendor names into a public repo.
@@ -127,47 +161,294 @@ function VendorSelect({ value, onChange }: SelectProps) {
   )
 }
 
-/** Credentials: masked, click to open in a modal (secure + multi-line friendly). */
-function SecretText({ value }: { value: string | null | undefined }) {
+/** One credential's username/secret rows — each field copies separately,
+ * secrets stay masked until the eye toggle is clicked. */
+function CredentialRows({
+  cred,
+  onCopy,
+}: {
+  cred: AssetCredential
+  onCopy: (text: string) => void
+}) {
+  const [show, setShow] = useState(false)
+  if (!cred.username && !cred.secret) {
+    return <Text type="secondary">未填写账号或密钥</Text>
+  }
+  return (
+    <div style={{ display: 'grid', gap: 4 }}>
+      {cred.username && (
+        <Space size={4}>
+          <Text type="secondary">账号</Text>
+          <Text
+            code
+            style={{
+              maxWidth: 260,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {cred.username}
+          </Text>
+          <Button
+            type="text"
+            size="small"
+            icon={<CopyOutlined />}
+            aria-label={`复制账号 ${cred.label}`}
+            onClick={() => onCopy(cred.username!)}
+          />
+        </Space>
+      )}
+      {cred.secret && (
+        <Space size={4}>
+          <Text type="secondary">密钥</Text>
+          {show ? (
+            <Text
+              code
+              style={{
+                maxWidth: 260,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                maxHeight: 120,
+                overflowY: 'auto',
+              }}
+            >
+              {cred.secret}
+            </Text>
+          ) : (
+            <Text code>••••••••</Text>
+          )}
+          <Button
+            type="text"
+            size="small"
+            icon={show ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+            aria-label={
+              show ? `隐藏密钥 ${cred.label}` : `显示密钥 ${cred.label}`
+            }
+            onClick={() => setShow((s) => !s)}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<CopyOutlined />}
+            aria-label={`复制密钥 ${cred.label}`}
+            onClick={() => onCopy(cred.secret!)}
+          />
+        </Space>
+      )}
+    </div>
+  )
+}
+
+interface CredentialDrawerProps {
+  projectId: string
+  asset: Asset | null
+  open: boolean
+  onClose: () => void
+  onCopy: (text: string) => void
+}
+
+/** Manage one asset's credentials: list + add/edit/delete, each entry with
+ * a typed label and separately copyable username / secret. */
+function CredentialDrawer({
+  projectId,
+  asset,
+  open,
+  onClose,
+  onCopy,
+}: CredentialDrawerProps) {
   const { message } = App.useApp()
-  const [open, setOpen] = useState(false)
-  if (!value) return <Text type="secondary">-</Text>
+  const queryClient = useQueryClient()
+  const [credForm] = Form.useForm()
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<AssetCredential | null>(null)
+  const assetId = asset?.id ?? ''
+
+  const { data: credentials, isLoading } = useQuery({
+    queryKey: ['asset-credentials', assetId],
+    queryFn: () => assetCredentialsApi.listByAsset(projectId, assetId),
+    enabled: open && !!assetId,
+  })
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['asset-credentials', assetId] })
+    // The asset row carries a read-only credential_count.
+    queryClient.invalidateQueries({ queryKey: ['assets', projectId] })
+  }, [queryClient, assetId, projectId])
+
+  function closeForm() {
+    setFormOpen(false)
+    setEditing(null)
+    credForm.resetFields()
+  }
+
+  const createMut = useMutation({
+    mutationFn: (body: CreateAssetCredential) =>
+      assetCredentialsApi.create(projectId, assetId, body),
+    onSuccess: () => {
+      invalidate()
+      message.success('凭据已添加')
+      closeForm()
+    },
+  })
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateAssetCredential }) =>
+      assetCredentialsApi.update(id, body),
+    onSuccess: () => {
+      invalidate()
+      message.success('凭据已更新')
+      closeForm()
+    },
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: assetCredentialsApi.delete,
+    onSuccess: () => {
+      invalidate()
+      message.success('已删除')
+    },
+  })
+
+  function openCreate() {
+    setEditing(null)
+    credForm.resetFields()
+    setFormOpen(true)
+  }
+
+  function openEdit(c: AssetCredential) {
+    setEditing(c)
+    credForm.setFieldsValue({
+      label: c.label,
+      cred_type: c.cred_type,
+      username: c.username ?? '',
+      secret: c.secret ?? '',
+    })
+    setFormOpen(true)
+  }
+
+  function submit() {
+    credForm.validateFields().then((v) => {
+      // Empty strings stay absent so untouched fields never overwrite data.
+      const body = {
+        label: v.label,
+        cred_type: v.cred_type || 'password',
+        username: v.username || undefined,
+        secret: v.secret || undefined,
+      }
+      if (editing) {
+        updateMut.mutate({ id: editing.id, body })
+      } else {
+        createMut.mutate(body as CreateAssetCredential)
+      }
+    })
+  }
 
   return (
-    <>
-      <Button type="link" size="small" onClick={() => setOpen(true)}>
-        ••••••
-      </Button>
-      <Modal
-        title="凭据"
-        open={open}
-        onCancel={() => setOpen(false)}
-        footer={
-          <Button
-            icon={<CopyOutlined />}
-            onClick={() =>
-              navigator.clipboard.writeText(value).then(
-                () => message.success('已复制'),
-                () => message.error('复制失败'),
-              )
-            }
-          >
-            复制
-          </Button>
-        }
-        width={480}
-      >
-        <Paragraph
-          style={{
-            whiteSpace: 'pre-wrap',
-            margin: 0,
-            fontFamily: 'var(--font-mono)',
-          }}
+    <Drawer
+      title={`凭据 · ${asset?.name ?? ''}`}
+      open={open}
+      onClose={onClose}
+      width={520}
+      extra={
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreate}
+          disabled={!assetId}
         >
-          {value}
-        </Paragraph>
+          添加凭据
+        </Button>
+      }
+    >
+      <List
+        loading={isLoading}
+        dataSource={credentials ?? []}
+        locale={{
+          emptyText: '还没有凭据。给这台资产的每个账号 / 密钥单独建一条。',
+        }}
+        renderItem={(c) => (
+          <List.Item
+            actions={[
+              <Button
+                key="edit"
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label={`编辑凭据 ${c.label}`}
+                onClick={() => openEdit(c)}
+              />,
+              <Popconfirm
+                key="delete"
+                title="删除该凭据？"
+                onConfirm={() => deleteMut.mutate(c.id)}
+              >
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  aria-label={`删除凭据 ${c.label}`}
+                />
+              </Popconfirm>,
+            ]}
+          >
+            <List.Item.Meta
+              title={
+                <Space size={6}>
+                  <span>{c.label}</span>
+                  <Tag color={credTypeColor(c.cred_type)}>
+                    {credTypeLabel(c.cred_type)}
+                  </Tag>
+                </Space>
+              }
+              description={<CredentialRows cred={c} onCopy={onCopy} />}
+            />
+          </List.Item>
+        )}
+      />
+
+      <Modal
+        title={editing ? '编辑凭据' : '添加凭据'}
+        open={formOpen}
+        onCancel={closeForm}
+        onOk={submit}
+        confirmLoading={createMut.isPending || updateMut.isPending}
+        okText={editing ? '保存' : '添加'}
+        cancelText="取消"
+        width={440}
+      >
+        <Form form={credForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="label"
+            label="名称"
+            rules={[{ required: true, message: '请输入名称，如 SSH root' }]}
+          >
+            <Input placeholder="如：SSH root / 后台管理员" />
+          </Form.Item>
+          <Form.Item name="cred_type" label="类型" initialValue="password">
+            <Select
+              options={CRED_TYPES.map((t) => ({
+                label: t.label,
+                value: t.value,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="username" label="账号">
+            <Input
+              placeholder="用户名 / 账号 ID（无则留空）"
+              autoComplete="off"
+            />
+          </Form.Item>
+          <Form.Item name="secret" label="密钥">
+            <Input.TextArea
+              rows={3}
+              placeholder="密码 / 密钥体 / 令牌（无则留空）"
+              autoComplete="off"
+            />
+          </Form.Item>
+        </Form>
       </Modal>
-    </>
+    </Drawer>
   )
 }
 
@@ -210,6 +491,7 @@ export default function AssetsTab({ projectId }: Props) {
   const queryClient = useQueryClient()
   const [assetOpen, setAssetOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
+  const [credentialAsset, setCredentialAsset] = useState<Asset | null>(null)
   const [assetForm] = Form.useForm()
 
   const { data: assets } = useQuery({
@@ -359,10 +641,18 @@ export default function AssetsTab({ projectId }: Props) {
       },
       {
         title: '凭据',
-        dataIndex: 'credentials',
         key: 'credentials',
-        width: 120,
-        render: (v: string | null) => <SecretText value={v} />,
+        width: 110,
+        render: (_: unknown, r: Asset) => (
+          <Button
+            type="link"
+            size="small"
+            icon={<KeyOutlined />}
+            onClick={() => setCredentialAsset(r)}
+          >
+            {r.credential_count > 0 ? `${r.credential_count} 条` : '登记'}
+          </Button>
+        ),
       },
       {
         title: '厂商',
@@ -405,7 +695,6 @@ export default function AssetsTab({ projectId }: Props) {
                   asset_type: r.asset_type,
                   value: r.value,
                   access_method: r.access_method,
-                  credentials: r.credentials,
                   vendor: r.vendor,
                   description: r.description,
                 })
@@ -509,12 +798,6 @@ export default function AssetsTab({ projectId }: Props) {
           <Form.Item name="access_method" label="访问方式">
             <AccessMethodSelect />
           </Form.Item>
-          <Form.Item name="credentials" label="凭据">
-            <Input.TextArea
-              rows={3}
-              placeholder="账号 / 密码 / API Key（保存后在列表会掩码显示）"
-            />
-          </Form.Item>
           <Form.Item name="vendor" label="厂商">
             <VendorSelect />
           </Form.Item>
@@ -523,6 +806,14 @@ export default function AssetsTab({ projectId }: Props) {
           </Form.Item>
         </Form>
       </Modal>
+
+      <CredentialDrawer
+        projectId={projectId}
+        asset={credentialAsset}
+        open={!!credentialAsset}
+        onClose={() => setCredentialAsset(null)}
+        onCopy={copy}
+      />
     </div>
   )
 }

@@ -16,6 +16,9 @@ import type {
   Asset,
   CreateAsset,
   UpdateAsset,
+  AssetCredential,
+  CreateAssetCredential,
+  UpdateAssetCredential,
   ProjectFile,
   UpdateFile,
   FileWithProject,
@@ -148,6 +151,30 @@ export const assetsApi = {
       .then((r) => r.data),
 }
 
+// --- Asset credentials (nested under a project asset) ---
+
+export const assetCredentialsApi = {
+  listByAsset: (projectId: string, assetId: string) =>
+    http
+      .get<AssetCredential[]>(
+        `/projects/${projectId}/assets/${assetId}/credentials`,
+      )
+      .then((r) => r.data),
+  create: (projectId: string, assetId: string, data: CreateAssetCredential) =>
+    http
+      .post<AssetCredential>(
+        `/projects/${projectId}/assets/${assetId}/credentials`,
+        data,
+      )
+      .then((r) => r.data),
+  update: (id: string, data: UpdateAssetCredential) =>
+    http
+      .put<AssetCredential>(`/asset-credentials/${id}`, data)
+      .then((r) => r.data),
+  delete: (id: string) =>
+    http.delete(`/asset-credentials/${id}`).then((r) => r.data),
+}
+
 // --- Files ---
 
 export const filesApi = {
@@ -259,6 +286,8 @@ export const authApi = {
   logout: () => http.post('/auth/logout').then((r) => r.data),
   me: () =>
     http.get<import('../types').UserPublic>('/auth/me').then((r) => r.data),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    http.post('/auth/password', data).then((r) => r.data),
 }
 
 // 401 interceptor: session expired or never established → bounce to the
@@ -320,7 +349,7 @@ export const deliverablesApi = {
 // --- Error classification ---
 
 export type ApiErrorKind =
-  'offline' | 'server' | 'validation' | 'conflict' | 'unknown'
+  'offline' | 'server' | 'validation' | 'conflict' | 'rate_limited' | 'unknown'
 
 export interface ApiErrorInfo {
   kind: ApiErrorKind
@@ -349,6 +378,10 @@ export function classifyApiError(err: unknown): ApiErrorInfo {
   }
   if (status === 409) {
     return { kind: 'conflict', message, status }
+  }
+  if (status === 429) {
+    // Login throttled after repeated failures (brute-force guard).
+    return { kind: 'rate_limited', message, status }
   }
   return { kind: 'unknown', message, status }
 }

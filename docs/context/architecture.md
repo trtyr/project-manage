@@ -28,6 +28,7 @@ Core workflow — captured in PRODUCT.md and enforced by the URL shape:
  │       │
  │       ├─ phase tree (nested, self-referencing parent_id)
  │       ├─ assets (IT devices)
+ │       │   └─ asset_credentials (multi-entry logins/keys per asset)
  │       ├─ files + links (linkable to comm and phase)
  │       ├─ people (team + client, unified)
  │       ├─ deliverables (交付物 lifecycle)
@@ -41,9 +42,10 @@ users (local account, argon2id) ──► session (tower-sessions, Postgres)
 
 `clients (1) ──< (N) projects (1) ──< (N) {communications, tasks, assets,`
 `project_files, phases, people, deliverables, issues, findings}`
-(`backend/migrations/001`–`022`; `people` unifies the former `members` +
+(`backend/migrations/001`–`024`; `people` unifies the former `members` +
 `client_contacts` tables — migration 014; `issues`/`findings` landed in
-020/021, `users`+`session` in 022). All `/api/*` business routes sit behind
+020/021, `users`+`session` in 022, `asset_credentials` — nested under
+each asset — in 023, `user_sessions` ownership index in 024). All `/api/*` business routes sit behind
 the fail-closed session guard (`require_auth`) — only `/api/health` and
 `/api/auth/*` are public.
 
@@ -75,7 +77,7 @@ Vite dev proxy in the middle.
 │     → DefaultBodyLimit → SessionManagerLayer → with_state(AppState)    │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ PostgreSQL 16  (sqlx 0.8, runtime-tokio, tls-rustls, macros)            │
-│ 22 SQL migrations → _sqlx_migrations bookkeeping table                  │
+│ 24 SQL migrations → _sqlx_migrations bookkeeping table                  │
 │ set_updated_at() trigger installed in migration 001, reused by all       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -94,22 +96,25 @@ Vite dev proxy in the middle.
 
 ## 3. Module dependency graph
 
-### 3.1 Backend — 22 routers wired into `/api`
+### 3.1 Backend — 24 routers wired into `/api`
 
 Verified by counting `.nest("/api", …)` calls in
-`backend/src/app.rs::build_app` (22 hits; `GET /api/health` is a plain
-route). The breakdown: **12 flat** resource routers (clients, projects,
-communications, tasks, issues, findings, assets, files, phases, people,
-deliverables, search) + **9 project-scoped** routers (communications,
-tasks, issues, findings, assets, files, phases, people, deliverables) +
-**1 public `auth_router`** (status/setup/login/logout/me). The split is
+`backend/src/app.rs::build_app` (24 hits; `GET /api/health` is a plain
+route). The breakdown: **13 flat** resource routers (clients, projects,
+communications, tasks, issues, findings, assets, asset-credentials, files,
+phases, people,
+deliverables, search) + **10 project-scoped** routers (communications,
+tasks, issues, findings, assets, asset-credentials, files, phases, people,
+deliverables) +
+**1 public `auth_router`** (status/setup/login/logout/me/password). The split is
 not just naming: `public_api` (health + auth) is unguarded, while every
 router in the table below sits behind `require_auth` (fail-closed session
-guard, §5.7).
+guard, §5.7). `logout`/`me`/`password` self-guard inside their handlers
+(401 without a valid session).
 
 | # | Router (`*_router()`)        | Source                              | Mounted path prefix                                       |
 |---|------------------------------|-------------------------------------|-----------------------------------------------------------|
-| 1 | `auth_router`                | `handlers/auth.rs:269`              | `/auth/status`, `/auth/setup`, `/auth/login`, `/auth/logout`, `/auth/me` — **public** |
+| 1 | `auth_router`                | `handlers/auth.rs:269`              | `/auth/status`, `/auth/setup`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/password` — **public** (logout/me/password self-guard) |
 | 2 | `clients_router`             | `handlers/clients.rs`               | `/clients`, `/clients/{id}`                               |
 | 3 | `projects_router`            | `handlers/projects.rs`              | `/projects`, `/projects/{id}`                             |
 | 4 | `communications_router`      | `handlers/communications.rs`        | `/communications/{id}` + `/recent`, `/search`             |
@@ -122,15 +127,17 @@ guard, §5.7).
 | 11| `project_findings_router`    | `handlers/findings.rs`              | `/projects/{id}/findings`                                 |
 | 12| `project_assets_router`      | `handlers/assets.rs`                | `/projects/{id}/assets`                                   |
 | 13| `assets_router`              |                                     | `/assets/{id}`                                            |
-| 14| `project_files_router`       | `handlers/files.rs`                 | `/projects/{id}/files` (multipart), `/projects/{id}/links`|
-| 15| `files_router`               | `handlers/files.rs`                 | `/files`, `/files/{id}`, `/download`, `/preview`, `/link`, `/link-phase` |
-| 16| `project_phases_router`      | `handlers/phases.rs`                | `/projects/{id}/phases`                                   |
-| 17| `phases_router`              |                                     | `/phases/{id}`                                            |
-| 18| `project_people_router`      | `handlers/people.rs`                | `/projects/{id}/people`, `/projects/{id}/people/reorder`  |
-| 19| `people_router`              |                                     | `/people/{id}`, `/people/{id}/flip-side`                  |
-| 20| `project_deliverables_router`| `handlers/deliverables.rs`          | `/projects/{id}/deliverables`                             |
-| 21| `deliverables_router`        |                                     | `/deliverables/{id}`                                      |
-| 22| `search_router`              | `handlers/search.rs`                | `/search?q=…`                                             |
+| 14| `project_asset_credentials_router` | `handlers/asset_credentials.rs` | `/projects/{id}/assets/{asset_id}/credentials`           |
+| 15| `asset_credentials_router`   |                                     | `/asset-credentials/{id}`                                 |
+| 16| `project_files_router`       | `handlers/files.rs`                 | `/projects/{id}/files` (multipart), `/projects/{id}/links`|
+| 17| `files_router`               | `handlers/files.rs`                 | `/files`, `/files/{id}`, `/download`, `/preview`, `/link`, `/link-phase` |
+| 18| `project_phases_router`      | `handlers/phases.rs`                | `/projects/{id}/phases`                                   |
+| 19| `phases_router`              |                                     | `/phases/{id}`                                            |
+| 20| `project_people_router`      | `handlers/people.rs`                | `/projects/{id}/people`, `/projects/{id}/people/reorder`  |
+| 21| `people_router`              |                                     | `/people/{id}`, `/people/{id}/flip-side`                  |
+| 22| `project_deliverables_router`| `handlers/deliverables.rs`          | `/projects/{id}/deliverables`                             |
+| 23| `deliverables_router`        |                                     | `/deliverables/{id}`                                      |
+| 24| `search_router`              | `handlers/search.rs`                | `/search?q=…`                                             |
 
 Plus `GET /api/health` mounted as a route (not a nest) inside `public_api`
 (`app.rs::health`). Unmatched `/api/*` requests stay on the API's empty
@@ -164,20 +171,24 @@ main.rs ── mod db, mod error, mod handlers, mod models, mod state
    │        app.rs (build_app — router shape shared with tests)
    │
    ├── handlers/{clients,projects,communications,tasks,issues,findings,
-   │             assets,files,phases,people,deliverables,search,auth}.rs
+   │             assets,asset_credentials,files,phases,people,deliverables,
+   │             search,auth}.rs
    │             (one *_router() each, except search = flat only,
    │              auth = public + require_auth middleware)
    ├── models/   {client,project,communication,task,issue,finding,asset,
-   │              project_file,phase,person,deliverable,user}.rs
+   │              asset_credential,project_file,phase,person,deliverable,
+   │              user}.rs
    ├── db/       pool.rs (PgPoolOptions) + helpers.rs (ensure_project_exists,
-   │              ensure_communication_in_project, chrono↔time bind helpers)
+   │              ensure_asset_in_project, ensure_communication_in_project,
+   │              chrono↔time bind helpers)
    ├── error.rs  AppError + IntoResponse  ──► { error, message } envelope
    └── state.rs  AppState { pool }   (cloneable, cheap to share)
 ```
 
 No cross-handler imports — handlers only talk to `db`, `error`, `models`,
 `state`. The shared helpers are `ensure_project_exists` (first await of
-every project-scoped handler) and `ensure_communication_in_project`
+every project-scoped handler), `ensure_asset_in_project` (guards the
+asset-credential parent asset), and `ensure_communication_in_project`
 (guards the optional `communication_id` link on issues/findings).
 
 ---
@@ -312,6 +323,7 @@ Anything else from middleware becomes a logged 500.
 | 404  | `not_found`        | `AppError::NotFound` or `RowNotFound` |
 | 408  | `request_timeout`  | tower `Elapsed` → `AppError::Timeout` |
 | 409  | `conflict`         | `AppError::Conflict` (e.g. setup after an account exists) |
+| 429  | `rate_limited`     | login throttle: 5 consecutive failures → 15-min lockout |
 | 500  | `internal_error`   | everything else; full error logged    |
 
 5xx detail is **never** leaked — `into_response` swaps in a generic message
@@ -322,8 +334,9 @@ backend changes.
 
 ### 5.5 Flat + project-scoped routers, two per resource
 
-The 9 dual-mount resources are: communications, tasks, issues, findings,
-assets, files, phases, people, deliverables (`clients`/`projects` are
+The 10 dual-mount resources are: communications, tasks, issues, findings,
+assets, asset-credentials, files, phases, people, deliverables
+(`clients`/`projects` are
 top-level only, `search` is flat only, `auth` is public only).
 `handlers/files.rs`:
 
@@ -392,6 +405,24 @@ intentionally **unsigned** (user-approved 2026-08-27): it carries only a
 random session id, all state lives server-side, so forgery is a no-op and
 sessions survive restarts. There is no `SESSION_SECRET`.
 
+Hardening layered on top (2026-09-06):
+
+- **Login throttle** — `LoginThrottle` in `handlers/auth.rs` (process
+  global, held in `AppState`): 5 consecutive failures lock logins for 15
+  minutes → `429 rate_limited`; success resets, restart clears. Global on
+  purpose: with one account every unknown caller is the same adversary.
+- **Session-id rotation** — login/setup call `session.cycle_id()` so a
+  pre-login anonymous cookie never survives authentication (session
+  fixation); `POST /api/auth/password` cycles again after a change.
+- **Password change + revocation** — `POST /api/auth/password` requires
+  the current password and revokes every OTHER session of the user via
+  the `user_sessions` ownership index (migration 024), which
+  `require_auth`/`me` keep refreshed on authenticated use (tower-sessions
+  hides the post-cycle id from handlers, so ownership is written on use).
+- **No username oracle** — login against an unknown username still runs
+  one argon2 verification against a dummy hash, keeping the timing of the
+  generic 401 uniform.
+
 Frontend side: `App.tsx` runs an auth-ready gate (`auth/status` → route to
 `/setup` if needed; `/auth/me` 401 while not on an auth page → `/login`),
 and the axios response interceptor bounces any non-`/auth/*` 401 to
@@ -414,8 +445,8 @@ parameters go through `db::helpers::{dt_to_offset, date_to_time_date}`
 | AppError envelope   | `backend/src/error.rs`                                             |
 | Pool + helpers      | `backend/src/db/pool.rs`, `backend/src/db/helpers.rs`              |
 | Auth (guard + session) | `backend/src/handlers/auth.rs`, `main.rs` (session layer)       |
-| Resource handlers   | `backend/src/handlers/{clients,projects,communications,tasks,issues,findings,assets,files,phases,people,deliverables,search}.rs` |
-| Migrations          | `backend/migrations/20250714000001_*.sql` … `…00022_*.sql` (22 files) |
+| Resource handlers   | `backend/src/handlers/{clients,projects,communications,tasks,issues,findings,assets,asset_credentials,files,phases,people,deliverables,search}.rs` |
+| Migrations          | `backend/migrations/20250714000001_*.sql` … `…00024_*.sql` (24 files) |
 | Frontend entrypoint | `frontend/src/main.tsx`, `frontend/src/App.tsx`                    |
 | Routing             | `frontend/src/App.tsx:386-396`                                     |
 | API client          | `frontend/src/api/index.ts`                                        |

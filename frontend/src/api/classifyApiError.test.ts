@@ -64,6 +64,14 @@ describe('classifyApiError — conventions.md §6.1 contract', () => {
     })
   })
 
+  describe('rate_limited — 429', () => {
+    it('classifies status 429 as rate_limited (login brute-force guard)', () => {
+      const info = classifyApiError(axiosError(429))
+      expect(info.kind).toBe('rate_limited')
+      expect(info.status).toBe(429)
+    })
+  })
+
   describe('unknown — everything else', () => {
     it.each([200, 301, 401, 403, 404, 600])(
       'classifies status %i as unknown',

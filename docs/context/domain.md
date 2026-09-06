@@ -149,6 +149,25 @@ All nine project-scoped tables cascade on project delete:
 
 `phases` also cascades on its own `parent_id` self-reference
 (`007_phases.sql:6`), so deleting a parent phase removes its children too.
+`asset_credentials` is the one grandchild table: it cascades from its
+parent `assets` row (`023_asset_credentials.sql`), so deleting an asset
+removes its credentials and deleting a project removes both transitively.
+
+### 2.2b Asset credentials
+
+An asset carries **multiple typed credentials** (SSH / admin console /
+API key…), one `asset_credentials` row each — they are *not* stored on
+the asset row (the former single free-text `assets.credentials` column
+was dropped in migration 023; legacy text was carried over as a labeled
+row per asset). Invariants:
+
+- `label` is required and non-empty (400 otherwise).
+- `cred_type` is validated in Rust against `CredentialType::ALL`
+  (`password` / `api_key` / `certificate` / `token` / `other`).
+- `username` / `secret` are independently nullable (a key-only credential
+  has no username); each is copied separately in the UI.
+- Secrets are stored as **plain TEXT** — masking is a frontend display
+  concern only, matching the internal-tool threat model.
 
 ### 2.3 Optional SET NULL links
 
@@ -206,6 +225,7 @@ listed below):
 | Handler module              | Call sites    |
 |-----------------------------|---------------|
 | `handlers/assets.rs`        | list, create (+ reorder) |
+| `handlers/asset_credentials.rs` | list, create (+ `ensure_asset_in_project`) |
 | `handlers/communications.rs`| list, create             |
 | `handlers/deliverables.rs`  | list, create             |
 | `handlers/files.rs`         | list, upload, link       |
@@ -216,7 +236,10 @@ listed below):
 | `handlers/tasks.rs`         | list, create             |
 
 Missing project → 404 `not_found` *before* the FK violation would have fired
-on insert, so the error code is stable for the UI.
+on insert, so the error code is stable for the UI. Asset credentials add a
+second gate in the same spirit: `ensure_asset_in_project`
+(`backend/src/db/helpers.rs`) 404s when the path's `asset_id` is missing or
+belongs to a different project, keeping credential routes project-scoped.
 
 ### 3.2 Upload flow
 

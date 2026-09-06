@@ -48,6 +48,12 @@ pub enum AppError {
     /// State conflict, e.g. re-running setup after an account exists.
     #[error("{0}")]
     Conflict(String),
+
+    /// Login throttled after repeated failures (brute-force guard).
+    /// 429 with a generic message; `Retry-After` semantics are documented
+    /// rather than computed (the lockout window is a server constant).
+    #[error("{0}")]
+    RateLimited(String),
 }
 
 impl AppError {
@@ -58,6 +64,9 @@ impl AppError {
             AppError::Timeout(msg) => (StatusCode::REQUEST_TIMEOUT, "request_timeout", msg.clone()),
             AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, "conflict", msg.clone()),
+            AppError::RateLimited(msg) => {
+                (StatusCode::TOO_MANY_REQUESTS, "rate_limited", msg.clone())
+            }
             AppError::Database(sqlx::Error::RowNotFound) => (
                 StatusCode::NOT_FOUND,
                 "not_found",

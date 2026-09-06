@@ -59,6 +59,29 @@ pub fn date_to_time_date(d: chrono::NaiveDate) -> time::Date {
     time::Date::from_calendar_date(d.year(), month, d.day() as u8).expect("valid calendar date")
 }
 
+/// Verify that an asset exists and belongs to the given project.
+/// Used by asset-credential handlers to guard the parent asset path.
+pub async fn ensure_asset_in_project(
+    pool: &PgPool,
+    project_id: Uuid,
+    asset_id: Uuid,
+) -> AppResult<()> {
+    let exists: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM assets WHERE id = $1 AND project_id = $2")
+            .bind(asset_id)
+            .bind(project_id)
+            .fetch_optional(pool)
+            .await?;
+
+    if exists.is_none() {
+        return Err(AppError::NotFound(format!(
+            "asset {asset_id} not found in project {project_id}"
+        )));
+    }
+
+    Ok(())
+}
+
 /// Verify that a communication exists and belongs to the given project.
 /// Used by issues/findings to guard an optional `communication_id` link.
 pub async fn ensure_communication_in_project(

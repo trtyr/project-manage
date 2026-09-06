@@ -20,7 +20,7 @@ Related docs in this folder: `conventions.md` (code patterns),
 |---|---|---|
 | Rust toolchain | **1.85+ (edition 2024)** | `backend/Cargo.toml` uses `edition = "2024"`, which stabilized in Rust 1.85. There is no `rust-toolchain.toml` floor; the Docker image pins `rust:1.97`. |
 | Node.js | **20 or newer** | `frontend/package.json` requires Vite 8 (`^8.1.1`), which only runs on Node 20+. |
-| PostgreSQL | **16** | Matches the schema features used by the 22 migrations (`gen_random_uuid()` via `pgcrypto`-equivalent, `TEXT[]`, `TIMESTAMPTZ`, self-referential phases). |
+| PostgreSQL | **16** | Matches the schema features used by the 24 migrations (`gen_random_uuid()` via `pgcrypto`-equivalent, `TEXT[]`, `TIMESTAMPTZ`, self-referential phases). |
 
 ### 1.1 PostgreSQL role & auth
 

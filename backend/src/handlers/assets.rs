@@ -17,7 +17,9 @@ use crate::models::{Asset, CreateAsset, UpdateAsset};
 use crate::state::AppState;
 
 const ASSET_COLUMNS: &str = "id, project_id, name, asset_type, value, description, \
-     access_method, credentials, vendor, sort_order, created_at, updated_at";
+     access_method, vendor, sort_order, created_at, updated_at";
+const CREDENTIAL_COUNT_EXPR: &str = "(SELECT COUNT(*) FROM asset_credentials ac WHERE ac.asset_id = assets.id) \
+     AS credential_count";
 
 pub fn project_assets_router() -> Router<AppState> {
     Router::new()
@@ -38,7 +40,7 @@ async fn list_by_project(
 ) -> AppResult<Json<Vec<Asset>>> {
     ensure_project_exists(&pool, project_id).await?;
     let rows = sqlx::query_as::<_, Asset>(&format!(
-        "SELECT {ASSET_COLUMNS} FROM assets \
+        "SELECT {ASSET_COLUMNS}, {CREDENTIAL_COUNT_EXPR} FROM assets \
          WHERE project_id = $1 ORDER BY sort_order ASC, created_at ASC"
     ))
     .bind(project_id)
@@ -59,11 +61,13 @@ async fn create_for_project(
 
     let row = sqlx::query_as::<_, Asset>(
         "INSERT INTO assets (project_id, name, asset_type, value, description, \
-         access_method, credentials, vendor, sort_order) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, \
+         access_method, vendor, sort_order) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, \
             (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM assets WHERE project_id = $1)) \
          RETURNING id, project_id, name, asset_type, value, description, \
-                   access_method, credentials, vendor, sort_order, created_at, updated_at",
+                   access_method, vendor, sort_order, created_at, updated_at, \
+                   (SELECT COUNT(*) FROM asset_credentials ac WHERE ac.asset_id = assets.id) \
+                   AS credential_count",
     )
     .bind(project_id)
     .bind(&input.name)
@@ -71,7 +75,6 @@ async fn create_for_project(
     .bind(input.value.as_ref())
     .bind(input.description.as_ref())
     .bind(input.access_method.as_ref())
-    .bind(input.credentials.as_ref())
     .bind(input.vendor.as_ref())
     .fetch_one(&pool)
     .await?;
@@ -80,12 +83,13 @@ async fn create_for_project(
 }
 
 async fn get_one(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> AppResult<Json<Asset>> {
-    let row =
-        sqlx::query_as::<_, Asset>(&format!("SELECT {ASSET_COLUMNS} FROM assets WHERE id = $1"))
-            .bind(id)
-            .fetch_optional(&pool)
-            .await?
-            .ok_or_else(|| AppError::NotFound(format!("asset {id} not found")))?;
+    let row = sqlx::query_as::<_, Asset>(&format!(
+        "SELECT {ASSET_COLUMNS}, {CREDENTIAL_COUNT_EXPR} FROM assets WHERE id = $1"
+    ))
+    .bind(id)
+    .fetch_optional(&pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("asset {id} not found")))?;
     Ok(Json(row))
 }
 
@@ -99,11 +103,12 @@ async fn update(
          asset_type = COALESCE($3, asset_type), value = COALESCE($4, value), \
          description = COALESCE($5, description), \
          access_method = COALESCE($6, access_method), \
-         credentials = COALESCE($7, credentials), \
-         vendor = COALESCE($8, vendor), updated_at = NOW() \
+         vendor = COALESCE($7, vendor), updated_at = NOW() \
          WHERE id = $1 \
          RETURNING id, project_id, name, asset_type, value, description, \
-                   access_method, credentials, vendor, sort_order, created_at, updated_at",
+                   access_method, vendor, sort_order, created_at, updated_at, \
+                   (SELECT COUNT(*) FROM asset_credentials ac WHERE ac.asset_id = assets.id) \
+                   AS credential_count",
     )
     .bind(id)
     .bind(input.name.as_ref())
@@ -111,7 +116,6 @@ async fn update(
     .bind(input.value.as_ref())
     .bind(input.description.as_ref())
     .bind(input.access_method.as_ref())
-    .bind(input.credentials.as_ref())
     .bind(input.vendor.as_ref())
     .fetch_optional(&pool)
     .await?

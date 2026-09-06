@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button, Form, Input, Typography, App } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { authApi } from '../api'
+import { authApi, classifyApiError } from '../api'
 import type { UserPublic } from '../types'
 
 const { Title, Text } = Typography
@@ -25,9 +25,13 @@ export default function LoginPage() {
       message.success('登录成功')
       navigate('/')
     } catch (err) {
-      const e = err as { response?: { status?: number } }
-      if (e?.response?.status === 401) {
+      const info = classifyApiError(err)
+      if (info.kind === 'rate_limited') {
+        message.error('尝试次数过多，登录已被临时锁定，请约 15 分钟后再试')
+      } else if (info.kind === 'validation' || info.status === 401) {
         message.error('用户名或密码错误')
+      } else if (info.kind === 'offline') {
+        message.error('网络异常，请检查连接后重试')
       } else {
         message.error('登录失败，请稍后重试')
       }

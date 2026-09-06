@@ -41,3 +41,12 @@ pub struct SetupRequest {
 }
 
 pub type LoginRequest = SetupRequest;
+
+/// `POST /api/auth/password` — requires the current password even though
+/// the caller holds a valid session (stolen-laptop hygiene).
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../frontend/src/types/generated/")]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
