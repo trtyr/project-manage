@@ -11,21 +11,18 @@ import {
   Space,
   App,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  BulbOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { findingsApi, communicationsApi } from '../api'
 import type { Finding, ProductSource, FeedbackStatus } from '../types'
-
-const SOURCE_OPTIONS = [
-  { label: '我们的产品', value: 'ours' },
-  { label: '第三方', value: 'third_party' },
-]
-
-const FEEDBACK_OPTIONS = [
-  { label: '未反馈', value: 'unreported' },
-  { label: '已反馈', value: 'reported' },
-]
+import EmptyState from './ui/EmptyState'
+import { SOURCE_META, FEEDBACK_META, metaOptions } from '../utils/status'
 
 interface Props {
   projectId: string
@@ -96,13 +93,15 @@ export default function FindingsTab({ projectId }: Props) {
         title: '归属',
         dataIndex: 'product_source',
         key: 'product_source',
-        width: 110,
+        width: 116,
         render: (s: ProductSource, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={s}
             style={{ width: 100 }}
-            options={SOURCE_OPTIONS}
+            options={metaOptions(SOURCE_META)}
             onChange={(val) =>
               updateFindingMut.mutate({
                 findingId: r.id,
@@ -117,26 +116,28 @@ export default function FindingsTab({ projectId }: Props) {
         dataIndex: 'product',
         key: 'product',
         width: 140,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) => v ?? <span className="table-dim">—</span>,
       },
       {
         title: '厂商',
         dataIndex: 'vendor',
         key: 'vendor',
         width: 120,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) => v ?? <span className="table-dim">—</span>,
       },
       {
         title: '反馈',
         dataIndex: 'feedback_status',
         key: 'feedback_status',
-        width: 110,
+        width: 104,
         render: (s: FeedbackStatus, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={s}
-            style={{ width: 95 }}
-            options={FEEDBACK_OPTIONS}
+            style={{ width: 88 }}
+            options={metaOptions(FEEDBACK_META)}
             onChange={(val) =>
               updateFindingMut.mutate({
                 findingId: r.id,
@@ -150,20 +151,22 @@ export default function FindingsTab({ projectId }: Props) {
         title: '发现日期',
         dataIndex: 'observed_at',
         key: 'observed_at',
-        width: 110,
-        render: (v: string) => dayjs(v).format('MM-DD'),
+        width: 96,
+        render: (v: string) => (
+          <span className="mono">{dayjs(v).format('MM-DD')}</span>
+        ),
       },
       {
         title: '描述',
         dataIndex: 'description',
         key: 'description',
         ellipsis: true,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) => v ?? <span className="table-dim">—</span>,
       },
       {
-        title: '操作',
+        title: '',
         key: 'action',
-        width: 80,
+        width: 76,
         render: (_: unknown, r: Finding) => (
           <Space size={0}>
             <Button
@@ -203,8 +206,9 @@ export default function FindingsTab({ projectId }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
+      <div className="table-toolbar">
         <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             // B2 fix (same as CommunicationsTab): refresh the default on open.
@@ -216,8 +220,15 @@ export default function FindingsTab({ projectId }: Props) {
         >
           记录发现
         </Button>
+        <div className="table-toolbar__spacer" />
+        {findings?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {findings.length} 项
+          </span>
+        ) : null}
       </div>
       <Table
+        className="table-card"
         dataSource={findings}
         rowKey="id"
         size="small"
@@ -225,8 +236,13 @@ export default function FindingsTab({ projectId }: Props) {
         scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{
-          emptyText:
-            '还没有产品发现。评测或对比中看到的现象（自家或三方产品）都值得留痕。',
+          emptyText: (
+            <EmptyState
+              icon={<BulbOutlined />}
+              title="还没有产品发现"
+              desc="评测或对比中看到的现象（自家或三方产品）都值得留痕。"
+            />
+          ),
         }}
       />
 
@@ -260,7 +276,7 @@ export default function FindingsTab({ projectId }: Props) {
         okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
-        <Form form={findingForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={findingForm} layout="vertical">
           <Form.Item
             name="title"
             label="发现"
@@ -277,7 +293,7 @@ export default function FindingsTab({ projectId }: Props) {
             initialValue="third_party"
             rules={[{ required: true, message: '请选择产品归属' }]}
           >
-            <Select options={SOURCE_OPTIONS} />
+            <Select options={metaOptions(SOURCE_META)} />
           </Form.Item>
           <Form.Item name="product" label="产品名">
             <Input placeholder="如：对象存储 OSS" />

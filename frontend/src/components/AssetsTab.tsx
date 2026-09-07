@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react'
 import {
   Button,
   Table,
-  Tag,
   Form,
   Input,
   Select,
@@ -12,7 +11,6 @@ import {
   Space,
   Typography,
   Drawer,
-  List,
   Tooltip,
 } from 'antd'
 import {
@@ -26,6 +24,7 @@ import {
   EyeInvisibleOutlined,
   ScissorOutlined,
   SearchOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -50,6 +49,9 @@ import type {
   CreateAssetCredential,
   UpdateAssetCredential,
 } from '../types'
+import Pill from './ui/Pill'
+import EmptyState from './ui/EmptyState'
+import { CRED_TYPE_META, ASSET_TYPE_TONE, metaOptions } from '../utils/status'
 
 const { Text, Paragraph } = Typography
 
@@ -80,60 +82,11 @@ const ASSET_TYPE_SUGGESTIONS = [
   '云平台',
 ]
 
-const ASSET_TYPE_COLOR: Record<string, string> = {
-  监控系统: 'blue',
-  数据管理系统: 'purple',
-  威胁情报: 'cyan',
-  暴露面检测: 'orange',
-  应用: 'green',
-  防火墙: 'red',
-  网关: 'volcano',
-  日志系统: 'geekblue',
-  SOAR: 'magenta',
-  NDR: 'gold',
-  EDR: 'geekblue',
-  DLP: 'gold',
-  SOC: 'blue',
-  SIEM: 'purple',
-  零信任: 'cyan',
-  堡垒机: 'red',
-  WAF: 'volcano',
-  蜜罐: 'magenta',
-}
-
 const ACCESS_METHODS = ['VPN', '直连', '拨号', '内网', '远程桌面']
-
-const CRED_TYPES: { value: string; label: string }[] = [
-  { value: 'password', label: '密码' },
-  { value: 'api_key', label: 'API Key' },
-  { value: 'certificate', label: '证书/密钥' },
-  { value: 'token', label: '令牌' },
-  { value: 'other', label: '其他' },
-]
-
-const CRED_TYPE_COLOR: Record<string, string> = {
-  password: 'blue',
-  api_key: 'purple',
-  certificate: 'gold',
-  token: 'cyan',
-  other: 'default',
-}
-
-function credTypeLabel(t: string | null | undefined): string {
-  return CRED_TYPES.find((x) => x.value === t)?.label ?? t ?? '其他'
-}
-
-function credTypeColor(t: string | null | undefined): string {
-  return (t && CRED_TYPE_COLOR[t]) || 'default'
-}
 
 // Vendor is free-form. Keep no hardcoded vendor list — avoids leaking any
 // real vendor names into a public repo.
 const VENDORS: string[] = []
-
-function assetTypeColor(t: string | null | undefined): string {
-  return (t && ASSET_TYPE_COLOR[t]) || 'default'
-}
 
 interface SelectProps {
   value?: string
@@ -190,23 +143,16 @@ function CredentialRows({
 }) {
   const [show, setShow] = useState(false)
   if (!cred.username && !cred.secret) {
-    return <Text type="secondary">未填写账号或密钥</Text>
+    return <span className="info-dim">未填写账号或密钥</span>
   }
   return (
-    <div style={{ display: 'grid', gap: 4 }}>
+    <div style={{ display: 'grid', gap: 6 }}>
       {cred.username && (
-        <Space size={4}>
-          <Text type="secondary">账号</Text>
-          <Text
-            code
-            style={{
-              maxWidth: 260,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
+        <div className="cred-field">
+          <span className="cred-field__name">账号</span>
+          <span className="cred-field__value" title={cred.username}>
             {cred.username}
-          </Text>
+          </span>
           <Button
             type="text"
             size="small"
@@ -214,26 +160,22 @@ function CredentialRows({
             aria-label={`复制账号 ${cred.label}`}
             onClick={() => onCopy(cred.username!)}
           />
-        </Space>
+        </div>
       )}
       {cred.secret && (
-        <Space size={4}>
-          <Text type="secondary">密钥</Text>
+        <div className="cred-field">
+          <span className="cred-field__name">密钥</span>
           {show ? (
-            <Text
-              code
-              style={{
-                maxWidth: 260,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                maxHeight: 120,
-                overflowY: 'auto',
-              }}
+            <span
+              className="cred-field__value cred-field__value--wrap"
+              title={cred.secret}
             >
               {cred.secret}
-            </Text>
+            </span>
           ) : (
-            <Text code>••••••••</Text>
+            <span className="cred-field__value" title="点击右侧眼睛图标显示">
+              ••••••••••
+            </span>
           )}
           <Button
             type="text"
@@ -251,7 +193,7 @@ function CredentialRows({
             aria-label={`复制密钥 ${cred.label}`}
             onClick={() => onCopy(cred.secret!)}
           />
-        </Space>
+        </div>
       )}
     </div>
   )
@@ -421,10 +363,19 @@ function CredentialDrawer({
 
   return (
     <Drawer
-      title={`凭据 · ${asset?.name ?? ''}`}
+      title={
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span>{asset?.name ?? ''}</span>
+          {asset?.value && (
+            <span className="mono" style={{ color: 'var(--ink-3)' }}>
+              {asset.value}
+            </span>
+          )}
+        </div>
+      }
       open={open}
       onClose={onClose}
-      width={520}
+      width={560}
       extra={
         <Button
           type="primary"
@@ -436,68 +387,79 @@ function CredentialDrawer({
         </Button>
       }
     >
-      <List
-        loading={isLoading}
-        dataSource={credentials ?? []}
-        locale={{
-          emptyText: '还没有凭据。给这台资产的每个账号 / 密钥单独建一条。',
-        }}
-        renderItem={(c) => {
-          const parts = parseCredentialChunks(c.secret ?? c.username ?? '')
-          return (
-            <List.Item
-              actions={[
-                ...(parts.length >= 2
-                  ? [
-                      <Tooltip key="split" title="按空行拆分为多条凭据">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<ScissorOutlined />}
-                          aria-label={`拆分凭据 ${c.label}`}
-                          onClick={() => setSplitTarget(c)}
-                        />
-                      </Tooltip>,
-                    ]
-                  : []),
-                <Button
-                  key="edit"
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  aria-label={`编辑凭据 ${c.label}`}
-                  onClick={() => openEdit(c)}
-                />,
-                <Popconfirm
-                  key="delete"
-                  title="删除该凭据？"
-                  onConfirm={() => deleteMut.mutate(c.id)}
-                >
+      {isLoading ? (
+        <Text type="secondary">加载中…</Text>
+      ) : credentials?.length ? (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {credentials.map((c) => {
+            const parts = parseCredentialChunks(c.secret ?? c.username ?? '')
+            const typeMeta = CRED_TYPE_META[c.cred_type] ?? {
+              label: c.cred_type,
+              tone: 'neutral' as const,
+            }
+            return (
+              <div key={c.id} className="cred-card">
+                <div className="cred-card__head">
+                  <span className="cred-card__label" title={c.label}>
+                    {c.label}
+                  </span>
+                  <Pill small tone={typeMeta.tone}>
+                    {typeMeta.label}
+                  </Pill>
+                  <span style={{ flex: 1 }} />
+                  {parts.length >= 2 && (
+                    <Tooltip title="按空行拆分为多条凭据">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ScissorOutlined />}
+                        aria-label={`拆分凭据 ${c.label}`}
+                        onClick={() => setSplitTarget(c)}
+                      />
+                    </Tooltip>
+                  )}
                   <Button
                     type="text"
-                    danger
                     size="small"
-                    icon={<DeleteOutlined />}
-                    aria-label={`删除凭据 ${c.label}`}
+                    icon={<EditOutlined />}
+                    aria-label={`编辑凭据 ${c.label}`}
+                    onClick={() => openEdit(c)}
                   />
-                </Popconfirm>,
-              ]}
+                  <Popconfirm
+                    title="删除该凭据？"
+                    onConfirm={() => deleteMut.mutate(c.id)}
+                  >
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      aria-label={`删除凭据 ${c.label}`}
+                    />
+                  </Popconfirm>
+                </div>
+                <CredentialRows cred={c} onCopy={onCopy} />
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <EmptyState
+          icon={<KeyOutlined />}
+          title="还没有凭据"
+          desc="给这台资产的每个账号 / 密钥单独建一条，按类型区分。"
+          action={
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openCreate}
+              disabled={!assetId}
             >
-              <List.Item.Meta
-                title={
-                  <Space size={6}>
-                    <span>{c.label}</span>
-                    <Tag color={credTypeColor(c.cred_type)}>
-                      {credTypeLabel(c.cred_type)}
-                    </Tag>
-                  </Space>
-                }
-                description={<CredentialRows cred={c} onCopy={onCopy} />}
-              />
-            </List.Item>
-          )
-        }}
-      />
+              添加凭据
+            </Button>
+          }
+        />
+      )}
 
       <Modal
         title={`拆分「${splitTarget?.label ?? ''}」`}
@@ -509,12 +471,12 @@ function CredentialDrawer({
         cancelText="取消"
         width={480}
       >
-        <Paragraph type="secondary">
+        <p className="settings-section__desc" style={{ marginTop: 0 }}>
           按空行拆分为 {splitParts.length} 条独立凭据（无法识别的行归入密钥），
           原条目删除：
-        </Paragraph>
+        </p>
         {splitParts.map((p, i) => (
-          <div key={i} style={{ marginBottom: 8 }}>
+          <div key={i} style={{ marginBottom: 8, fontSize: 13 }}>
             <Text strong>
               {i + 1}. {p.label}
             </Text>
@@ -534,7 +496,7 @@ function CredentialDrawer({
         cancelText="取消"
         width={440}
       >
-        <Form form={credForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={credForm} layout="vertical">
           <Form.Item
             name="label"
             label="名称"
@@ -543,12 +505,7 @@ function CredentialDrawer({
             <Input placeholder="如：SSH root / 后台管理员" />
           </Form.Item>
           <Form.Item name="cred_type" label="类型" initialValue="password">
-            <Select
-              options={CRED_TYPES.map((t) => ({
-                label: t.label,
-                value: t.value,
-              }))}
-            />
+            <Select options={metaOptions(CRED_TYPE_META)} />
           </Form.Item>
           <Form.Item name="username" label="账号">
             <Input
@@ -715,11 +672,9 @@ export default function AssetsTab({ projectId }: Props) {
       {
         title: '',
         key: 'drag',
-        width: 36,
+        width: 32,
         render: () => (
-          <HolderOutlined
-            style={{ cursor: 'grab', color: 'var(--muted-hex)' }}
-          />
+          <HolderOutlined style={{ cursor: 'grab', color: 'var(--ink-3)' }} />
         ),
       },
       { title: '名称', dataIndex: 'name', key: 'name', width: 150 },
@@ -730,9 +685,11 @@ export default function AssetsTab({ projectId }: Props) {
         width: 100,
         render: (t: string | null) =>
           t ? (
-            <Tag color={assetTypeColor(t)}>{t}</Tag>
+            <Pill small tone={ASSET_TYPE_TONE[t] ?? 'neutral'}>
+              {t}
+            </Pill>
           ) : (
-            <Text type="secondary">-</Text>
+            <span className="table-dim">—</span>
           ),
       },
       {
@@ -741,26 +698,42 @@ export default function AssetsTab({ projectId }: Props) {
         key: 'value',
         width: 200,
         render: (v: string | null) => {
-          if (!v) return <Text type="secondary">-</Text>
+          if (!v) return <span className="table-dim">—</span>
           const isUrl = /^https?:\/\//.test(v)
           return (
-            <Space size={2}>
+            <Space size={0} style={{ minWidth: 0 }}>
               {isUrl ? (
-                <Text
-                  ellipsis
-                  style={{ maxWidth: 220, verticalAlign: 'middle' }}
-                >
-                  <a href={v} target="_blank" rel="noopener noreferrer">
-                    {v}
-                  </a>
-                </Text>
-              ) : (
-                <Text
-                  ellipsis
-                  style={{ maxWidth: 220, verticalAlign: 'middle' }}
+                <a
+                  href={v}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mono table-link"
+                  style={{
+                    display: 'inline-block',
+                    maxWidth: 220,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    verticalAlign: 'middle',
+                  }}
                 >
                   {v}
-                </Text>
+                </a>
+              ) : (
+                <span
+                  className="mono"
+                  title={v}
+                  style={{
+                    display: 'inline-block',
+                    maxWidth: 220,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  {v}
+                </span>
               )}
               <Button
                 type="text"
@@ -777,19 +750,20 @@ export default function AssetsTab({ projectId }: Props) {
         title: '访问方式',
         dataIndex: 'access_method',
         key: 'access_method',
-        width: 100,
+        width: 88,
         render: (v: string | null) =>
-          v ? <Tag>{v}</Tag> : <Text type="secondary">-</Text>,
+          v ? <Pill small>{v}</Pill> : <span className="table-dim">—</span>,
       },
       {
         title: '凭据',
         key: 'credentials',
-        width: 110,
+        width: 96,
         render: (_: unknown, r: Asset) => (
           <Button
-            type="link"
+            type="text"
             size="small"
             icon={<KeyOutlined />}
+            className={`table-link ${r.credential_count > 0 ? '' : 'table-dim'}`}
             onClick={() => setCredentialAsset(r)}
           >
             {r.credential_count > 0 ? `${r.credential_count} 条` : '登记'}
@@ -801,7 +775,7 @@ export default function AssetsTab({ projectId }: Props) {
         dataIndex: 'vendor',
         key: 'vendor',
         width: 80,
-        render: (v: string | null) => v ?? <Text type="secondary">-</Text>,
+        render: (v: string | null) => v ?? <span className="table-dim">—</span>,
       },
       {
         title: '描述',
@@ -816,13 +790,13 @@ export default function AssetsTab({ projectId }: Props) {
               {v}
             </Paragraph>
           ) : (
-            <Text type="secondary">-</Text>
+            <span className="table-dim">—</span>
           ),
       },
       {
         title: '',
         key: 'action',
-        width: 90,
+        width: 76,
         render: (_: unknown, r: Asset) => (
           <Space size={0}>
             <Button
@@ -864,8 +838,9 @@ export default function AssetsTab({ projectId }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
+      <div className="table-toolbar">
         <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             setEditingAsset(null)
@@ -876,10 +851,10 @@ export default function AssetsTab({ projectId }: Props) {
           添加资产
         </Button>
         {(assets?.length ?? 0) > 1 && (
-          <Space style={{ marginLeft: 'var(--space-3)' }}>
+          <Space style={{ marginLeft: 'var(--space-2)' }}>
             <Input
               allowClear
-              prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
+              prefix={<SearchOutlined style={{ color: 'var(--ink-3)' }} />}
               placeholder="搜名称 / 地址 / 描述"
               style={{ width: 220 }}
               value={filterText}
@@ -895,6 +870,12 @@ export default function AssetsTab({ projectId }: Props) {
             />
           </Space>
         )}
+        <div className="table-toolbar__spacer" />
+        {assets?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {assets.length} 台
+          </span>
+        ) : null}
       </div>
       <DndContext
         sensors={sensors}
@@ -906,6 +887,7 @@ export default function AssetsTab({ projectId }: Props) {
           strategy={verticalListSortingStrategy}
         >
           <Table
+            className="table-card"
             dataSource={filteredAssets}
             rowKey="id"
             size="small"
@@ -914,9 +896,19 @@ export default function AssetsTab({ projectId }: Props) {
             columns={columns}
             components={{ body: { row: SortableRow } }}
             locale={{
-              emptyText: filtersActive
-                ? '没有匹配筛选条件的资产。'
-                : '还没有记录资产。把账号、平台入口、凭据集中登记在这里。',
+              emptyText: filtersActive ? (
+                <EmptyState
+                  icon={<SearchOutlined />}
+                  title="没有匹配的资产"
+                  desc="换个关键词，或清除类型筛选后再试。"
+                />
+              ) : (
+                <EmptyState
+                  icon={<DatabaseOutlined />}
+                  title="还没有记录资产"
+                  desc="把账号、平台入口、凭据集中登记在这里。"
+                />
+              ),
             }}
           />
         </SortableContext>
@@ -944,7 +936,7 @@ export default function AssetsTab({ projectId }: Props) {
         okText={editingAsset ? '保存' : '添加'}
         cancelText="取消"
       >
-        <Form form={assetForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={assetForm} layout="vertical">
           <Form.Item
             name="name"
             label="名称"

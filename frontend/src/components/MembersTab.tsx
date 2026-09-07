@@ -1,21 +1,12 @@
 import { useState } from 'react'
-import {
-  Typography,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Popconfirm,
-  App,
-  Space,
-  Empty,
-} from 'antd'
+import { Button, Modal, Form, Input, Select, Popconfirm, App } from 'antd'
 import {
   PlusOutlined,
   DeleteOutlined,
   EditOutlined,
   HolderOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -38,8 +29,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { peopleApi } from '../api'
 import type { Person, CreatePerson } from '../types'
-
-const { Title, Text } = Typography
+import Pill from './ui/Pill'
+import EmptyState from './ui/EmptyState'
+import Avatar from './ui/Avatar'
 
 // One shared role template for both team and client people — moving a person
 // across sides carries `role` verbatim, no conversion.
@@ -288,18 +280,12 @@ export default function MembersTab({ projectId }: Props) {
   function renderColumn(side: Side) {
     const list = side === 'team' ? teamPeople : clientPeople
     return (
-      <div style={{ marginBottom: 32, flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-        >
-          <Title level={5} style={{ margin: 0 }}>
-            {SIDE_LABEL[side]}
-          </Title>
+      <div className="card">
+        <div className="card__header">
+          <Avatar name={SIDE_LABEL[side]} size={20} />
+          {SIDE_LABEL[side]}
+          <span className="card__header__count">{list.length}</span>
+          <span className="card__header__spacer" />
           <Button
             size="small"
             icon={<PlusOutlined />}
@@ -308,60 +294,66 @@ export default function MembersTab({ projectId }: Props) {
             添加
           </Button>
         </div>
-        <DroppableArea id={`${side}-droppable`}>
-          <SortableContext
-            items={list.map((p) => itemId(side, p.id))}
-            strategy={verticalListSortingStrategy}
-          >
-            {list.length === 0 ? (
-              <Empty
-                description={`还没有${SIDE_LABEL[side]}`}
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            ) : (
-              list.map((p) => (
-                <SortableCard
-                  key={p.id}
-                  itemId={itemId(side, p.id)}
-                  label={p.name}
-                >
-                  <Text strong style={{ flex: '0 0 auto' }}>
-                    {p.name}
-                  </Text>
-                  <Text type="secondary">{p.role || '-'}</Text>
-                  <Text
-                    type="secondary"
-                    style={{ flex: 1, overflow: 'hidden' }}
-                    ellipsis
+        <div style={{ padding: 'var(--space-3)' }}>
+          <DroppableArea id={`${side}-droppable`}>
+            <SortableContext
+              items={list.map((p) => itemId(side, p.id))}
+              strategy={verticalListSortingStrategy}
+            >
+              {list.length === 0 ? (
+                <EmptyState
+                  icon={side === 'team' ? <TeamOutlined /> : <UserOutlined />}
+                  title={`还没有${SIDE_LABEL[side]}`}
+                  desc={
+                    side === 'team'
+                      ? '把团队侧的对接人加进来，任务就可以直接指派。'
+                      : '把客户侧的关键人加进来，记录角色和影响力。'
+                  }
+                />
+              ) : (
+                list.map((p) => (
+                  <SortableCard
+                    key={p.id}
+                    itemId={itemId(side, p.id)}
+                    label={p.name}
                   >
-                    {p.notes || ''}
-                  </Text>
-                  <Space>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditOutlined />}
-                      aria-label={`编辑 ${p.name}`}
-                      onClick={() => openEdit(p)}
-                    />
-                    <Popconfirm
-                      title="删除？"
-                      onConfirm={() => deleteMut.mutate(p.id)}
-                    >
+                    <Avatar name={p.name} size={24} />
+                    <span className="member-card__name">{p.name}</span>
+                    {p.role ? (
+                      <Pill small>{p.role}</Pill>
+                    ) : (
+                      <span className="table-dim" style={{ fontSize: 12 }}>
+                        未设角色
+                      </span>
+                    )}
+                    <span className="member-card__notes">{p.notes || ''}</span>
+                    <span style={{ display: 'flex', flexShrink: 0 }}>
                       <Button
                         type="text"
-                        danger
                         size="small"
-                        icon={<DeleteOutlined />}
-                        aria-label={`删除 ${p.name}`}
+                        icon={<EditOutlined />}
+                        aria-label={`编辑 ${p.name}`}
+                        onClick={() => openEdit(p)}
                       />
-                    </Popconfirm>
-                  </Space>
-                </SortableCard>
-              ))
-            )}
-          </SortableContext>
-        </DroppableArea>
+                      <Popconfirm
+                        title="删除？"
+                        onConfirm={() => deleteMut.mutate(p.id)}
+                      >
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          aria-label={`删除 ${p.name}`}
+                        />
+                      </Popconfirm>
+                    </span>
+                  </SortableCard>
+                ))
+              )}
+            </SortableContext>
+          </DroppableArea>
+        </div>
       </div>
     )
   }
@@ -373,7 +365,7 @@ export default function MembersTab({ projectId }: Props) {
         collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        <div className="members-grid">
           {renderColumn('team')}
           {renderColumn('client')}
         </div>
@@ -401,7 +393,7 @@ export default function MembersTab({ projectId }: Props) {
         okText={editPerson ? '保存' : '添加'}
         cancelText="取消"
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical">
           <Form.Item
             name="name"
             label="姓名"

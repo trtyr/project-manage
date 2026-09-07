@@ -11,24 +11,18 @@ import {
   Space,
   App,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  WarningOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { issuesApi, peopleApi, communicationsApi } from '../api'
 import type { Issue, IssueStatus, IssuePriority } from '../types'
-
-const STATUS_OPTIONS = [
-  { label: '待解决', value: 'open' },
-  { label: '进行中', value: 'in_progress' },
-  { label: '已解决', value: 'resolved' },
-]
-
-const PRIORITY_OPTIONS = [
-  { label: '紧急', value: 'urgent' },
-  { label: '高', value: 'high' },
-  { label: '正常', value: 'normal' },
-  { label: '低', value: 'low' },
-]
+import EmptyState from './ui/EmptyState'
+import { ISSUE_STATUS_META, PRIORITY_META, metaOptions } from '../utils/status'
 
 interface Props {
   projectId: string
@@ -106,13 +100,15 @@ export default function IssuesTab({ projectId }: Props) {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
-        width: 110,
+        width: 104,
         render: (s: IssueStatus, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={s}
-            style={{ width: 95 }}
-            options={STATUS_OPTIONS}
+            style={{ width: 88 }}
+            options={metaOptions(ISSUE_STATUS_META)}
             onChange={(val) =>
               updateIssueMut.mutate({ issueId: r.id, data: { status: val } })
             }
@@ -123,13 +119,15 @@ export default function IssuesTab({ projectId }: Props) {
         title: '优先级',
         dataIndex: 'priority',
         key: 'priority',
-        width: 90,
+        width: 88,
         render: (p: IssuePriority, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={p}
-            style={{ width: 80 }}
-            options={PRIORITY_OPTIONS}
+            style={{ width: 72 }}
+            options={metaOptions(PRIORITY_META)}
             onChange={(val) =>
               updateIssueMut.mutate({ issueId: r.id, data: { priority: val } })
             }
@@ -143,15 +141,17 @@ export default function IssuesTab({ projectId }: Props) {
         width: 120,
         render: (aid: string | null, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={aid ?? undefined}
-            style={{ width: 110 }}
+            style={{ width: 100 }}
             allowClear
-            placeholder="指派"
+            placeholder={<span className="table-dim">未指派</span>}
             // D2: guide to 成员 when the team side is empty
             notFoundContent={
               teamPeople.length === 0 ? (
-                <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                <span className="table-dim" style={{ fontSize: 12 }}>
                   团队侧暂无成员——到「成员」页添加后可指派
                 </span>
               ) : undefined
@@ -170,13 +170,13 @@ export default function IssuesTab({ projectId }: Props) {
         title: '截止',
         dataIndex: 'due_date',
         key: 'due_date',
-        width: 100,
+        width: 90,
         render: (v: string | null) => {
-          if (!v) return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          if (!v) return <span className="table-dim">—</span>
           const d = dayjs(v)
           const overdue = d.isBefore(dayjs(), 'day')
           return (
-            <span style={{ color: overdue ? 'var(--danger-hex)' : 'inherit' }}>
+            <span className={`mono ${overdue ? 'table-overdue' : ''}`}>
               {d.format('MM-DD')}
             </span>
           )
@@ -187,12 +187,12 @@ export default function IssuesTab({ projectId }: Props) {
         dataIndex: 'description',
         key: 'description',
         ellipsis: true,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) => v ?? <span className="table-dim">—</span>,
       },
       {
-        title: '操作',
+        title: '',
         key: 'action',
-        width: 80,
+        width: 76,
         render: (_: unknown, r: Issue) => (
           <Space size={0}>
             <Button
@@ -232,8 +232,9 @@ export default function IssuesTab({ projectId }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
+      <div className="table-toolbar">
         <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             setEditing(null)
@@ -243,8 +244,15 @@ export default function IssuesTab({ projectId }: Props) {
         >
           记录问题
         </Button>
+        <div className="table-toolbar__spacer" />
+        {issues?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {issues.length} 项
+          </span>
+        ) : null}
       </div>
       <Table
+        className="table-card"
         dataSource={issues}
         rowKey="id"
         size="small"
@@ -252,8 +260,13 @@ export default function IssuesTab({ projectId }: Props) {
         scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{
-          emptyText:
-            '还没有客户关切。客户在会上提的顾虑、待跟进的问题，随手记一条避免遗忘。',
+          emptyText: (
+            <EmptyState
+              icon={<WarningOutlined />}
+              title="还没有客户关切"
+              desc="客户在会上提的顾虑、待跟进的问题，随手记一条避免遗忘。"
+            />
+          ),
         }}
       />
 
@@ -285,7 +298,7 @@ export default function IssuesTab({ projectId }: Props) {
         okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
-        <Form form={issueForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={issueForm} layout="vertical">
           <Form.Item
             name="title"
             label="问题"
@@ -297,10 +310,10 @@ export default function IssuesTab({ projectId }: Props) {
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="open">
-            <Select options={STATUS_OPTIONS} />
+            <Select options={metaOptions(ISSUE_STATUS_META)} />
           </Form.Item>
           <Form.Item name="priority" label="优先级" initialValue="normal">
-            <Select options={PRIORITY_OPTIONS} />
+            <Select options={metaOptions(PRIORITY_META)} />
           </Form.Item>
           <Form.Item name="assignee_id" label="指派给">
             <Select
@@ -308,7 +321,7 @@ export default function IssuesTab({ projectId }: Props) {
               placeholder="选择团队成员"
               notFoundContent={
                 teamPeople.length === 0 ? (
-                  <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                  <span className="table-dim" style={{ fontSize: 12 }}>
                     团队侧暂无成员——到「成员」页添加后可指派
                   </span>
                 ) : undefined

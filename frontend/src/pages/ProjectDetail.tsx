@@ -1,19 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  Typography,
-  Button,
-  Form,
-  Input,
-  Select,
-  Tabs,
-  Tag,
-  Modal,
-  Skeleton,
-  Space,
-  Empty,
-  App,
-} from 'antd'
+import { Button, Form, Input, Select, Tabs, Modal, Skeleton, App } from 'antd'
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -23,6 +10,7 @@ import {
   MessageOutlined,
   TeamOutlined,
   DatabaseOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -36,7 +24,14 @@ import {
   findingsApi,
   deliverablesApi,
 } from '../api'
-import type { ProjectStatus, TechApprovalStatus, ProjectFile } from '../types'
+import type { TechApprovalStatus, ProjectFile } from '../types'
+import Pill from '../components/ui/Pill'
+import EmptyState from '../components/ui/EmptyState'
+import {
+  PROJECT_STATUS_META,
+  TECH_APPROVAL_META,
+  toneColor,
+} from '../utils/status'
 import FilePreview from '../components/FilePreview'
 import PhasesTab from '../components/PhasesTab'
 import DeliverablesTab from '../components/DeliverablesTab'
@@ -50,14 +45,6 @@ import FindingsTab from '../components/FindingsTab'
 import GroupedTab from '../components/GroupedTab'
 import OverviewTab from '../components/OverviewTab'
 
-const { Title, Text } = Typography
-
-const statusLabel: Record<ProjectStatus, string> = {
-  in_progress: '进行中',
-  completed: '已完成',
-  paused: '已暂停',
-}
-
 const TECH_APPROVAL_OPTIONS: Array<{
   label: string
   value: TechApprovalStatus
@@ -67,14 +54,6 @@ const TECH_APPROVAL_OPTIONS: Array<{
   { label: '已认可', value: '已认可' },
   { label: '技术否决', value: '技术否决' },
 ]
-
-const TECH_APPROVAL_TAG_COLORS: Record<TechApprovalStatus, string | undefined> =
-  {
-    未接触: undefined,
-    POC中: 'processing',
-    已认可: 'success',
-    技术否决: 'error',
-  }
 
 function TabLabel({
   icon,
@@ -90,15 +69,7 @@ function TabLabel({
       {icon}
       <span>{label}</span>
       {count !== undefined && count > 0 && (
-        <span
-          style={{
-            fontSize: 12,
-            color: 'var(--muted-hex)',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {count}
-        </span>
+        <span className="tab-label__count">{count}</span>
       )}
     </span>
   )
@@ -189,7 +160,7 @@ export default function ProjectDetail() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: 24 }}>
+      <div>
         <Skeleton active paragraph={{ rows: 8 }} />
       </div>
     )
@@ -197,86 +168,83 @@ export default function ProjectDetail() {
 
   if (!project) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
-        <Empty description="项目不存在或已被删除" />
-        <Button onClick={() => navigate('/')} style={{ marginTop: 16 }}>
-          返回项目列表
-        </Button>
+      <div className="card">
+        <EmptyState
+          icon={<FolderOpenOutlined />}
+          title="项目不存在或已被删除"
+          desc="它可能刚被删除，或者链接已过期。"
+          action={<Button onClick={() => navigate('/')}>返回项目列表</Button>}
+        />
       </div>
     )
   }
+
+  const status = PROJECT_STATUS_META[project.status] ?? {
+    label: project.status,
+    tone: 'neutral' as const,
+  }
+  const techApproval = project.tech_approval
+    ? TECH_APPROVAL_META[project.tech_approval]
+    : undefined
+
+  const statusOptions = Object.entries(PROJECT_STATUS_META).map(
+    ([value, m]) => ({ label: m.label, value }),
+  )
 
   return (
     <div className="fade-in">
       {/* === 顶部标题区 === */}
       <div className="detail-header">
-        <div>
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
+        <div style={{ minWidth: 0 }}>
+          <button
+            type="button"
+            className="back-link"
             onClick={() => navigate('/')}
-            className="back-btn"
-            style={{ marginBottom: 8 }}
           >
-            返回
-          </Button>
+            <ArrowLeftOutlined style={{ fontSize: 12 }} /> 项目
+          </button>
           <div className="detail-title-row">
-            <Title
-              level={2}
-              style={{
-                margin: 0,
-                fontWeight: 700,
-                fontSize: 24,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {project.name}
-            </Title>
-            <Tag
-              className={`status-badge status-badge--${project.status as ProjectStatus}`}
-            >
-              {statusLabel[project.status as ProjectStatus] ?? project.status}
-            </Tag>
-            {project.phase && (
-              <Text type="secondary" style={{ fontSize: 14 }}>
-                · {project.phase}
-              </Text>
+            <h1 className="detail-title">{project.name}</h1>
+            <Pill tone={status.tone} dot>
+              {status.label}
+            </Pill>
+            {techApproval && (
+              <Pill tone={techApproval.tone} dot small>
+                {techApproval.label}
+              </Pill>
             )}
           </div>
-          {(project.tech_approval || project.competitors) && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 8,
-                marginTop: 8,
-              }}
-            >
-              {project.tech_approval && (
-                <Tag
-                  color={TECH_APPROVAL_TAG_COLORS[project.tech_approval]}
-                  style={{ marginInlineEnd: 0 }}
-                >
-                  技术认可：{project.tech_approval}
-                </Tag>
-              )}
-              {project.competitors && (
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  竞品：{project.competitors}
-                </Text>
-              )}
-            </div>
-          )}
-          {client && (
-            <div className="detail-meta">
-              客户：{client.name}
-              {client.contact_person && ` · ${client.contact_person}`}
-              {client.contact_info && ` · ${client.contact_info}`}
-            </div>
-          )}
+          <div className="detail-meta">
+            {project.phase && <span>{project.phase}</span>}
+            {client && (
+              <>
+                {project.phase && <span className="detail-meta__sep">·</span>}
+                <span>{client.name}</span>
+              </>
+            )}
+            {client?.contact_person && (
+              <>
+                <span className="detail-meta__sep">·</span>
+                <span>{client.contact_person}</span>
+              </>
+            )}
+            {client?.contact_info && (
+              <>
+                <span className="detail-meta__sep">·</span>
+                <span className="mono">{client.contact_info}</span>
+              </>
+            )}
+            {project.competitors && (
+              <>
+                <span className="detail-meta__sep">·</span>
+                <span style={{ color: 'var(--ink-3)' }}>
+                  竞品 {project.competitors}
+                </span>
+              </>
+            )}
+          </div>
         </div>
-        <Space>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <Button
             icon={<EditOutlined />}
             onClick={() => {
@@ -318,9 +286,9 @@ export default function ProjectDetail() {
               })
             }}
           >
-            删除项目
+            删除
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* === Tabs === */}
@@ -456,7 +424,6 @@ export default function ProjectDetail() {
         <Form
           form={projectForm}
           layout="vertical"
-          style={{ marginTop: 16 }}
           onFinish={(v) => {
             const goals = v.goals?.split('\n').filter(Boolean) ?? []
             updateMut.mutate({ ...v, goals })
@@ -466,13 +433,7 @@ export default function ProjectDetail() {
             <Input />
           </Form.Item>
           <Form.Item name="status" label="状态">
-            <Select
-              options={[
-                { label: '进行中', value: 'in_progress' },
-                { label: '已完成', value: 'completed' },
-                { label: '已暂停', value: 'paused' },
-              ]}
-            />
+            <Select options={statusOptions} />
           </Form.Item>
           <Form.Item name="tech_approval" label="技术认可">
             <Select
@@ -492,29 +453,39 @@ export default function ProjectDetail() {
           {client && (
             <div
               style={{
-                padding: '12px 16px',
-                background: 'rgba(var(--primary-rgb), 0.03)',
+                padding: '10px 12px',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--hairline)',
                 borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              <Text
-                type="secondary"
-                style={{ fontSize: 13, display: 'block', marginBottom: 4 }}
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 9999,
+                  background: toneColor('blue'),
+                  flexShrink: 0,
+                }}
+              />
+              <TextSecondary label="客户" />
+              <span
+                style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}
               >
-                客户
-              </Text>
-              <Text strong>{client.name}</Text>
+                {client.name}
+              </span>
               {client.contact_person && (
-                <Text type="secondary">
-                  {' · '}
+                <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
                   {client.contact_person}
-                </Text>
+                </span>
               )}
               {client.contact_info && (
-                <Text type="secondary">
-                  {' · '}
+                <span className="mono" style={{ color: 'var(--ink-3)' }}>
                   {client.contact_info}
-                </Text>
+                </span>
               )}
             </div>
           )}
@@ -528,5 +499,20 @@ export default function ProjectDetail() {
         onClose={() => setPreviewFile(null)}
       />
     </div>
+  )
+}
+
+function TextSecondary({ label }: { label: string }) {
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        color: 'var(--ink-3)',
+      }}
+    >
+      {label}
+    </span>
   )
 }

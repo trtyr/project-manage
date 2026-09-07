@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import {
-  Typography,
   Button,
   Tooltip,
-  Tag,
   Space,
   Modal,
   Form,
@@ -13,7 +11,6 @@ import {
   Popconfirm,
   Upload,
   App,
-  Empty,
 } from 'antd'
 import {
   PlusOutlined,
@@ -22,13 +19,15 @@ import {
   PaperClipOutlined,
   ThunderboltOutlined,
   UploadOutlined,
+  ApartmentOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { phasesApi, filesApi } from '../api'
 import type { Phase, ProjectFile } from '../types'
-
-const { Text } = Typography
+import Pill from './ui/Pill'
+import EmptyState from './ui/EmptyState'
+import { PHASE_STATUS_META, metaOptions } from '../utils/status'
 
 interface PhaseNode extends Phase {
   children: PhaseNode[]
@@ -47,14 +46,6 @@ function buildTree(phases: Phase[]): PhaseNode[] {
     }
   })
   return roots
-}
-
-// (removed — file sizes shown by FilesTab inline instead)
-
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: '待开始', color: 'var(--muted-hex)' },
-  in_progress: { label: '进行中', color: 'var(--primary-hex)' },
-  completed: { label: '已完成', color: 'var(--success-hex)' },
 }
 
 interface StandardPhaseTemplate {
@@ -170,64 +161,35 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
   const tree = buildTree(phases ?? [])
 
   const renderNode = (node: PhaseNode, depth: number) => {
-    const cfg = statusConfig[node.status] ?? {
+    const cfg = PHASE_STATUS_META[node.status] ?? {
       label: node.status,
-      color: 'var(--muted-hex)',
+      tone: 'neutral' as const,
     }
     const phaseFiles = (files ?? []).filter((f) => f.phase_id === node.id)
     const availableFiles = (files ?? []).filter((f) => !f.phase_id)
     return (
       <div key={node.id}>
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '10px 12px',
-            marginLeft: depth * 24,
-            borderRadius: 8,
-            background:
-              depth === 0 ? 'rgba(var(--primary-rgb), 0.02)' : 'transparent',
-            border: '1px solid var(--hairline)',
-            marginBottom: 8,
-          }}
+          className="phase-row"
+          style={depth > 0 ? { marginLeft: depth * 24 } : undefined}
         >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: cfg.color,
-              flexShrink: 0,
-            }}
-          />
-          <Text strong>{node.name}</Text>
-          <Tag
-            style={{
-              fontSize: 12,
-              borderColor: 'transparent',
-              // B4 fix: `${color}15` string-appends alpha to a var() — invalid
-              // CSS that silently dropped the background. color-mix works with
-              // both var() tokens and hex.
-              background: `color-mix(in srgb, ${cfg.color} 12%, transparent)`,
-              color: cfg.color,
-            }}
-          >
+          <Pill tone={cfg.tone} dot>
             {cfg.label}
-          </Tag>
+          </Pill>
+          <span className="phase-row__name">{node.name}</span>
           {node.planned_start && (
-            <Text type="secondary" style={{ fontSize: 13 }}>
+            <span className="phase-row__dates">
               {dayjs(node.planned_start).format('MM/DD')}
               {node.planned_end &&
                 ` → ${dayjs(node.planned_end).format('MM/DD')}`}
-            </Text>
+            </span>
           )}
           {node.description && (
-            <Text type="secondary" style={{ fontSize: 13 }}>
+            <span className="phase-row__desc" title={node.description}>
               {node.description}
-            </Text>
+            </span>
           )}
-          <Space style={{ marginLeft: 'auto' }}>
+          <Space style={{ marginLeft: 'auto', flexShrink: 0 }}>
             <Tooltip title="添加子阶段">
               <Button
                 type="text"
@@ -277,29 +239,16 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
 
         {/* 阶段产物 */}
         <div
-          style={{
-            marginLeft: depth * 24 + 24,
-            marginBottom: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-1)',
-            flexWrap: 'wrap',
-          }}
+          className="phase-files"
+          style={
+            depth > 0
+              ? { marginLeft: `calc(${depth * 24}px + 28px)` }
+              : undefined
+          }
         >
-          <PaperClipOutlined
-            style={{ color: 'var(--muted-hex)', fontSize: 12 }}
-          />
+          <PaperClipOutlined style={{ color: 'var(--ink-3)', fontSize: 12 }} />
           {phaseFiles.map((f) => (
-            <Space
-              key={f.id}
-              size={2}
-              style={{
-                background: 'var(--card-surface)',
-                border: '1px solid var(--hairline)',
-                borderRadius: 6,
-                padding: '2px 6px 2px 10px',
-              }}
-            >
+            <span key={f.id} className="file-chip">
               {f.source_type === 'link' ? (
                 <a
                   href={f.url!}
@@ -307,7 +256,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   title={f.original_name}
-                  style={{ color: 'inherit', fontSize: 12 }}
+                  className="file-chip__name"
                 >
                   🔗 {f.original_name}
                 </a>
@@ -316,6 +265,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
                   role="button"
                   tabIndex={0}
                   title={f.original_name}
+                  className="file-chip__name"
                   onClick={(e) => {
                     e.stopPropagation()
                     onFilePreview?.(f)
@@ -323,7 +273,6 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') onFilePreview?.(f)
                   }}
-                  style={{ cursor: 'pointer', fontSize: 12 }}
                 >
                   {f.original_name}
                 </span>
@@ -345,14 +294,15 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
                   aria-label={`取消关联 ${f.original_name}`}
                 />
               </Popconfirm>
-            </Space>
+            </span>
           ))}
           {availableFiles.length > 0 && (
             <Select
               size="small"
               placeholder="关联文件"
               variant="borderless"
-              style={{ width: 220 }}
+              className="cell-select"
+              style={{ width: 200 }}
               value={undefined}
               onChange={(fileId: string) => {
                 linkFileMut.mutate({ fileId, phaseId: node.id })
@@ -382,14 +332,14 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             </Tooltip>
           </Upload>
           {phaseFiles.length === 0 && !availableFiles.length && (
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <span style={{ color: 'var(--ink-3)', fontSize: 12 }}>
               暂无产物
-            </Text>
+            </span>
           )}
         </div>
 
         {node.children.length > 0 && (
-          <div>
+          <div className="phase-children">
             {node.children.map((child) => renderNode(child, depth + 1))}
           </div>
         )}
@@ -399,51 +349,63 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Button
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setCreateOpen(true)
-              form.resetFields()
-            }}
-          >
-            添加阶段
-          </Button>
-          <Tooltip title="一键导入标准七阶段模板">
-            {(phases?.length ?? 0) > 0 ? (
-              <Popconfirm
-                title="当前已有阶段，七阶段模板将追加在末尾，确认导入？"
-                okText="确认导入"
-                cancelText="取消"
-                onConfirm={() => importTemplateMut.mutate()}
-              >
-                <Button
-                  icon={<ThunderboltOutlined />}
-                  loading={importTemplateMut.isPending}
-                >
-                  导入七阶段模板
-                </Button>
-              </Popconfirm>
-            ) : (
+      <div className="table-toolbar">
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setCreateOpen(true)
+            form.resetFields()
+          }}
+        >
+          添加阶段
+        </Button>
+        <Tooltip title="一键导入标准七阶段模板">
+          {(phases?.length ?? 0) > 0 ? (
+            <Popconfirm
+              title="当前已有阶段，七阶段模板将追加在末尾，确认导入？"
+              okText="确认导入"
+              cancelText="取消"
+              onConfirm={() => importTemplateMut.mutate()}
+            >
               <Button
                 icon={<ThunderboltOutlined />}
                 loading={importTemplateMut.isPending}
-                onClick={() => importTemplateMut.mutate()}
               >
                 导入七阶段模板
               </Button>
-            )}
-          </Tooltip>
-        </Space>
+            </Popconfirm>
+          ) : (
+            <Button
+              icon={<ThunderboltOutlined />}
+              loading={importTemplateMut.isPending}
+              onClick={() => importTemplateMut.mutate()}
+            >
+              导入七阶段模板
+            </Button>
+          )}
+        </Tooltip>
       </div>
       {tree.length > 0 ? (
         tree.map((node) => renderNode(node, 0))
       ) : (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="还没有阶段规划"
-        />
+        <div className="card">
+          <EmptyState
+            icon={<ApartmentOutlined />}
+            title="还没有阶段规划"
+            desc="从需求挖掘到签单冲刺，用阶段拆解整个推进过程。"
+            action={
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                onClick={() => importTemplateMut.mutate()}
+                loading={importTemplateMut.isPending}
+              >
+                导入七阶段模板
+              </Button>
+            }
+          />
+        </div>
       )}
 
       {/* Create Modal */}
@@ -465,7 +427,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
         okText="添加"
         cancelText="取消"
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical">
           <Form.Item
             name="name"
             label="阶段名称"
@@ -481,12 +443,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="pending">
-            <Select
-              options={Object.entries(statusConfig).map(([k, v]) => ({
-                label: v.label,
-                value: k,
-              }))}
-            />
+            <Select options={metaOptions(PHASE_STATUS_META)} />
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} />
@@ -531,7 +488,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
         okText="保存"
         cancelText="取消"
       >
-        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={editForm} layout="vertical">
           <Form.Item
             name="name"
             label="阶段名称"
@@ -540,12 +497,7 @@ export default function PhasesTab({ projectId, files, onFilePreview }: Props) {
             <Input />
           </Form.Item>
           <Form.Item name="status" label="状态">
-            <Select
-              options={Object.entries(statusConfig).map(([k, v]) => ({
-                label: v.label,
-                value: k,
-              }))}
-            />
+            <Select options={metaOptions(PHASE_STATUS_META)} />
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} />

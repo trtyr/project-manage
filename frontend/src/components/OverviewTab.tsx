@@ -1,8 +1,5 @@
-import { Descriptions, Typography } from 'antd'
 import type { Client, Project } from '../types'
 import TimelineTab from './TimelineTab'
-
-const { Text } = Typography
 
 interface Props {
   projectId: string
@@ -24,50 +21,62 @@ interface Props {
 export default function OverviewTab({
   projectId,
   project,
+  client,
   onGoFillPhaseDates,
 }: Props) {
+  const hasGoals = project.goals.length > 0
+  const hasCompetitors = !!project.competitors
+  const hasAnything = hasGoals || hasCompetitors || !!client
+
   return (
     <div>
-      <Descriptions
-        size="small"
-        column={2}
-        bordered
-        style={{ marginBottom: 'var(--space-6)' }}
-        items={[
-          {
-            key: 'goals',
-            label: '目标',
-            span: 2,
-            children: project.goals.length ? (
-              <ul style={{ margin: 0, paddingLeft: 'var(--space-4)' }}>
-                {project.goals.map((g) => (
-                  <li key={g}>{g}</li>
-                ))}
-              </ul>
-            ) : (
-              '-'
-            ),
-          },
-          {
-            key: 'competitors',
-            label: '竞品',
-            span: 2,
-            children: project.competitors || '-',
-          },
-          // L10 fix: 状态/客户/阶段/技术认可 rows removed — the detail header
-          // already shows all four; the overview keeps only the deeper fields.
-        ]}
-      />
-      <Text
-        type="secondary"
-        style={{
-          fontSize: 13,
-          display: 'block',
-          marginBottom: 'var(--space-2)',
-        }}
-      >
-        时间线
-      </Text>
+      {hasAnything && (
+        <div className="card" style={{ marginBottom: 'var(--space-6)' }}>
+          {hasGoals && (
+            <div className="info-row">
+              <div className="info-row__label">目标</div>
+              <div className="info-row__value">
+                <ul className="check-list">
+                  {project.goals.map((g) => (
+                    <li key={g}>{g}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          {project.competitors !== undefined && (
+            <div className="info-row">
+              <div className="info-row__label">竞品</div>
+              <div className="info-row__value">
+                {project.competitors || (
+                  <span className="info-dim">未记录</span>
+                )}
+              </div>
+            </div>
+          )}
+          {client && (
+            <div className="info-row">
+              <div className="info-row__label">客户</div>
+              <div className="info-row__value">
+                {client.name}
+                {client.contact_person && (
+                  <span style={{ color: 'var(--ink-3)' }}>
+                    {' '}
+                    · {client.contact_person}
+                  </span>
+                )}
+                {client.contact_info && (
+                  <span className="mono" style={{ color: 'var(--ink-3)' }}>
+                    {' '}
+                    · {client.contact_info}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="section-label">时间线</div>
       <TimelineTab projectId={projectId} onGoFillDates={onGoFillPhaseDates} />
     </div>
   )

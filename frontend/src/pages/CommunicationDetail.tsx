@@ -3,13 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Button,
   Skeleton,
-  Empty,
-  Tag,
-  Space,
-  Modal,
   Form,
   DatePicker,
   Input,
+  Modal,
   App,
   Popconfirm,
   Upload,
@@ -23,12 +20,15 @@ import {
   EyeOutlined,
   DownloadOutlined,
   LinkOutlined,
+  MessageOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import Markdown from '../components/Markdown'
 import ParticipantsInput from '../components/ParticipantsInput'
 import FilePreview from '../components/FilePreview'
+import Pill from '../components/ui/Pill'
+import EmptyState from '../components/ui/EmptyState'
 import { communicationsApi, filesApi } from '../api'
 import { formatSize } from '../utils/format'
 import type { UpdateCommunication, ProjectFile } from '../types'
@@ -111,7 +111,7 @@ export default function CommunicationDetail() {
 
   if (isLoading) {
     return (
-      <div className="reading-layout" style={{ padding: 24 }}>
+      <div className="reading-layout">
         <Skeleton active paragraph={{ rows: 10 }} />
       </div>
     )
@@ -119,14 +119,17 @@ export default function CommunicationDetail() {
 
   if (!comm) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
-        <Empty description="记录不存在" />
-        <Button
-          onClick={() => navigate(`/projects/${id}`)}
-          style={{ marginTop: 16 }}
-        >
-          返回项目
-        </Button>
+      <div className="card">
+        <EmptyState
+          icon={<MessageOutlined />}
+          title="记录不存在"
+          desc="这条沟通记录可能已被删除。"
+          action={
+            <Button onClick={() => navigate(`/projects/${id}`)}>
+              返回项目
+            </Button>
+          }
+        />
       </div>
     )
   }
@@ -142,35 +145,36 @@ export default function CommunicationDetail() {
     <div className="comm-detail-wrap fade-in">
       {/* 主内容区 */}
       <div className="comm-detail-main">
-        <div className="reading-header">
-          <div>
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/projects/${id}`)}
-              className="back-btn"
-            >
-              返回项目
-            </Button>
-            <span className="reading-date">
-              {dayjs(comm.occurred_at).format('YYYY年M月D日 HH:mm')}
-            </span>
-          </div>
-        </div>
+        <button
+          type="button"
+          className="back-link"
+          onClick={() => navigate(`/projects/${id}`)}
+        >
+          <ArrowLeftOutlined style={{ fontSize: 12 }} /> 返回项目
+        </button>
+
+        <span className="reading-date">
+          {dayjs(comm.occurred_at).format('YYYY年M月D日 HH:mm')}
+        </span>
 
         {/* 参与人 */}
         {participants.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 6,
+              margin: 'var(--space-3) 0 var(--space-4)',
+            }}
+          >
             {participants.map((p) => (
-              <Tag key={p} className="tag-participant">
-                {p}
-              </Tag>
+              <Pill key={p}>{p}</Pill>
             ))}
           </div>
         )}
 
         {/* 正文 */}
-        <div className="md-render" style={{ marginBottom: 32 }}>
+        <div className="md-render" style={{ marginBottom: 'var(--space-6)' }}>
           <Markdown>{comm.content}</Markdown>
         </div>
 
@@ -187,8 +191,8 @@ export default function CommunicationDetail() {
 
       {/* 右侧悬浮面板 */}
       <aside className="comm-detail-aside">
-        <div className="comm-aside-section">
-          <Space>
+        <div className="card">
+          <div style={{ display: 'flex', gap: 8, padding: 'var(--space-3)' }}>
             <Button
               icon={<EditOutlined />}
               onClick={() => {
@@ -213,34 +217,36 @@ export default function CommunicationDetail() {
                 删除
               </Button>
             </Popconfirm>
-          </Space>
+          </div>
         </div>
 
-        <div className="comm-aside-section">
-          <div className="comm-files-header">
-            <span className="comm-conclusion__label">
-              <PaperClipOutlined /> 关联文件
-              {linkedFiles.length > 0 && `（${linkedFiles.length}）`}
-            </span>
-          </div>
-          <Upload
-            multiple
-            showUploadList={false}
-            beforeUpload={(file) => {
-              uploadMut.mutate(file)
-              return false
-            }}
-          >
-            <Button
-              size="small"
-              icon={<UploadOutlined />}
-              loading={uploadMut.isPending}
+        <div className="card">
+          <div className="card__header">
+            <PaperClipOutlined style={{ color: 'var(--ink-3)' }} />
+            关联文件
+            {linkedFiles.length > 0 && (
+              <span className="card__header__count">{linkedFiles.length}</span>
+            )}
+            <span className="card__header__spacer" />
+            <Upload
+              multiple
+              showUploadList={false}
+              beforeUpload={(file) => {
+                uploadMut.mutate(file)
+                return false
+              }}
             >
-              上传文件
-            </Button>
-          </Upload>
+              <Button
+                size="small"
+                icon={<UploadOutlined />}
+                loading={uploadMut.isPending}
+              >
+                上传
+              </Button>
+            </Upload>
+          </div>
           {linkedFiles.length > 0 ? (
-            <div className="comm-aside-files__list">
+            <div className="row-list">
               {linkedFiles.map((f) => {
                 const isLink = f.source_type === 'link' && f.url
                 return (
@@ -360,7 +366,7 @@ export default function CommunicationDetail() {
         okText="保存"
         cancelText="取消"
       >
-        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={editForm} layout="vertical">
           <Form.Item
             name="occurred_at"
             label="沟通时间"

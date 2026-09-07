@@ -30,13 +30,13 @@ export default function GroupedTab({ items }: Props) {
   return (
     <div>
       <Segmented
+        className="grouped-segment"
         value={current.key}
         onChange={(v) => setActiveKey(v as string)}
         options={items.map((i) => ({
           value: i.key,
-          label: i.count ? `${i.label} (${i.count})` : i.label,
+          label: i.count ? `${i.label} ${i.count}` : i.label,
         }))}
-        style={{ marginBottom: 16 }}
       />
       {current.content}
     </div>

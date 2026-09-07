@@ -8,10 +8,7 @@ interface Props {
 }
 
 /** Fenced ```mermaid blocks become diagrams; every other code stays code. */
-function CodeBlock(props: {
-  className?: string
-  children?: ReactNode
-}) {
+function CodeBlock(props: { className?: string; children?: ReactNode }) {
   const code = String(props.children ?? '')
   if (props.className?.includes('language-mermaid')) {
     return <Mermaid chart={code.replace(/\n$/, '')} />

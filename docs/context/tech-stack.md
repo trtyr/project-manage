@@ -15,7 +15,7 @@ without reading the whole repository.
 | `frontend/vite.config.ts` | Development port and `/api` proxy topology |
 | `frontend/tsconfig.json` | TypeScript project references |
 | `frontend/.oxlintrc.json` | Oxlint plugins and enforced rules |
-| `DESIGN.md` | CSS/OKLCH palette and typography contract |
+| `DESIGN.md` | Geist design contract: palette, typography, layout, components |
 | `frontend/src/theme.ts` | Ant Design light/dark theme implementation |
 
 Package version strings below quote the repository manifests. PostgreSQL 16 is
@@ -34,7 +34,7 @@ range operators remain intact so the declarations are exact.
 | Component system | Ant Design | `5.29.3` |
 | Server state | TanStack React Query | `5.101.2` |
 | Linting | Oxlint | `1.71.0` |
-| Visual language | Inter + OKLCH tokens | Teal primary; amber accent |
+| Visual language | Geist (Vercel) tokens | Neutral grayscale + blue `#0070f3`; Geist Sans/Mono |
 
 ## 1. Languages and source formats
 
@@ -43,7 +43,7 @@ range operators remain intact so the declarations are exact.
 | Rust | `edition = "2024"` in `backend/Cargo.toml` | Backend HTTP service, handlers, models, errors, and database access |
 | TypeScript | `"typescript": "~6.0.2"` in `frontend/package.json` | Frontend application, API client, types, and Vite config |
 | SQL | SQLx feature `"postgres"`; `*.sql` migrations | PostgreSQL-dialect schema and data operations |
-| CSS | Custom OKLCH variables specified by `DESIGN.md` | Palette, semantic states, typography, and layout styling |
+| CSS | Custom properties specified by `DESIGN.md` (Geist system) | Palette, semantic states, typography, and layout styling |
 
 The TypeScript project-reference coordinator at `frontend/tsconfig.json` has
 no compiler-version field of its own. It delegates to the two exact project
@@ -201,55 +201,46 @@ runtime `Migrator` path described above.
 
 ## 6. Design tokens and visual system
 
-### Design contract from `DESIGN.md`
+### Geist (Vercel) design system in `frontend/src/index.css`
 
-CSS uses named custom tokens with OKLCH values. The design source describes a
-near-white surface, oxidized teal primary, and warm amber accent.
+The visual language (re-designed 2026-09-07) is the Geist system: a
+pure-neutral grayscale, one blue accent, 1px hairline borders instead of
+shadows, and Geist Sans/Mono typography (mono for dates, sizes, identifiers).
+Dark mode is a first-class peer of light mode — tokens swap on `html.dark`,
+and an inline `index.html` script applies the persisted theme pre-paint.
 
-| CSS token | Exact OKLCH value | Intended use |
-|---|---|---|
-| `--bg` | `oklch(0.985 0.003 180)` | Near-white teal-tinted page background |
-| `--surface` | `oklch(0.975 0.004 180)` | Cards and panels |
-| `--ink` | `oklch(0.200 0.010 180)` | Body text |
-| `--primary` | `oklch(0.550 0.095 180)` | Brand anchor and primary actions |
-| `--accent` | `oklch(0.680 0.130 55)` | Badges and status pills |
-| `--muted` | `oklch(0.500 0.008 180)` | Secondary text |
+| CSS token | Light | Dark | Intended use |
+|---|---|---|---|
+| `--bg` | `#ffffff` | `#000000` | Page background |
+| `--bg-subtle` | `#fafafa` | `#0a0a0a` | Sidebar rail, hover fills, card headers |
+| `--surface-raised` | `#ffffff` | `#161616` | Dropdowns, popovers, modals, toasts |
+| `--hairline` | `#eaeaea` | `#262626` | Dividers and card borders |
+| `--hairline-strong` | `#c9c9c9` | `#3d3d3d` | Control borders on hover |
+| `--ink` / `--ink-2` / `--ink-3` | `#171717` / `#666` / `#888` | `#ededed` / `#a1a1a1` / `#6e6e6e` | Text scale |
+| `--blue` | `#0070f3` | `#3291ff` | Single accent: primary buttons, links, focus rings |
+| `--green` / `--amber` / `--red` / `--purple` / `--teal` | `#0e9f6e` / `#f5a623` / `#ee0000` / `#7928ca` / `#0d9488` | `#29d398` / `#f5a623` / `#ff5f56` / `#9e7aff` / `#50e3c2` | Status dots & pills (`ui/Pill` tones) |
 
-Semantic state tokens are also specified in OKLCH:
-
-| State | Exact value |
-|---|---|
-| Success | `oklch(0.600 0.120 145)` |
-| Warning | `oklch(0.700 0.140 65)` |
-| Error | `oklch(0.550 0.180 25)` |
-| Info | `oklch(0.600 0.080 200)` |
-
-Typography is a single sans-serif family: **Inter**, with `system-ui` as the
-fallback. The fixed scale runs from `0.75rem` labels through `1.5rem` hero
-numbers; body line-height is `1.5` and heading line-height is `1.25`.
+Radii: 6px controls, 8px cards/modals. Controls are 32px (`controlHeightSM`
+26). Shadows are reserved for floating layers only (`--shadow-md`,
+`--shadow-lg`). Tooltips and toasts are always inverted (dark chip in light
+mode and vice versa). Typography: **Geist Sans** 400/500/600 + **Geist Mono**
+400/500 via `@fontsource`, with the system CJK stack as fallback.
 
 ### Ant Design implementation in `frontend/src/theme.ts`
 
-The React theme maps the design language to Ant Design tokens. The requested
-hex anchors are present in the shared token object:
+The React theme maps the same language onto AntD tokens:
 
 | Design role | Exact theme token | Value |
 |---|---|---|
-| Oxidized teal primary | `colorPrimary` | `'#148374'` |
-| Warm amber accent | `colorWarning` | `'#d48042'` |
-| Font | `fontFamily` | `"'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"` |
+| Accent | `colorPrimary` | `'#0070f3'` (light) / `'#3291ff'` (dark) |
+| Fonts | `fontFamily` / `codeFontFamily` | `FONT_SANS` / `FONT_MONO` (exported) |
+| Radii | `borderRadius` / `borderRadiusLG` | `6` / `8` |
 | Light algorithm | `lightTheme.algorithm` | `antdTheme.defaultAlgorithm` |
 | Dark algorithm | `darkTheme.algorithm` | `antdTheme.darkAlgorithm` |
 
-| Theme | Token or tokens | Exact value or values |
-|---|---|---|
-| Light | `colorBgContainer`; `colorBgLayout`; `colorText` | `'#ffffff'`; `'#f5f7f7'`; `'#1a1e1e'` |
-| Dark | `colorBgContainer`; `colorBgLayout`; `colorText` | `'#1e2222'`; `'#141616'`; `'#e4e8e8'` |
-| Dark primary | `darkTheme.token.colorPrimary` | `'#2db89e'` |
-
-Both modes customize menus, buttons, cards, tables, tags, inputs, selects,
-modals, and tabs. `App.tsx` selects `lightTheme` or `darkTheme` through
-`ConfigProvider`, and supplies the `zh_CN` locale.
+Both modes customize tables, menus, buttons, segmented controls, tabs and
+tags through component tokens. `App.tsx` selects `lightTheme` or `darkTheme`
+through `ConfigProvider`, and supplies the `zh_CN` locale.
 
 ## 7. First-party source inventory
 

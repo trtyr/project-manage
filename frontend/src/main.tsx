@@ -8,6 +8,12 @@ import {
 } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import 'dayjs/locale/zh-cn'
+// Geist Sans/Mono — the type system behind the Geist (Vercel) design
+import '@fontsource/geist-sans/400.css'
+import '@fontsource/geist-sans/500.css'
+import '@fontsource/geist-sans/600.css'
+import '@fontsource/geist-mono/400.css'
+import '@fontsource/geist-mono/500.css'
 import './index.css'
 import App from './App.tsx'
 import { classifyApiError } from './api/index.ts'

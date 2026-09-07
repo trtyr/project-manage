@@ -375,6 +375,13 @@ component per project-detail sub-tab plus two layout primitives. The
 former `components/FileLibrary.tsx` and `components/CommunicationDetail.tsx`
 were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
+The Geist (Vercel) visual redesign (2026-09-07) restyled every tab on the
+shared design system (`index.css` tokens + `theme.ts` AntD tokens +
+`ui/` primitives in E.20) without changing data flow: tables render inside
+`.table-card` bordered containers, in-cell enum selects are borderless
+`.cell-select` with colored dot labels from `utils/status.tsx`, empty
+states are `ui/EmptyState`, enum chips are `ui/Pill`.
+
 ### E.1 `GroupedTab` — the aggregation primitive
 
 | Field | Value |
@@ -525,7 +532,7 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | 修改密码 modal (opened from the sidebar footer key icon): requires current password, new ≥ 8 chars + confirm-field match, calls `authApi.changePassword` (`POST /api/auth/password`). Success toast notes that other devices are logged out (server revokes the user's other sessions). Backend 400 messages (wrong current password / too short) surface directly. |
+| Responsibility | 修改密码 modal (opened from the topbar/sidebar user menu): requires current password, new ≥ 8 chars + confirm-field match, calls `authApi.changePassword` (`POST /api/auth/password`). Success toast notes that other devices are logged out (server revokes the user's other sessions). Backend 400 messages (wrong current password / too short) surface directly. |
 | Public API (TS) | `export default function ChangePasswordModal({ open, onClose }: Props)` |
 | Internal deps | `authApi`; antd `Modal`/`Form`. |
 
@@ -533,9 +540,21 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | Export/import console at `/backup` (third sidebar item). Export card: plain links to `/api/export` (JSON snapshot) and `/api/export/archive` (full ZIP) — session-cookie downloads. Import card: `Upload.Dragger` accepting `.json`/`.zip`; `customRequest` intercepts the file and opens a destructive-action `modal.confirm` (替换全部数据) before calling `backupApi.importJson` / `importArchive`; shows the returned `ImportReport` (per-table counts + files restored/missing). Notes that manifests contain credential secrets in plain text. |
+| Responsibility | Export/import console at `/backup` (third sidebar item), rendered as Geist settings-style section cards. Export card: plain links to `/api/export` (JSON snapshot) and `/api/export/archive` (full ZIP) — session-cookie downloads. Import card: `Upload.Dragger` accepting `.json`/`.zip`; `customRequest` intercepts the file and opens a destructive-action `modal.confirm` (替换全部数据) before calling `backupApi.importJson` / `importArchive`; shows the returned `ImportReport` (per-table counts + files restored/missing). Notes that manifests contain credential secrets in plain text. |
 | Public API (TS) | `export default function BackupPage()` |
-| Internal deps | `backupApi`; antd `Upload`/`Card`/`modal.confirm`. |
+| Internal deps | `backupApi`; antd `Upload`/`modal.confirm`. |
+
+### E.20 `ui/` — Geist design-system primitives (`frontend/src/components/ui/`)
+
+Four tiny presentational primitives the redesigned pages are built from.
+No data fetching, no antd dependencies.
+
+| File | Responsibility |
+|---|---|
+| `ui/Pill.tsx` | Status pill: colored dot + label on a tone-tinted full-round chip. Tones: `neutral blue green amber red purple teal`; `small` variant for table cells; optional `onClick` turns it into a keyboard-operable button. |
+| `ui/EmptyState.tsx` | Geist empty state (icon circle + title + secondary description + optional action). Standalone or as an AntD Table `locale.emptyText`. |
+| `ui/StatTile.tsx` | Dashboard metric tile: label row (optional color dot) + large mono tabular value. |
+| `ui/Avatar.tsx` | Square avatar with the person's initial; black-on-light / white-on-dark like the brand mark. |
 
 ---
 
@@ -564,26 +583,26 @@ were **removed** (their jobs moved into `FilesTab` / `CommunicationsTab`).
 
 | Field | Value |
 |---|---|
-| Responsibility | Ant Design `ThemeConfig` tokens for light + dark mode. |
-| Public API (TS) | `export const lightTheme: ThemeConfig`, `export const darkTheme: ThemeConfig` |
-| Tokens | Shared brand color `#148374` (light) / `#2db89e` (dark); `borderRadius: 8`; `fontFamily: 'Inter', system-ui, …`; per-component overrides for `Layout`, `Menu`, `Button`, `Card`, `Table`, `Tag`, `Input`, `Select`, `Modal`, `Tabs`. |
+| Responsibility | Ant Design `ThemeConfig` tokens for light + dark mode, mapping the Geist (Vercel) design system onto AntD-rendered controls. The full visual contract lives in `index.css` CSS custom properties; this file only aligns AntD widgets. |
+| Public API (TS) | `export const lightTheme: ThemeConfig`, `export const darkTheme: ThemeConfig`, `export const FONT_SANS`, `export const FONT_MONO` |
+| Tokens | Single accent blue `#0070f3` (light) / `#3291ff` (dark); neutral ink scale `#171717/#666/#888` vs `#ededed/#a1a1a1/#6e6e6e`; hairline borders `#eaeaea` vs `#262626`; `borderRadius: 6` (LG 8); `controlHeight: 32`; Geist Sans/Mono stacks; per-component overrides for `Table`, `Tag`, `Segmented`, `Tabs`, `Menu`, `Button`. Inverted tooltips/toasts (dark chip in light mode) are layered in `index.css` — AntD has no token for them. |
 | Internal deps | `antd` `theme` algorithm + `ThemeConfig` type. |
 
-### F.4 `utils/format.ts`
+### F.4 `utils/format.ts` + `utils/status.tsx`
 
 | Field | Value |
 |---|---|
-| Responsibility | Tiny formatting helper(s) shared across pages. |
-| Public API (TS) | `export function formatSize(bytes: number): string` — produces `B` / `KB` / `MB`. |
-| Internal deps | None. |
+| `format.ts` | `export function formatSize(bytes: number): string` — produces `B` / `KB` / `MB`. |
+| `status.tsx` | Single source of enum-ish display metadata: `PROJECT_STATUS_META`, `TASK_STATUS_META`, `PRIORITY_META`, `ISSUE_STATUS_META`, `PHASE_STATUS_META`, `DELIVERABLE_STATUS_META`, `CRED_TYPE_META`, `TECH_APPROVAL_META`, `FEEDBACK_META`, `SOURCE_META`, `ASSET_TYPE_TONE` (each maps a domain value → `{ label, tone }` for `ui/Pill`), plus `toneColor(tone)` and `metaOptions(meta)` (dot-labelled AntD Select options). Tables, pills and cell selects all read these so labels/tone never drift. It is `.tsx` because `dotLabel`/`metaOptions` return JSX. |
 
 ### F.5 `App.tsx`
 
 | Field | Value |
 |---|---|
-| Responsibility | Top-level shell: auth bootstrap gate (`auth-status` → `/setup`, `/me` 401 → `/login`, spinner until resolved) + persistent sidebar (logo + global search + nav + project-count footer + logout + theme toggle) + `<Routes>` wrapped in `ErrorBoundary`. |
+| Responsibility | Top-level shell: auth bootstrap gate (`auth-status` → `/setup`, `/me` 401 → `/login`, spinner until resolved) + Geist chrome — 240px sidebar (brand mark, nav rail with raised active card, user card in the footer) and a sticky 56px topbar (breadcrumbs derived from the route + project name, Ctrl/⌘+K command search with grouped dropdown panel, compact avatar menu) — plus `<Routes>` wrapped in `ErrorBoundary`. |
 | Public API (TS) | `export default function App(): JSX.Element` (plus internal `SidebarItem` and `ErrorBoundary` classes — not exported) |
-| State | `isDark` (localStorage-persisted, falls back to `prefers-color-scheme`); sidebar global search (debounced 300 ms via `searchApi`); `useQuery(['projects'], projectsApi.list)` for footer stats — **enabled only after login** (`!!me`) so the sidebar never fires a 401 on `/login`/`/setup`. |
+| State | `isDark` (localStorage-persisted, falls back to `prefers-color-scheme`; also applied pre-paint by an inline script in `index.html`); topbar global search (debounced 300 ms via `searchApi`, panel closes on blur/Esc/clear); `useQuery(['projects'], projectsApi.list)` for breadcrumbs + footer stats — **enabled only after login** (`!!me`) so it never fires a 401 on `/login`/`setup`. |
+| User menu | AntD `Dropdown` on both the sidebar user card and the topbar avatar: profile header, 修改密码 (`ChangePasswordModal`), theme toggle, 登出. |
 | Routes | `/` → `ProjectBoard`; `/files` → `FileLibrary`; `/projects/:id` → `ProjectDetail`; `/projects/:id/communications/:commId` → `CommunicationDetail`; `/login` → `LoginPage`; `/setup` → `SetupPage` (last two render standalone, no app shell). |
 | ErrorBoundary | Class component; on failure shows a "页面出错了" + reload button; logs to `console.error`. |
 | Internal deps | `lightTheme`, `darkTheme` from `./theme`; `projectsApi` from `./api`; pages from `./pages/*`. |

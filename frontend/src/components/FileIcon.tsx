@@ -27,7 +27,7 @@ export default function FileIcon({
   size = 16,
 }: Props) {
   if (sourceType === 'link')
-    return <LinkOutlined style={{ color: '#13c2c2', fontSize: size }} />
+    return <LinkOutlined style={{ color: 'var(--teal)', fontSize: size }} />
 
   const ext = filename?.split('.').pop()?.toLowerCase() ?? ''
   const mime = mimeType ?? ''
@@ -42,43 +42,43 @@ export default function FileIcon({
       exts: ['pdf'],
       mimes: ['application/pdf'],
       Icon: FilePdfOutlined,
-      color: 'var(--danger-hex)',
+      color: 'var(--red)',
     },
     {
       exts: ['doc', 'docx'],
       mimes: ['word'],
       Icon: FileWordOutlined,
-      color: '#2f54eb',
+      color: 'var(--blue)',
     },
     {
       exts: ['xls', 'xlsx'],
       mimes: ['excel', 'spreadsheet'],
       Icon: FileExcelOutlined,
-      color: 'var(--success-hex)',
+      color: 'var(--green)',
     },
     {
       exts: ['ppt', 'pptx'],
       mimes: ['powerpoint'],
       Icon: FilePptOutlined,
-      color: '#fa8c16',
+      color: 'var(--amber)',
     },
     {
       exts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico'],
       mimes: ['image/'],
       Icon: FileImageOutlined,
-      color: 'var(--info-hex)',
+      color: 'var(--purple)',
     },
     {
       exts: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'],
       mimes: [],
       Icon: FileZipOutlined,
-      color: '#d48806',
+      color: 'var(--amber)',
     },
     {
       exts: ['md', 'markdown'],
       mimes: ['markdown'],
       Icon: FileMarkdownOutlined,
-      color: '#2f54eb',
+      color: 'var(--blue)',
     },
     {
       exts: [
@@ -116,7 +116,7 @@ export default function FileIcon({
         'application/x-yaml',
       ],
       Icon: FileTextOutlined,
-      color: '#595959',
+      color: 'var(--ink-2)',
     },
   ]
 
@@ -125,5 +125,5 @@ export default function FileIcon({
       return <Icon style={{ color, fontSize: size }} />
   }
 
-  return <FileOutlined style={{ color: '#8c8c8c', fontSize: size }} />
+  return <FileOutlined style={{ color: 'var(--ink-3)', fontSize: size }} />
 }

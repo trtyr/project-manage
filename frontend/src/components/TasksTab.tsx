@@ -11,24 +11,18 @@ import {
   Space,
   App,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CheckSquareOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { tasksApi, peopleApi } from '../api'
 import type { Task, TaskStatus, TaskPriority } from '../types'
-
-const STATUS_OPTIONS = [
-  { label: '当前', value: 'current' },
-  { label: '下一步', value: 'next' },
-  { label: '待办', value: 'todo' },
-]
-
-const PRIORITY_OPTIONS = [
-  { label: '紧急', value: 'urgent' },
-  { label: '高', value: 'high' },
-  { label: '正常', value: 'normal' },
-  { label: '低', value: 'low' },
-]
+import EmptyState from './ui/EmptyState'
+import { TASK_STATUS_META, PRIORITY_META, metaOptions } from '../utils/status'
 
 interface Props {
   projectId: string
@@ -115,13 +109,15 @@ export default function TasksTab({ projectId }: Props) {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
-        width: 110,
+        width: 104,
         render: (s: TaskStatus, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={s}
-            style={{ width: 95 }}
-            options={STATUS_OPTIONS}
+            style={{ width: 88 }}
+            options={metaOptions(TASK_STATUS_META)}
             onChange={(val) =>
               updateTaskMut.mutate({ taskId: r.id, data: { status: val } })
             }
@@ -132,13 +128,15 @@ export default function TasksTab({ projectId }: Props) {
         title: '优先级',
         dataIndex: 'priority',
         key: 'priority',
-        width: 90,
+        width: 88,
         render: (p: TaskPriority, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={p}
-            style={{ width: 80 }}
-            options={PRIORITY_OPTIONS}
+            style={{ width: 72 }}
+            options={metaOptions(PRIORITY_META)}
             onChange={(val) =>
               updateTaskMut.mutate({ taskId: r.id, data: { priority: val } })
             }
@@ -152,15 +150,17 @@ export default function TasksTab({ projectId }: Props) {
         width: 120,
         render: (aid: string | null, r: { id: string }) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={aid ?? undefined}
-            style={{ width: 110 }}
+            style={{ width: 100 }}
             allowClear
-            placeholder="指派"
+            placeholder={<span className="table-dim">未指派</span>}
             // D2: guide to 成员 when the team side is empty
             notFoundContent={
               teamPeople.length === 0 ? (
-                <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                <span className="table-dim" style={{ fontSize: 12 }}>
                   团队侧暂无成员——到「成员」页添加后可指派
                 </span>
               ) : undefined
@@ -179,22 +179,22 @@ export default function TasksTab({ projectId }: Props) {
         title: '截止',
         dataIndex: 'planned_date',
         key: 'planned_date',
-        width: 110,
+        width: 90,
         render: (v: string | null) => {
-          if (!v) return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          if (!v) return <span className="table-dim">—</span>
           const d = dayjs(v)
           const overdue = d.isBefore(dayjs(), 'day')
           return (
-            <span style={{ color: overdue ? 'var(--danger-hex)' : 'inherit' }}>
+            <span className={`mono ${overdue ? 'table-overdue' : ''}`}>
               {d.format('MM-DD')}
             </span>
           )
         },
       },
       {
-        title: '操作',
+        title: '',
         key: 'action',
-        width: 80,
+        width: 76,
         render: (_: unknown, r: Task) => (
           <Space size={0}>
             <Button
@@ -225,12 +225,19 @@ export default function TasksTab({ projectId }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
-        <Button icon={<PlusOutlined />} onClick={openCreate}>
+      <div className="table-toolbar">
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           添加任务
         </Button>
+        <div className="table-toolbar__spacer" />
+        {tasks?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {tasks.length} 项
+          </span>
+        ) : null}
       </div>
       <Table
+        className="table-card"
         dataSource={tasks}
         rowKey="id"
         size="small"
@@ -238,8 +245,13 @@ export default function TasksTab({ projectId }: Props) {
         scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{
-          emptyText:
-            '还没有任务。把下一步要做的事记下来，用状态区分「待办 / 进行中 / 下一步」。',
+          emptyText: (
+            <EmptyState
+              icon={<CheckSquareOutlined />}
+              title="还没有任务"
+              desc="把下一步要做的事记下来，用状态区分「当前 / 下一步 / 待办」。"
+            />
+          ),
         }}
       />
 
@@ -271,7 +283,7 @@ export default function TasksTab({ projectId }: Props) {
         okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
-        <Form form={taskForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={taskForm} layout="vertical">
           <Form.Item
             name="title"
             label="任务标题"
@@ -280,10 +292,10 @@ export default function TasksTab({ projectId }: Props) {
             <Input placeholder="如：端口扫描" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="todo">
-            <Select options={STATUS_OPTIONS} />
+            <Select options={metaOptions(TASK_STATUS_META)} />
           </Form.Item>
           <Form.Item name="priority" label="优先级" initialValue="normal">
-            <Select options={PRIORITY_OPTIONS} />
+            <Select options={metaOptions(PRIORITY_META)} />
           </Form.Item>
           <Form.Item name="assignee_id" label="指派给">
             <Select
@@ -291,7 +303,7 @@ export default function TasksTab({ projectId }: Props) {
               placeholder="选择团队成员"
               notFoundContent={
                 teamPeople.length === 0 ? (
-                  <span style={{ fontSize: 12, color: 'var(--muted-hex)' }}>
+                  <span className="table-dim" style={{ fontSize: 12 }}>
                     团队侧暂无成员——到「成员」页添加后可指派
                   </span>
                 ) : undefined

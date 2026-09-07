@@ -61,8 +61,9 @@ export default function CommunicationsTab({ projectId }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
+      <div className="table-toolbar">
         <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             // Defensive reset so a previously-cancelled session cannot leak
@@ -77,6 +78,12 @@ export default function CommunicationsTab({ projectId }: Props) {
         >
           添加沟通记录
         </Button>
+        <div className="table-toolbar__spacer" />
+        {communications?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {communications.length} 条
+          </span>
+        ) : null}
       </div>
       <CommunicationList
         communications={communications}

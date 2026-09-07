@@ -6,6 +6,8 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   LinkOutlined,
+  SearchOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -13,6 +15,7 @@ import { filesApi } from '../api'
 import type { FileWithProject } from '../types'
 import FilePreview from '../components/FilePreview'
 import FileIcon from '../components/FileIcon'
+import EmptyState from '../components/ui/EmptyState'
 import { formatSize } from '../utils/format'
 
 const { CheckableTag } = Tag
@@ -74,50 +77,53 @@ export default function FileLibrary() {
     <div className="fade-in">
       {/* Page header */}
       <div className="page-header">
-        <div className="page-header__left">
+        <div>
           <h1 className="page-header__title">资料库</h1>
-          <span className="page-header__count">
-            {files?.length ?? 0} 个文件
-          </span>
+          <div className="page-header__sub">
+            {files?.length ?? 0} 个文件 · 跨项目集中检索
+          </div>
         </div>
       </div>
 
-      <Input.Search
-        placeholder="搜索文件名、项目名或标签…"
-        allowClear
-        size="large"
-        style={{ marginBottom: 'var(--space-4)', maxWidth: 400 }}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      {allTags.length > 0 && (
-        <Space size={[4, 4]} wrap style={{ marginLeft: 'var(--space-2)' }}>
-          {allTags.map((t) => (
-            <CheckableTag
-              key={t}
-              checked={activeTags.includes(t)}
-              onChange={(checked: boolean) =>
-                setActiveTags((prev) =>
-                  checked ? [...prev, t] : prev.filter((x) => x !== t),
-                )
-              }
-            >
-              {t}
-            </CheckableTag>
-          ))}
-          {activeTags.length > 0 && (
-            <Button
-              type="link"
-              size="small"
-              onClick={() => setActiveTags([])}
-              aria-label="清除标签筛选"
-            >
-              清除筛选
-            </Button>
-          )}
-        </Space>
-      )}
+      <div className="table-toolbar">
+        <Input
+          placeholder="搜索文件名、项目名或标签…"
+          allowClear
+          prefix={<SearchOutlined style={{ color: 'var(--ink-3)' }} />}
+          style={{ width: 320 }}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {allTags.length > 0 && (
+          <Space size={[4, 4]} wrap style={{ marginLeft: 'var(--space-2)' }}>
+            {allTags.map((t) => (
+              <CheckableTag
+                key={t}
+                checked={activeTags.includes(t)}
+                onChange={(checked: boolean) =>
+                  setActiveTags((prev) =>
+                    checked ? [...prev, t] : prev.filter((x) => x !== t),
+                  )
+                }
+              >
+                {t}
+              </CheckableTag>
+            ))}
+            {activeTags.length > 0 && (
+              <Button
+                type="link"
+                size="small"
+                onClick={() => setActiveTags([])}
+                aria-label="清除标签筛选"
+              >
+                清除筛选
+              </Button>
+            )}
+          </Space>
+        )}
+      </div>
 
       <Table
+        className="table-card"
         dataSource={visible}
         rowKey="id"
         size="small"
@@ -191,7 +197,11 @@ export default function FileLibrary() {
             key: 'file_size',
             width: 70,
             render: (s: number, r: FileWithProject) =>
-              r.source_type === 'link' ? '-' : formatSize(s),
+              r.source_type === 'link' ? (
+                <span className="table-dim">—</span>
+              ) : (
+                <span className="mono">{formatSize(s)}</span>
+              ),
           },
           {
             title: '标签',
@@ -210,14 +220,18 @@ export default function FileLibrary() {
             dataIndex: 'created_at',
             key: 'created_at',
             width: 140,
-            render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
+            render: (v: string) => (
+              <span className="mono">
+                {dayjs(v).format('YYYY-MM-DD HH:mm')}
+              </span>
+            ),
           },
           {
             title: '',
             key: 'action',
             width: 110,
             render: (_: unknown, r: FileWithProject) => (
-              <Space>
+              <Space size={0}>
                 {r.source_type === 'link' && r.url ? (
                   <Button
                     type="text"
@@ -264,7 +278,15 @@ export default function FileLibrary() {
             ),
           },
         ]}
-        locale={{ emptyText: '资料库中还没有文件' }}
+        locale={{
+          emptyText: (
+            <EmptyState
+              icon={<FolderOpenOutlined />}
+              title="资料库中还没有文件"
+              desc="在项目的「资料」标签页上传文件或添加在线链接。"
+            />
+          ),
+        }}
       />
 
       <FilePreview

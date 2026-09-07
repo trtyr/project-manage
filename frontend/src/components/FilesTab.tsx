@@ -21,12 +21,14 @@ import {
   EditOutlined,
   EyeOutlined,
   LinkOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { filesApi, communicationsApi, phasesApi } from '../api'
 import type { ProjectFile } from '../types'
 import FileIcon from './FileIcon'
+import EmptyState from './ui/EmptyState'
 import { formatSize } from '../utils/format'
 
 const { CheckableTag } = Tag
@@ -189,7 +191,11 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         key: 'file_size',
         width: 70,
         render: (s: number, r: ProjectFile) =>
-          r.source_type === 'link' ? '-' : formatSize(s),
+          r.source_type === 'link' ? (
+            <span className="table-dim">—</span>
+          ) : (
+            <span className="mono">{formatSize(s)}</span>
+          ),
       },
       {
         title: '标签',
@@ -208,14 +214,16 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         dataIndex: 'description',
         key: 'description',
         ellipsis: true,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) => v ?? <span className="table-dim">—</span>,
       },
       {
         title: '上传时间',
         dataIndex: 'created_at',
         key: 'created_at',
-        width: 105,
-        render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
+        width: 120,
+        render: (v: string) => (
+          <span className="mono">{dayjs(v).format('YYYY-MM-DD HH:mm')}</span>
+        ),
       },
       {
         title: '来源',
@@ -223,10 +231,9 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         width: 130,
         render: (_: unknown, r: ProjectFile) => {
           if (!r.communication_id)
-            return <span style={{ color: 'var(--muted-hex)' }}>直接上传</span>
+            return <span className="table-dim">直接上传</span>
           const comm = communications?.find((c) => c.id === r.communication_id)
-          if (!comm)
-            return <span style={{ color: 'var(--muted-hex)' }}>已关联</span>
+          if (!comm) return <span className="table-dim">已关联</span>
           const preview = comm.content.slice(0, 12).replace(/\n/g, ' ')
           return (
             <a
@@ -244,7 +251,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                     `/projects/${projectId}/communications/${r.communication_id}`,
                   )
               }}
-              className="table-link"
+              className="table-link table-link--plain"
               style={{ cursor: 'pointer' }}
             >
               沟通 · {preview}
@@ -258,8 +265,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         key: 'phase',
         width: 100,
         render: (_: unknown, r: ProjectFile) => {
-          if (!r.phase_id)
-            return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          if (!r.phase_id) return <span className="table-dim">—</span>
           const ph = phases?.find((p) => p.id === r.phase_id)
           return (
             <span title={ph?.description || ''}>{ph?.name ?? '未知阶段'}</span>
@@ -269,9 +275,9 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
       {
         title: '',
         key: 'action',
-        width: 140,
+        width: 120,
         render: (_: unknown, r: ProjectFile) => (
-          <Space>
+          <Space size={0}>
             {r.source_type === 'link' && r.url ? (
               <Button
                 type="text"
@@ -346,8 +352,12 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
-        <Button icon={<PlusOutlined />} onClick={() => setFileOpen(true)}>
+      <div className="table-toolbar">
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setFileOpen(true)}
+        >
           上传文件
         </Button>
         {allTags.length > 0 && (
@@ -377,8 +387,15 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
             )}
           </Space>
         )}
+        <div className="table-toolbar__spacer" />
+        {files?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {files.length} 个文件
+          </span>
+        ) : null}
       </div>
       <Table
+        className="table-card"
         dataSource={visibleFiles}
         rowKey="id"
         size="small"
@@ -386,7 +403,13 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{
-          emptyText: '还没有上传文件。把方案、报告拖进来，并关联到对应阶段。',
+          emptyText: (
+            <EmptyState
+              icon={<FolderOpenOutlined />}
+              title="还没有上传文件"
+              desc="把方案、报告拖进来，并关联到对应阶段。"
+            />
+          ),
         }}
       />
 
@@ -423,7 +446,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         }}
         width={480}
       >
-        <div style={{ marginTop: 16 }}>
+        <div>
           {uploadMode === 'file' ? (
             <Upload.Dragger
               multiple
@@ -446,7 +469,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                   }) as UploadFile,
               )}
             >
-              <p style={{ margin: 0, color: 'var(--muted-hex)' }}>
+              <p style={{ margin: 0, color: 'var(--ink-2)', fontSize: 13 }}>
                 点击或拖拽文件到此处（可多选）
               </p>
             </Upload.Dragger>
@@ -456,7 +479,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
                 placeholder="链接地址（https://…）"
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
-                prefix={<LinkOutlined style={{ color: 'var(--muted-hex)' }} />}
+                prefix={<LinkOutlined style={{ color: 'var(--ink-3)' }} />}
               />
               <Input
                 style={{ marginTop: 8 }}
@@ -501,7 +524,7 @@ export default function FilesTab({ projectId, onFilePreview }: Props) {
         okText="保存"
         cancelText="取消"
       >
-        <div style={{ marginTop: 16 }}>
+        <div>
           <Input.TextArea
             rows={2}
             placeholder="描述（可选）"

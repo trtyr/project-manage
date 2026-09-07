@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Modal, Typography, Skeleton, Tabs } from 'antd'
+import { Modal, Typography, Skeleton, Tabs, Button, Tooltip } from 'antd'
+import { DownloadOutlined } from '@ant-design/icons'
 import Markdown from './Markdown'
+import FileIcon from './FileIcon'
 import { filesApi } from '../api'
 import type { ProjectFile } from '../types'
+import { formatSize } from '../utils/format'
+import dayjs from 'dayjs'
 
 const { Text } = Typography
 
@@ -198,9 +202,59 @@ export default function FilePreview({ file, open, onClose }: Props) {
     isXlsx ||
     isDocx
 
+  const handleDownload = async () => {
+    try {
+      const blob = await filesApi.download(file!.id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file!.original_name
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      /* downloads have their own error paths in callers */
+    }
+  }
+
   return (
     <Modal
-      title={file.original_name}
+      title={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
+          <FileIcon
+            filename={file.original_name}
+            mimeType={file.mime_type}
+            sourceType={file.source_type}
+            size={18}
+          />
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={file.original_name}
+          >
+            {file.original_name}
+          </span>
+          <span
+            className="mono"
+            style={{ color: 'var(--ink-3)', flexShrink: 0 }}
+          >
+            {file.source_type === 'link'
+              ? '在线链接'
+              : `${formatSize(file.file_size)} · ${dayjs(file.created_at).format('YYYY-MM-DD')}`}
+          </span>
+        </div>
+      }
       open={open}
       onCancel={onClose}
       footer={null}
@@ -208,8 +262,36 @@ export default function FilePreview({ file, open, onClose }: Props) {
       width="100%"
       styles={{ body: { height: '85vh', overflow: 'auto', padding: 0 } }}
     >
+      {file.source_type !== 'link' && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '8px 16px',
+            borderBottom: '1px solid var(--hairline)',
+          }}
+        >
+          <Tooltip title="下载文件">
+            <Button
+              type="text"
+              size="small"
+              icon={<DownloadOutlined />}
+              aria-label={`下载 ${file.original_name}`}
+              onClick={handleDownload}
+            >
+              下载
+            </Button>
+          </Tooltip>
+        </div>
+      )}
       {isImageType(file.mime_type) && (
-        <div style={{ textAlign: 'center', padding: 16 }}>
+        <div
+          style={{
+            textAlign: 'center',
+            padding: 16,
+            background: 'var(--bg-subtle)',
+          }}
+        >
           <img
             src={previewUrl}
             alt={file.original_name}
@@ -249,32 +331,11 @@ export default function FilePreview({ file, open, onClose }: Props) {
           ) : isMd ? (
             <Markdown>{textContent}</Markdown>
           ) : (
-            <pre
-              style={{
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                fontSize: 13,
-                fontFamily: 'var(--font-mono)',
-                margin: 0,
-                lineHeight: 1.6,
-                color: 'var(--ink)',
-              }}
-            >
+            <pre className="preview-text">
               {textContent.split('\n').map((line, i) => (
-                <div key={i} style={{ display: 'flex' }}>
-                  <span
-                    style={{
-                      color: 'var(--muted)',
-                      width: 44,
-                      textAlign: 'right',
-                      paddingRight: 12,
-                      userSelect: 'none',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <span style={{ flex: 1 }}>{line || ' '}</span>
+                <div key={i} className="preview-text__line">
+                  <span className="preview-text__no">{i + 1}</span>
+                  <span className="preview-text__content">{line || ' '}</span>
                 </div>
               ))}
             </pre>

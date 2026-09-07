@@ -1,71 +1,98 @@
 # DESIGN.md
 
+> Visual contract for project-manage — the Geist (Vercel) design system.
+> Implemented in `frontend/src/index.css` (CSS custom properties + component
+> classes) and `frontend/src/theme.ts` (AntD token mapping). Rewritten
+> 2026-09-07; supersedes the teal/OKLCH scheme.
+
 ## Color
 
 ### Strategy
 
-Restrained — pure white surface, oxidized teal primary, warm amber accent ≤10%.
+Pure-neutral grayscale surfaces with 1px hairline borders — no tinted hues,
+no decorative shadows. One blue accent carries every interactive meaning
+(primary actions, links, focus rings, selection). Status colors appear only
+as dot + tinted pill, never as large fills. Dark mode is a first-class peer
+of light mode, not an inversion hack: page background is true black (#000).
 
-### Palette (OKLCH)
+### Palette
 
-| Role | Value | Usage |
-|---|---|---|
-| `--bg` | `oklch(0.985 0.003 180)` | Near-white teal tint — page background, lets white cards float |
-| `--surface` | `oklch(0.975 0.004 180)` | Near-white, faint teal tint — cards, panels |
-| `--ink` | `oklch(0.200 0.010 180)` | Near-black, faint teal — body text (≥7:1 vs bg) |
-| `--primary` | `oklch(0.550 0.095 180)` | Oxidized teal — brand anchor, primary actions, selection |
-| `--accent` | `oklch(0.680 0.130 55)` | Warm amber — badges, status pills, cold/warm contrast |
-| `--muted` | `oklch(0.500 0.008 180)` | Teal-tinted gray — secondary text (≥3.5:1 vs bg) |
+| Role | Light | Dark | Usage |
+|---|---|---|---|
+| `--bg` | `#ffffff` | `#000000` | Page background |
+| `--bg-subtle` | `#fafafa` | `#0a0a0a` | Sidebar rail, hover fills, card headers, input wells |
+| `--surface-raised` | `#ffffff` | `#161616` | Dropdowns, popovers, modals, drawers, toasts |
+| `--hairline` | `#eaeaea` | `#262626` | Dividers, card/table borders |
+| `--hairline-strong` | `#c9c9c9` | `#3d3d3d` | Control borders (hover state) |
+| `--ink` | `#171717` | `#ededed` | Primary text |
+| `--ink-2` | `#666666` | `#a1a1a1` | Secondary text |
+| `--ink-3` | `#888888` | `#6e6e6e` | Tertiary text, table headers, timestamps |
+| `--blue` | `#0070f3` | `#3291ff` | The accent |
+| `--green` | `#0e9f6e` | `#29d398` | Success / done |
+| `--amber` | `#f5a623` | `#f5a623` | Warning / paused |
+| `--red` | `#ee0000` | `#ff5f56` | Error / danger / overdue |
+| `--purple` | `#7928ca` | `#9e7aff` | Categorical accent |
+| `--teal` | `#0d9488` | `#50e3c2` | Categorical accent |
 
-### Semantic States
+Pill text tones are AA-tuned darker/lighter variants of the dot color
+(`.pill--blue` etc. in index.css). Tooltips and toasts are always inverted:
+dark chip in light mode, light chip in dark mode.
 
-| State | Color | Value |
-|---|---|---|
-| success | green | `oklch(0.600 0.120 145)` |
-| warning | amber | `oklch(0.700 0.140 65)` |
-| error | red | `oklch(0.550 0.180 25)` |
-| info | teal | `oklch(0.600 0.080 200)` |
+### Shadows
 
-Text on primary/accent fills: white. Text on pale fills (L > 0.85): ink.
+Reserved for floating layers only — never on static cards.
+
+| Layer | Token |
+|---|---|
+| Active sidebar card, segmented item | `--shadow-xs` |
+| Dropdown, popover, select popup, toast | `--shadow-md` |
+| Modal dialog | `--shadow-lg` |
 
 ## Typography
 
-### Family
+Two families, both self-hosted via `@fontsource`:
 
-Single sans-serif: **Inter** (system-ui fallback). No display font — product UI doesn't need one.
+- **Geist Sans** 400/500/600 — UI text. Fallbacks: system stack + CJK
+  (`PingFang SC`, `Microsoft YaHei`).
+- **Geist Mono** 400/500 — dates, sizes, identifiers, counts, code, form
+  values in credential rows. Mono is a signal: "this is data, not prose".
 
-### Scale (fixed rem, ratio 1.125)
-
-| Token | Size | Usage |
-|---|---|---|
-| `--text-xs` | 0.75rem (12px) | Labels, captions, metadata |
-| `--text-sm` | 0.875rem (14px) | Secondary text, table cells |
-| `--text-base` | 1rem (16px) | Body text, inputs |
-| `--text-lg` | 1.125rem (18px) | Section headings |
-| `--text-xl` | 1.25rem (20px) | Page headings |
-| `--text-2xl` | 1.5rem (24px) | Hero numbers |
-
-Line-height: 1.5 for body, 1.25 for headings. Letter-spacing: -0.01em for headings, 0 for body.
+Scale (px): 11 (section labels, uppercase + tracking) · 12 (meta, timestamps,
+table headers) · 13 (secondary body, table cells, nav) · 14 (body, controls)
+· 15/16 (modal titles, large controls) · 20 (page titles) · 24 (stat tile
+values, tabular). Body line-height 1.5–1.75; headings -0.02em tracking.
 
 ## Layout
 
-- App shell: sticky dark top bar (60px) with logo + inline text nav + content area
-- Content max-width: 1280px, centered with 32px padding
-- Responsive: board grid collapses to single column at <768px
-- Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48px
+- App shell: 240px sidebar (`--bg-subtle`, hairline right edge) + main
+  column with a sticky 56px topbar (breadcrumbs · search · avatar menu).
+- Sidebar active item is a raised surface card (white / #1f1f1f) with its
+  own hairline — the Vercel nav pattern.
+- Content: max-width 1120px centered, 32px side padding, generous bottom.
+- Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48px.
+- Responsive: ≤960px sidebar collapses to a 64px icon rail, topbar search
+  hides; ≤640px slims further. `prefers-reduced-motion` disables animation.
 
 ## Components
 
-- **Ant Design v5** as base, customized via theme tokens to match palette
-- Buttons: primary (teal fill, white text), default (outline), text (no border)
-- Tables: compact density, sticky headers, row hover highlight
-- Forms: labeled inputs, inline validation, skeleton loading
-- Empty states: illustrative + actionable ("还没有客户，点击创建第一个")
-- Loading: skeleton placeholders, not spinners
+- **Ant Design v5** as base, retuned via `theme.ts` tokens: 32px controls,
+  6px radius (8px for cards/dialogs), no colored shadows, borderless
+  in-cell enum selects that read as values until hovered.
+- **Pills** (`ui/Pill`): dot + label on tone-tinted full-round chip; the
+  only sanctioned way to render status/priority/type enums.
+- **Empty states** (`ui/EmptyState`): glyph circle, one-line title, one-line
+  secondary description, at most one action.
+- **Tables** (`.table-card`): bordered rounded container, 12px ink-3 header
+  row, hairline row dividers, hover fill `--bg-subtle`, mono numerics.
+- **Cards** (`.card` + `.card__header`): hairline container; header strip
+  `--bg-subtle` with 13px semibold title and mono count.
+- **Auth pages**: centered 340px column on a masked dot-grid backdrop;
+  brand mark (black square / white triangle, inverted in dark) above.
+- **Loading**: skeleton placeholders in content areas, spinner only for the
+  initial auth gate.
 
 ## Motion
 
-- Duration: 150–250ms
-- Easing: `cubic-bezier(0.25, 1, 0.5, 1)` (ease-out-quart)
-- Purpose: state transitions, feedback, reveal — never decoration
-- `prefers-reduced-motion`: crossfade or instant
+- Durations: 120ms fast (hover, fill), 180ms normal (enter/exit).
+- Easing: `cubic-bezier(0.25, 1, 0.5, 1)`.
+- Purpose: state feedback only — never decoration.

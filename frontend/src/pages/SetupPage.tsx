@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { Button, Form, Input, Typography, App } from 'antd'
+import { Button, Form, Input, App } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { authApi } from '../api'
 import type { UserPublic } from '../types'
-
-const { Title, Text, Paragraph } = Typography
 
 /// First-run bootstrap: create the initial account. The backend only
 /// accepts this while the users table is empty (409 afterwards).
@@ -45,36 +43,26 @@ export default function SetupPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--bg, #f5f7f7)',
-      }}
-    >
-      <div
-        style={{
-          width: 380,
-          padding: 32,
-          background: 'var(--card-surface, #fff)',
-          borderRadius: 8,
-          border: '1px solid var(--hairline, #e8eded)',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <Title level={4} style={{ margin: 0 }}>
-            系统初始化
-          </Title>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <span
+            className="brand-mark"
+            style={{ width: 32, height: 32, borderRadius: 8 }}
+          />
+          <h1 className="auth-title">系统初始化</h1>
         </div>
-        <Paragraph
-          type="secondary"
-          style={{ textAlign: 'center', fontSize: 13 }}
+        <p className="auth-sub">
+          首次使用，请创建管理员账号。
+          <br />
+          此页面仅出现一次。
+        </p>
+        <Form
+          className="auth-form"
+          layout="vertical"
+          onFinish={onFinish}
+          requiredMark={false}
         >
-          首次使用，请创建管理员账号。此页面仅出现一次。
-        </Paragraph>
-        <Form layout="vertical" onFinish={onFinish}>
           <Form.Item
             name="username"
             label="用户名"
@@ -117,17 +105,7 @@ export default function SetupPage() {
             创建账号并进入
           </Button>
         </Form>
-        <Text
-          type="secondary"
-          style={{
-            display: 'block',
-            textAlign: 'center',
-            marginTop: 16,
-            fontSize: 12,
-          }}
-        >
-          创建后此接口将永久关闭
-        </Text>
+        <div className="auth-footer">创建后此接口将永久关闭</div>
       </div>
     </div>
   )

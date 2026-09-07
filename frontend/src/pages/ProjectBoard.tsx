@@ -7,24 +7,18 @@ import {
   Input,
   Select,
   Radio,
-  Empty,
   App,
   Dropdown,
-  Card,
   Skeleton,
-  Statistic,
-  Tag,
-  Typography,
 } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   PlusOutlined,
   SearchOutlined,
   MoreOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  PauseCircleOutlined,
   FolderOutlined,
+  MessageOutlined,
+  FileOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -36,7 +30,11 @@ import {
   searchApi,
 } from '../api'
 import type { SearchHit } from '../api'
-import type { Project, ProjectStatus } from '../types'
+import type { Project } from '../types'
+import Pill from '../components/ui/Pill'
+import EmptyState from '../components/ui/EmptyState'
+import StatTile from '../components/ui/StatTile'
+import { PROJECT_STATUS_META } from '../utils/status'
 
 /** D5: shared CRM options — same value set as ProjectDetail's edit modal. */
 const TECH_APPROVAL_OPTIONS = [
@@ -46,18 +44,10 @@ const TECH_APPROVAL_OPTIONS = [
   { label: '技术否决', value: '技术否决' },
 ]
 
-const { Text } = Typography
-
-const statusOrder: Record<ProjectStatus, number> = {
+const statusOrder: Record<string, number> = {
   in_progress: 0,
   paused: 1,
   completed: 2,
-}
-
-const statusDot: Record<ProjectStatus, string> = {
-  in_progress: 'status-dot--in_progress',
-  completed: 'status-dot--completed',
-  paused: 'status-dot--paused',
 }
 
 export default function ProjectBoard() {
@@ -257,15 +247,19 @@ export default function ProjectBoard() {
     )
     .slice(0, 5)
 
+  const statusOptions = Object.entries(PROJECT_STATUS_META).map(
+    ([value, m]) => ({ label: m.label, value }),
+  )
+
   return (
     <div>
       {/* Page header */}
       <div className="page-header">
-        <div className="page-header__left">
+        <div>
           <h1 className="page-header__title">概览</h1>
-          <span className="page-header__count">
-            {projects?.length ?? 0} 个项目
-          </span>
+          <div className="page-header__sub">
+            {projects?.length ?? 0} 个项目 · {inProgress} 个进行中
+          </div>
         </div>
         <Button
           type="primary"
@@ -278,17 +272,12 @@ export default function ProjectBoard() {
 
       {/* Search */}
       <Input
-        size="large"
         placeholder="搜索项目、沟通、任务、关切…"
-        prefix={<SearchOutlined style={{ color: 'var(--muted-hex)' }} />}
+        prefix={<SearchOutlined style={{ color: 'var(--ink-3)' }} />}
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}
         allowClear
-        style={{
-          marginBottom: 'var(--space-6)',
-          borderRadius: 8,
-          maxWidth: 420,
-        }}
+        style={{ marginBottom: 'var(--space-6)', maxWidth: 420 }}
       />
 
       {/* === Search mode === */}
@@ -296,11 +285,14 @@ export default function ProjectBoard() {
         <div>
           {/* Matched projects */}
           <div className="search-results__group">
-            <div className="search-results__label">
-              项目（{filteredProjects.length}）
+            <div className="section-label">
+              项目
+              <span className="section-label__count">
+                {filteredProjects.length}
+              </span>
             </div>
             {filteredProjects.length ? (
-              <div className="project-list">
+              <div className="card row-list">
                 {filteredProjects.map((p) => (
                   <ProjectRow
                     key={p.id}
@@ -312,16 +304,15 @@ export default function ProjectBoard() {
                 ))}
               </div>
             ) : (
-              <div style={{ color: 'var(--muted-hex)', fontSize: 13 }}>
-                没有匹配的项目
-              </div>
+              <div className="section-label__count">没有匹配的项目</div>
             )}
           </div>
 
           {/* Matched communications */}
           <div className="search-results__group">
-            <div className="search-results__label">
-              沟通记录（{commHits.length}）
+            <div className="section-label">
+              沟通记录
+              <span className="section-label__count">{commHits.length}</span>
             </div>
             {commHits.length ? (
               <div>
@@ -330,17 +321,16 @@ export default function ProjectBoard() {
                 ))}
               </div>
             ) : (
-              <div style={{ color: 'var(--muted-hex)', fontSize: 13 }}>
-                没有匹配的沟通记录
-              </div>
+              <div className="section-label__count">没有匹配的沟通记录</div>
             )}
           </div>
 
           {/* L13: other resources (task/issue/finding/person/asset) */}
           {otherHits.length > 0 && (
             <div className="search-results__group">
-              <div className="search-results__label">
-                其他资源（{otherHits.length}）
+              <div className="section-label">
+                其他资源
+                <span className="section-label__count">{otherHits.length}</span>
               </div>
               <div>
                 {otherHits.map((h) => (
@@ -353,70 +343,15 @@ export default function ProjectBoard() {
       ) : (
         <>
           {/* === Dashboard stats === */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: 'var(--space-4)',
-              marginBottom: 'var(--space-6)',
-            }}
-          >
-            <Card
-              size="small"
-              variant="borderless"
-              style={{ background: 'var(--card-surface)' }}
-            >
-              <Statistic
-                title="进行中"
-                value={inProgress}
-                prefix={
-                  <ClockCircleOutlined
-                    style={{ color: 'var(--primary-hex)' }}
-                  />
-                }
-              />
-            </Card>
-            <Card
-              size="small"
-              variant="borderless"
-              style={{ background: 'var(--card-surface)' }}
-            >
-              <Statistic
-                title="已完成"
-                value={completed}
-                prefix={
-                  <CheckCircleOutlined
-                    style={{ color: 'var(--success-hex)' }}
-                  />
-                }
-              />
-            </Card>
-            <Card
-              size="small"
-              variant="borderless"
-              style={{ background: 'var(--card-surface)' }}
-            >
-              <Statistic
-                title="已暂停"
-                value={paused}
-                prefix={
-                  <PauseCircleOutlined
-                    style={{ color: 'var(--warning-hex)' }}
-                  />
-                }
-              />
-            </Card>
-            <Card
-              size="small"
-              variant="borderless"
-              style={{ background: 'var(--card-surface)' }}
-            >
-              <Statistic
-                title="资料"
-                value={recentFiles?.length ?? 0}
-                prefix={<FolderOutlined style={{ color: 'var(--info-hex)' }} />}
-              />
-            </Card>
+          <div className="stat-grid">
+            <StatTile label="进行中" value={inProgress} dot="var(--blue)" />
+            <StatTile label="已完成" value={completed} dot="var(--green)" />
+            <StatTile label="已暂停" value={paused} dot="var(--amber)" />
+            <StatTile
+              label="资料"
+              value={recentFiles?.length ?? 0}
+              dot="var(--teal)"
+            />
           </div>
 
           {/* === Two-column: projects + activity === */}
@@ -430,108 +365,117 @@ export default function ProjectBoard() {
             <div
               style={{
                 display: 'flex',
-                gap: 32,
+                gap: 'var(--space-6)',
                 alignItems: 'flex-start',
                 flexWrap: 'wrap',
               }}
             >
               {/* Projects */}
               <div style={{ flex: '1 1 60%', minWidth: 320 }}>
-                <div
-                  className="recent-section__label"
-                  style={{ marginBottom: 12 }}
-                >
-                  项目列表
-                </div>
-                {isLoading ? (
-                  <Skeleton active paragraph={{ rows: 4 }} />
-                ) : (
-                  <div className="project-list">
-                    {filteredProjects.map((p) => (
-                      <ProjectRow
-                        key={p.id}
-                        project={p}
-                        clientName={clientMap.get(p.client_id) ?? '未知客户'}
-                        onClick={() => navigate(`/projects/${p.id}`)}
-                        menuItems={getMenuItems(p)}
-                      />
-                    ))}
+                <div className="card">
+                  <div className="card__header">
+                    项目列表
+                    <span className="card__header__count">
+                      {projects?.length ?? 0}
+                    </span>
                   </div>
-                )}
+                  {isLoading ? (
+                    <div style={{ padding: 'var(--space-4)' }}>
+                      <Skeleton active paragraph={{ rows: 4 }} />
+                    </div>
+                  ) : (
+                    <div className="row-list">
+                      {filteredProjects.map((p) => (
+                        <ProjectRow
+                          key={p.id}
+                          project={p}
+                          clientName={clientMap.get(p.client_id) ?? '未知客户'}
+                          onClick={() => navigate(`/projects/${p.id}`)}
+                          menuItems={getMenuItems(p)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Activity sidebar */}
               <div style={{ flex: '0 0 320px' }}>
                 {/* Recent communications */}
                 {recentComms?.length ? (
-                  <div style={{ marginBottom: 'var(--space-6)' }}>
-                    <div
-                      className="recent-section__label"
-                      style={{ marginBottom: 12 }}
-                    >
+                  <div
+                    className="card"
+                    style={{ marginBottom: 'var(--space-4)' }}
+                  >
+                    <div className="card__header">
+                      <MessageOutlined style={{ color: 'var(--ink-3)' }} />
                       最近沟通
                     </div>
-                    {recentComms.map((c) => (
-                      <div
-                        key={c.id}
-                        className="recent-item"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() =>
-                          navigate(
-                            `/projects/${c.project_id}/communications/${c.id}`,
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter')
+                    <div className="row-list">
+                      {recentComms.map((c) => (
+                        <div
+                          key={c.id}
+                          className="recent-item"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() =>
                             navigate(
                               `/projects/${c.project_id}/communications/${c.id}`,
                             )
-                        }}
-                      >
-                        <span className="recent-item__date">
-                          {dayjs(c.occurred_at).format('M月D日')}
-                        </span>
-                        <span className="recent-item__project">
-                          {c.project_name}
-                        </span>
-                        <span className="recent-item__preview">
-                          {c.content.replace(/[#*`>\-]/g, '').substring(0, 60)}
-                        </span>
-                      </div>
-                    ))}
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter')
+                              navigate(
+                                `/projects/${c.project_id}/communications/${c.id}`,
+                              )
+                          }}
+                        >
+                          <span className="recent-item__date">
+                            {dayjs(c.occurred_at).format('MM-DD')}
+                          </span>
+                          <span className="recent-item__project">
+                            {c.project_name}
+                          </span>
+                          <span className="recent-item__preview">
+                            {c.content
+                              .replace(/[#*`>\-]/g, '')
+                              .substring(0, 60)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
 
                 {/* Recent files */}
                 {recentFilesSorted.length ? (
-                  <div>
-                    <div
-                      className="recent-section__label"
-                      style={{ marginBottom: 12 }}
-                    >
+                  <div className="card">
+                    <div className="card__header">
+                      <FileOutlined style={{ color: 'var(--ink-3)' }} />
                       最近上传
                     </div>
-                    {recentFilesSorted.map((f) => (
-                      <div
-                        key={f.id}
-                        className="recent-item"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => navigate(`/projects/${f.project_id}`)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter')
-                            navigate(`/projects/${f.project_id}`)
-                        }}
-                      >
-                        <span className="recent-item__date">
-                          {dayjs(f.created_at).format('M月D日')}
-                        </span>
-                        <span className="recent-item__preview">
-                          {f.original_name}
-                        </span>
-                      </div>
-                    ))}
+                    <div className="row-list">
+                      {recentFilesSorted.map((f) => (
+                        <div
+                          key={f.id}
+                          className="recent-item"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => navigate(`/projects/${f.project_id}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter')
+                              navigate(`/projects/${f.project_id}`)
+                          }}
+                        >
+                          <span className="recent-item__date">
+                            {dayjs(f.created_at).format('MM-DD')}
+                          </span>
+                          <span className="recent-item__preview">
+                            {f.original_name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -548,11 +492,16 @@ export default function ProjectBoard() {
                 justifyContent: 'center',
               }}
             >
-              <Empty description="还没有项目">
-                <Button type="primary" onClick={() => setCreateOpen(true)}>
-                  创建第一个项目
-                </Button>
-              </Empty>
+              <EmptyState
+                icon={<FolderOutlined />}
+                title="开始你的第一个项目"
+                desc="创建项目后，客户、沟通记录、任务和文件都会集中在这里。"
+                action={
+                  <Button type="primary" onClick={() => setCreateOpen(true)}>
+                    创建第一个项目
+                  </Button>
+                }
+              />
             </div>
           )}
         </>
@@ -572,7 +521,7 @@ export default function ProjectBoard() {
         okText="创建"
         cancelText="取消"
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical">
           <Form.Item label="关联客户" required>
             <Radio.Group
               value={clientMode}
@@ -634,13 +583,7 @@ export default function ProjectBoard() {
             <Input placeholder="如：Web 应用开发" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="in_progress">
-            <Select
-              options={[
-                { label: '进行中', value: 'in_progress' },
-                { label: '已完成', value: 'completed' },
-                { label: '已暂停', value: 'paused' },
-              ]}
-            />
+            <Select options={statusOptions} />
           </Form.Item>
           <Form.Item name="phase" label="当前阶段">
             <Input placeholder="如：信息收集" />
@@ -691,7 +634,7 @@ export default function ProjectBoard() {
         okText="保存"
         cancelText="取消"
       >
-        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={editForm} layout="vertical">
           <Form.Item
             name="name"
             label="项目名称"
@@ -700,13 +643,7 @@ export default function ProjectBoard() {
             <Input />
           </Form.Item>
           <Form.Item name="status" label="状态">
-            <Select
-              options={[
-                { label: '进行中', value: 'in_progress' },
-                { label: '已完成', value: 'completed' },
-                { label: '已暂停', value: 'paused' },
-              ]}
-            />
+            <Select options={statusOptions} />
           </Form.Item>
           <Form.Item name="phase" label="当前阶段">
             <Input placeholder="如：信息收集" />
@@ -744,6 +681,10 @@ function ProjectRow({
   onClick: () => void
   menuItems?: MenuProps['items']
 }) {
+  const status = PROJECT_STATUS_META[project.status] ?? {
+    label: project.status,
+    tone: 'neutral' as const,
+  }
   return (
     <div
       className="project-row"
@@ -754,7 +695,9 @@ function ProjectRow({
         if (e.key === 'Enter') onClick()
       }}
     >
-      <div className={`status-dot ${statusDot[project.status]}`} />
+      <Pill tone={status.tone} dot>
+        {status.label}
+      </Pill>
       <div className="project-row__body">
         <div className="project-row__name">{project.name}</div>
         <div className="project-row__meta">
@@ -765,6 +708,10 @@ function ProjectRow({
               {project.phase}
             </>
           )}
+          <span className="project-row__meta-sep">·</span>
+          <span className="mono">
+            更新于 {dayjs(project.updated_at).format('MM-DD')}
+          </span>
         </div>
       </div>
       {menuItems && (
@@ -810,30 +757,10 @@ function SearchHitRow({ hit }: { hit: SearchHit }) {
       onKeyDown={(e) =>
         e.key === 'Enter' && navigate(`/projects/${hit.project_id ?? hit.id}`)
       }
-      style={{
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: 'var(--space-2)',
-        padding: 'var(--space-2) var(--space-3)',
-        borderRadius: 8,
-        cursor: 'pointer',
-        background: 'var(--card-surface)',
-        marginBottom: 'var(--space-2)',
-      }}
     >
-      <Tag style={{ marginInlineEnd: 0, flexShrink: 0 }}>
-        {HIT_RESOURCE_LABEL[hit.resource] ?? hit.resource}
-      </Tag>
-      <Text strong ellipsis style={{ flex: '0 1 auto' }}>
-        {hit.title}
-      </Text>
-      <Text
-        type="secondary"
-        ellipsis
-        style={{ flex: 1, minWidth: 0, fontSize: 12 }}
-      >
-        {hit.subtitle}
-      </Text>
+      <Pill small>{HIT_RESOURCE_LABEL[hit.resource] ?? hit.resource}</Pill>
+      <span className="search-hit-row__title">{hit.title}</span>
+      <span className="search-hit-row__subtitle">{hit.subtitle}</span>
     </div>
   )
 }

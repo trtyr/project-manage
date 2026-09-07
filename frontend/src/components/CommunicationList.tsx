@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { Tag, Empty } from 'antd'
 import { PaperClipOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import type { Communication, ProjectFile } from '../types'
+import Pill from './ui/Pill'
+import EmptyState from './ui/EmptyState'
 
 interface Props {
   communications: Communication[] | undefined
@@ -27,10 +28,13 @@ export default function CommunicationList({
 
   if (!communications?.length) {
     return (
-      <Empty
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description="还没有沟通记录。会议纪要、微信要点、电话结论——记下和客户的每次关键往来。"
-      />
+      <div className="card">
+        <EmptyState
+          icon={<PaperClipOutlined />}
+          title="还没有沟通记录"
+          desc="会议纪要、微信要点、电话结论——记下和客户的每次关键往来。"
+        />
+      </div>
     )
   }
 
@@ -38,7 +42,7 @@ export default function CommunicationList({
     navigate(`/projects/${projectId}/communications/${cid}`)
 
   return (
-    <div>
+    <div className="card row-list">
       {communications.map((c) => {
         const participants = parseParticipants(c.participants)
         const linkedCount =
@@ -60,20 +64,14 @@ export default function CommunicationList({
                 {dayjs(c.occurred_at).format('YYYY-MM-DD HH:mm')}
               </span>
               {participants.map((p) => (
-                <Tag key={p} className="tag-participant">
+                <Pill key={p} small>
                   {p}
-                </Tag>
+                </Pill>
               ))}
               {linkedCount > 0 && (
-                <Tag
-                  className="tag-participant"
-                  style={{
-                    background: 'rgba(var(--primary-rgb), 0.04)',
-                    color: 'var(--muted-hex)',
-                  }}
-                >
+                <Pill small>
                   <PaperClipOutlined /> {linkedCount}
-                </Tag>
+                </Pill>
               )}
             </div>
             <div className="comm-list-item__preview">

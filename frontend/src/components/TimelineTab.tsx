@@ -1,19 +1,13 @@
 import { useMemo } from 'react'
-import { Empty, Tag, Typography, Button } from 'antd'
+import { Button } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
+import { CalendarOutlined } from '@ant-design/icons'
 import { phasesApi } from '../api'
 import type { Phase } from '../types'
-
-const { Text } = Typography
-
-// B5 fix: phase status shown as raw English ('in_progress') on timeline rows —
-// map to the same Chinese labels the phases tab uses.
-const STATUS_LABEL: Record<string, string> = {
-  pending: '待开始',
-  in_progress: '进行中',
-  completed: '已完成',
-}
+import Pill from './ui/Pill'
+import EmptyState from './ui/EmptyState'
+import { PHASE_STATUS_META } from '../utils/status'
 
 interface Props {
   projectId: string
@@ -52,25 +46,35 @@ export default function TimelineTab({ projectId, onGoFillDates }: Props) {
 
   if (!phases.length) {
     return (
-      <Empty
-        description="还没有阶段数据。添加阶段并填写计划日期后，这里会显示甘特图。"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
+      <div className="card">
+        <EmptyState
+          icon={<CalendarOutlined />}
+          title="还没有阶段数据"
+          desc="添加阶段并填写计划日期后，这里会显示甘特图。"
+          action={
+            onGoFillDates && <Button onClick={onGoFillDates}>去添加阶段</Button>
+          }
+        />
+      </div>
     )
   }
 
   if (!start) {
     return (
-      <Empty
-        description="阶段还没有计划日期。填入「计划开始」和「计划结束」后查看时间线。"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      >
-        {onGoFillDates && (
-          <Button type="primary" onClick={onGoFillDates}>
-            去填阶段日期
-          </Button>
-        )}
-      </Empty>
+      <div className="card">
+        <EmptyState
+          icon={<CalendarOutlined />}
+          title="阶段还没有计划日期"
+          desc="填入「计划开始」和「计划结束」后查看时间线。"
+          action={
+            onGoFillDates && (
+              <Button type="primary" onClick={onGoFillDates}>
+                去填阶段日期
+              </Button>
+            )
+          }
+        />
+      </div>
     )
   }
 
@@ -111,122 +115,56 @@ export default function TimelineTab({ projectId, onGoFillDates }: Props) {
   })()
 
   return (
-    <div style={{ marginTop: 'var(--space-2)' }}>
+    <div className="card" style={{ padding: 'var(--space-4)' }}>
       {/* Header: date axis */}
-      <div
-        style={{
-          position: 'relative',
-          height: 24,
-          marginLeft: 160,
-          marginBottom: 4,
-          borderBottom: '1px solid var(--hairline)',
-        }}
-      >
+      <div className="timeline-axis">
         {weekMarkers.map((m, i) => (
-          <div
+          <span
             key={i}
-            style={{
-              position: 'absolute',
-              left: `${m.pct}%`,
-              fontSize: 11,
-              color: m.isMonth ? 'var(--ink-hex)' : 'var(--muted-hex)',
-              fontWeight: m.isMonth ? 500 : 400,
-              transform: 'translateX(-50%)',
-              whiteSpace: 'nowrap',
-            }}
+            className={`timeline-axis__tick${m.isMonth ? ' timeline-axis__tick--month' : ''}`}
+            style={{ left: `${m.pct}%` }}
           >
             {m.label}
-          </div>
+          </span>
         ))}
       </div>
 
       {/* Phase rows */}
-      <div style={{ position: 'relative' }}>
+      <div className="timeline-body">
         {/* L12: today line across all phase rows */}
         {todayOffsetPct !== null && (
           <div
+            className="timeline-today"
             aria-hidden
-            style={{
-              position: 'absolute',
-              left: `calc(160px + (100% - 160px) * ${todayOffsetPct / 100})`,
-              top: 0,
-              bottom: 0,
-              width: 1,
-              background: 'var(--danger-hex)',
-              opacity: 0.45,
-              zIndex: 1,
-            }}
+            style={{ ['--today-pct' as string]: todayOffsetPct / 100 }}
             title="今天"
           />
         )}
         {phases.map((p) => {
           const bar = barFor(p)
+          const statusMeta = PHASE_STATUS_META[p.status]
           return (
-            <div
-              key={p.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: 8,
-                minHeight: 32,
-              }}
-            >
+            <div key={p.id} className="timeline-row">
               {/* Label */}
-              <div
-                style={{
-                  width: 150,
-                  flexShrink: 0,
-                  fontSize: 13,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  paddingRight: 'var(--space-2)',
-                  textAlign: 'right',
-                }}
-              >
-                {p.name}
-                {p.status && p.status !== 'pending' && (
-                  <Tag
-                    style={{
-                      marginLeft: 4,
-                      fontSize: 10,
-                      lineHeight: '16px',
-                      padding: '0 4px',
-                    }}
-                  >
-                    {STATUS_LABEL[p.status] ?? p.status}
-                  </Tag>
+              <div className="timeline-row__label">
+                <span className="timeline-row__name" title={p.name}>
+                  {p.name}
+                </span>
+                {statusMeta && p.status !== 'pending' && (
+                  <Pill small tone={statusMeta.tone}>
+                    {statusMeta.label}
+                  </Pill>
                 )}
               </div>
 
               {/* Bar track */}
-              <div
-                style={{
-                  flex: 1,
-                  position: 'relative',
-                  height: 24,
-                  background: 'var(--subtle-bg)',
-                  borderRadius: 4,
-                }}
-              >
+              <div className="timeline-row__track">
                 {bar ? (
                   <div
+                    className={`timeline-row__bar${p.status === 'completed' ? ' timeline-row__bar--done' : ''}`}
                     style={{
-                      position: 'absolute',
                       left: `${bar.offsetPct}%`,
                       width: `${Math.max(bar.widthPct, 2)}%`,
-                      top: 2,
-                      bottom: 2,
-                      background: 'var(--primary-hex)',
-                      borderRadius: 4,
-                      opacity: p.status === 'completed' ? 0.5 : 0.85,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 10,
-                      color: '#fff',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
                     }}
                     title={`${bar.ps.format('MM-DD')} → ${bar.pe.format('MM-DD')}`}
                   >
@@ -235,18 +173,7 @@ export default function TimelineTab({ projectId, onGoFillDates }: Props) {
                       : ''}
                   </div>
                 ) : (
-                  <Text
-                    style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      fontSize: 11,
-                    }}
-                    type="secondary"
-                  >
-                    未排期
-                  </Text>
+                  <span className="timeline-row__none">未排期</span>
                 )}
               </div>
             </div>

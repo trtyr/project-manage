@@ -2,27 +2,28 @@ import { useState, useMemo } from 'react'
 import {
   Button,
   Table,
-  Tag,
   Form,
   Input,
   Select,
   DatePicker,
   Modal,
   Popconfirm,
-  App,
   Space,
+  App,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SendOutlined,
+} from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { deliverablesApi, filesApi } from '../api'
 import type { Deliverable } from '../types/generated/Deliverable'
-
-const STATUS_OPTIONS = [
-  { label: '待交付', value: 'pending' },
-  { label: '已交付', value: 'delivered' },
-  { label: '已验收', value: 'accepted' },
-]
+import EmptyState from './ui/EmptyState'
+import Pill from './ui/Pill'
+import { DELIVERABLE_STATUS_META, metaOptions } from '../utils/status'
 
 interface Props {
   projectId: string
@@ -89,13 +90,15 @@ export default function DeliverablesTab({ projectId }: Props) {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
-        width: 100,
+        width: 104,
         render: (s: string, r: Deliverable) => (
           <Select
+            className="cell-select"
+            variant="borderless"
             size="small"
             value={s}
-            style={{ width: 90 }}
-            options={STATUS_OPTIONS}
+            style={{ width: 88 }}
+            options={metaOptions(DELIVERABLE_STATUS_META)}
             onChange={(val: string) =>
               updateMut.mutate({
                 id: r.id,
@@ -109,13 +112,13 @@ export default function DeliverablesTab({ projectId }: Props) {
         title: '截止',
         dataIndex: 'due_date',
         key: 'due_date',
-        width: 100,
+        width: 90,
         render: (v: string | null) => {
-          if (!v) return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          if (!v) return <span className="table-dim">—</span>
           const d = dayjs(v)
           const overdue = d.isBefore(dayjs(), 'day')
           return (
-            <span style={{ color: overdue ? 'var(--danger-hex)' : 'inherit' }}>
+            <span className={`mono ${overdue ? 'table-overdue' : ''}`}>
               {d.format('MM-DD')}
             </span>
           )
@@ -126,15 +129,15 @@ export default function DeliverablesTab({ projectId }: Props) {
         dataIndex: 'linked_file_id',
         key: 'linked_file_id',
         render: (fid: string | null) => {
-          if (!fid) return <span style={{ color: 'var(--muted-hex)' }}>-</span>
+          if (!fid) return <span className="table-dim">—</span>
           const f = files?.find((x) => x.id === fid)
-          return f ? <Tag>{f.original_name}</Tag> : '-'
+          return f ? <Pill small>{f.original_name}</Pill> : '—'
         },
       },
       {
         title: '',
         key: 'action',
-        width: 90,
+        width: 76,
         render: (_: unknown, r: Deliverable) => (
           <Space size={0}>
             <Button
@@ -171,8 +174,9 @@ export default function DeliverablesTab({ projectId }: Props) {
 
   return (
     <div>
-      <div className="tab-action">
+      <div className="table-toolbar">
         <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             setEditing(null)
@@ -182,8 +186,15 @@ export default function DeliverablesTab({ projectId }: Props) {
         >
           添加交付物
         </Button>
+        <div className="table-toolbar__spacer" />
+        {deliverables?.length ? (
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {deliverables.length} 项
+          </span>
+        ) : null}
       </div>
       <Table
+        className="table-card"
         dataSource={deliverables}
         rowKey="id"
         size="small"
@@ -191,7 +202,13 @@ export default function DeliverablesTab({ projectId }: Props) {
         scroll={{ x: 'max-content' }}
         columns={columns}
         locale={{
-          emptyText: '还没有交付物。每个阶段的产出文件挂在这里，形成验收清单。',
+          emptyText: (
+            <EmptyState
+              icon={<SendOutlined />}
+              title="还没有交付物"
+              desc="每个阶段的产出文件挂在这里，形成验收清单。"
+            />
+          ),
         }}
       />
 
@@ -218,7 +235,7 @@ export default function DeliverablesTab({ projectId }: Props) {
         okText={editing ? '保存' : '添加'}
         cancelText="取消"
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical">
           <Form.Item
             name="name"
             label="交付物名称"
@@ -227,7 +244,7 @@ export default function DeliverablesTab({ projectId }: Props) {
             <Input placeholder="如：验收报告 v1" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue="pending">
-            <Select options={STATUS_OPTIONS} />
+            <Select options={metaOptions(DELIVERABLE_STATUS_META)} />
           </Form.Item>
           {/* D7: 关联文件 moved above 截止日期 — real usage is a
               file-linked deliverables list (3/3 linked, 0/3 dated), so
