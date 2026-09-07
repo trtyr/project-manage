@@ -80,7 +80,7 @@ export type FeedbackStatus = 'unreported' | 'reported'
 // Credential types on an asset credential (validated in Rust
 // `CredentialType::is_valid`).
 export type CredentialType =
-  'password' | 'api_key' | 'certificate' | 'token' | 'other'
+  'password' | 'aksk' | 'api_key' | 'certificate' | 'token' | 'other'
 
 // `source_type` is a `String` in Rust; keep the narrow union here so call
 // sites that construct a `ProjectFile` get autocomplete and typo detection.

@@ -12,15 +12,19 @@ use uuid::Uuid;
 #[allow(non_snake_case)]
 pub mod CredentialType {
     pub const PASSWORD: &str = "password";
+    pub const AKSK: &str = "aksk";
     pub const API_KEY: &str = "api_key";
     pub const CERTIFICATE: &str = "certificate";
     pub const TOKEN: &str = "token";
     pub const OTHER: &str = "other";
 
-    pub const ALL: &[&str] = &[PASSWORD, API_KEY, CERTIFICATE, TOKEN, OTHER];
+    pub const ALL: &[&str] = &[PASSWORD, AKSK, API_KEY, CERTIFICATE, TOKEN, OTHER];
 
     pub fn is_valid(input: &str) -> bool {
-        matches!(input, PASSWORD | API_KEY | CERTIFICATE | TOKEN | OTHER)
+        matches!(
+            input,
+            PASSWORD | AKSK | API_KEY | CERTIFICATE | TOKEN | OTHER
+        )
     }
 }
 
@@ -30,7 +34,7 @@ pub struct AssetCredential {
     pub id: Uuid,
     pub asset_id: Uuid,
     pub label: String,
-    #[ts(type = "'password' | 'api_key' | 'certificate' | 'token' | 'other'")]
+    #[ts(type = "'password' | 'aksk' | 'api_key' | 'certificate' | 'token' | 'other'")]
     pub cred_type: String,
     pub username: Option<String>,
     pub secret: Option<String>,

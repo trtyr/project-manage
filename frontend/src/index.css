@@ -261,6 +261,44 @@ body {
   height: 100vh;
   padding: var(--space-3) var(--space-3);
   z-index: 10;
+  transition: width var(--duration-fast) var(--ease-out);
+}
+
+/* User-toggled collapsed rail — same geometry as the ≤960px auto-collapse. */
+.app-sidebar--collapsed {
+  width: 64px;
+  padding: var(--space-3) var(--space-2);
+}
+
+.app-sidebar--collapsed .sidebar-logo {
+  justify-content: center;
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.app-sidebar--collapsed .sidebar-logo__text,
+.app-sidebar--collapsed
+  .sidebar-nav
+  .sidebar-item
+  > span:not(.sidebar-item__icon),
+.app-sidebar--collapsed .sidebar-user__info,
+.app-sidebar--collapsed .sidebar-section-label,
+.app-sidebar--collapsed .sidebar-toggle__label {
+  display: none;
+}
+
+.app-sidebar--collapsed .sidebar-item {
+  justify-content: center;
+  padding: 0;
+}
+
+.app-sidebar--collapsed .sidebar-user {
+  justify-content: center;
+  padding: var(--space-1);
+}
+
+.app-sidebar--collapsed .sidebar-toggle {
+  justify-content: center;
+  padding: 0;
 }
 
 .sidebar-logo {
@@ -341,6 +379,31 @@ body {
 .sidebar-footer {
   border-top: 1px solid var(--hairline);
   padding-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar-toggle:hover {
+  background: var(--overlay);
+  color: var(--ink);
 }
 
 .sidebar-user {
@@ -421,12 +484,15 @@ body {
   background: var(--bg);
 }
 
+/* Breadcrumbs take all leftover width so long project names stay whole;
+   only the extreme tail ellipsizes. */
 .crumbs {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-size: 13px;
   color: var(--ink-2);
+  flex: 1;
   min-width: 0;
   overflow: hidden;
 }
@@ -435,7 +501,16 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 240px;
+  max-width: 480px;
+  flex-shrink: 0;
+}
+
+.crumbs__current {
+  color: var(--ink);
+  font-weight: 500;
+  max-width: none;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 a.crumbs__item {
@@ -448,26 +523,18 @@ a.crumbs__item:hover {
   color: var(--ink);
 }
 
-.crumbs__current {
-  color: var(--ink);
-  font-weight: 500;
-}
-
 .crumbs__sep {
   color: var(--ink-3);
   flex-shrink: 0;
   user-select: none;
 }
 
-.topbar__spacer {
-  flex: 1;
-}
-
 /* --- Topbar search (command bar) --- */
 
 .topbar-search {
   position: relative;
-  width: 300px;
+  width: 260px;
+  flex-shrink: 0;
 }
 
 .topbar-search .ant-input-affix-wrapper {
@@ -477,7 +544,11 @@ a.crumbs__item:hover {
 .search-panel {
   position: absolute;
   top: calc(100% + 6px);
-  inset-inline: 0;
+  /* Anchor to the right edge and grow left so a narrower host input still
+     gets a full-width results panel. */
+  left: auto;
+  right: 0;
+  width: min(420px, calc(100vw - 48px));
   background: var(--surface-raised);
   border: 1px solid var(--hairline);
   border-radius: 8px;
@@ -558,7 +629,7 @@ a.crumbs__item:hover {
 .app-content__inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-8) 96px;
+  padding: var(--space-6) var(--space-8) 64px;
 }
 
 /* ==========================================================================
@@ -922,6 +993,10 @@ a.crumbs__item:hover {
   margin-bottom: var(--space-3);
 }
 
+.table-toolbar .grouped-segment {
+  margin-bottom: 0;
+}
+
 .table-toolbar__spacer {
   flex: 1;
 }
@@ -976,6 +1051,7 @@ a.table-link {
   min-width: 0;
 }
 
+/* Name takes the whole first line — never squeezed by a status column. */
 .project-row__name {
   font-size: 14px;
   font-weight: 500;
@@ -987,10 +1063,18 @@ a.table-link {
   white-space: nowrap;
 }
 
+/* Meta line: status pill + client/phase (elliptic) + right-aligned date. */
 .project-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 12px;
   color: var(--ink-3);
-  margin-top: 2px;
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.project-row__meta-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -999,6 +1083,13 @@ a.table-link {
 .project-row__meta-sep {
   margin: 0 var(--space-1);
   color: var(--hairline-strong);
+}
+
+.project-row__meta-date {
+  margin-left: auto;
+  padding-left: var(--space-3);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
 }
 
 .project-row__more {
@@ -1074,47 +1165,6 @@ a.table-link {
   white-space: nowrap;
   flex: 1;
   min-width: 0;
-}
-
-/* ==========================================================================
-   Search results (dashboard search mode)
-   ========================================================================== */
-
-.search-results__group {
-  margin-bottom: var(--space-6);
-}
-
-.search-hit-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out);
-}
-
-.search-hit-row:hover {
-  background: var(--bg-subtle);
-}
-
-.search-hit-row__title {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink);
-  flex: 0 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.search-hit-row__subtitle {
-  font-size: 12px;
-  color: var(--ink-3);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -2318,7 +2368,8 @@ a.file-chip__name:hover {
   .sidebar-logo__text,
   .sidebar-nav .sidebar-item > span:not(.sidebar-item__icon),
   .sidebar-user__info,
-  .sidebar-section-label {
+  .sidebar-section-label,
+  .sidebar-toggle__label {
     display: none;
   }
 
@@ -2332,6 +2383,11 @@ a.file-chip__name:hover {
     padding: var(--space-1);
   }
 
+  .sidebar-toggle {
+    justify-content: center;
+    padding: 0;
+  }
+
   .topbar {
     padding: 0 var(--space-4);
   }
@@ -2341,7 +2397,7 @@ a.file-chip__name:hover {
   }
 
   .app-content__inner {
-    padding: var(--space-4) var(--space-4) 72px;
+    padding: var(--space-4) var(--space-4) 64px;
   }
 
   .stat-grid {
@@ -2377,7 +2433,7 @@ a.file-chip__name:hover {
   }
 
   .app-content__inner {
-    padding: var(--space-3) var(--space-3) 72px;
+    padding: var(--space-3) var(--space-3) 64px;
   }
 
   .crumbs__item {

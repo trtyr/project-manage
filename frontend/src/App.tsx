@@ -5,6 +5,7 @@ import {
   Button,
   Dropdown,
   Spin,
+  Tooltip,
   App as AntApp,
 } from 'antd'
 import type { InputRef } from 'antd'
@@ -13,11 +14,14 @@ import {
   SearchOutlined,
   LogoutOutlined,
   KeyOutlined,
+  DashboardOutlined,
   FolderOutlined,
   DatabaseOutlined,
   SafetyCertificateOutlined,
   SunOutlined,
   MoonOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
@@ -27,6 +31,7 @@ import { lightTheme, darkTheme } from './theme'
 import { registerMutationErrorToast } from './mutationToast'
 import { projectsApi, searchApi, authApi } from './api'
 import Avatar from './components/ui/Avatar'
+import DashboardPage from './pages/DashboardPage'
 import ProjectBoard from './pages/ProjectBoard'
 import ProjectDetail from './pages/ProjectDetail'
 import CommunicationDetail from './pages/CommunicationDetail'
@@ -37,7 +42,8 @@ import BackupPage from './pages/BackupPage'
 import ChangePasswordModal from './components/ChangePasswordModal'
 
 const navItems = [
-  { path: '/', label: '项目', icon: FolderOutlined },
+  { path: '/', label: '总览', icon: DashboardOutlined },
+  { path: '/projects', label: '项目', icon: FolderOutlined },
   { path: '/files', label: '资料库', icon: DatabaseOutlined },
   { path: '/backup', label: '备份', icon: SafetyCertificateOutlined },
 ] as const
@@ -59,18 +65,21 @@ function SidebarItem({
   active,
   icon,
   label,
+  collapsed,
   onClick,
 }: {
   active: boolean
   icon: ReactNode
   label: string
+  collapsed: boolean
   onClick: () => void
 }) {
-  return (
+  const item = (
     <div
       className={`sidebar-item${active ? ' sidebar-item--active' : ''}`}
       role="button"
       tabIndex={0}
+      aria-label={label}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -82,6 +91,14 @@ function SidebarItem({
       <span className="sidebar-item__icon">{icon}</span>
       <span>{label}</span>
     </div>
+  )
+  // Icon-only rail: the label still needs to be discoverable.
+  return collapsed ? (
+    <Tooltip title={label} placement="right">
+      {item}
+    </Tooltip>
+  ) : (
+    item
   )
 }
 
@@ -211,6 +228,14 @@ function App() {
 
   const [passwordOpen, setPasswordOpen] = useState(false)
 
+  // Collapsible sidebar — persisted like the theme token.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('sidebar-collapsed') === '1',
+  )
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
+
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme')
     if (saved) return saved === 'dark'
@@ -291,11 +316,11 @@ function App() {
       const section = navItems.find(
         (n) => n.path === (location.pathname === '/' ? '/' : `/${parts[0]}`),
       )
-      return [{ label: section?.label ?? '项目', current: true }]
+      return [{ label: section?.label ?? '总览', current: true }]
     }
     const project = projects?.find((p) => p.id === parts[1])
     const items: { label: string; current?: boolean; to?: string }[] = [
-      { label: '项目', to: '/' },
+      { label: '项目', to: '/projects' },
     ]
     if (parts[1]) {
       items.push(
@@ -449,7 +474,9 @@ function App() {
       <MutationToastBridge />
       <div className="app-shell">
         {/* Sidebar */}
-        <aside className="app-sidebar">
+        <aside
+          className={`app-sidebar${sidebarCollapsed ? ' app-sidebar--collapsed' : ''}`}
+        >
           <div
             className="sidebar-logo"
             role="button"
@@ -474,6 +501,7 @@ function App() {
                 active={isActive(item.path)}
                 icon={<item.icon />}
                 label={item.label}
+                collapsed={sidebarCollapsed}
                 onClick={() => navigate(item.path)}
               />
             ))}
@@ -482,7 +510,18 @@ function App() {
           <div className="sidebar-spacer" />
 
           <div className="sidebar-footer">
-            <UserMenuButton />
+            <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
+            >
+              {sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              <span className="sidebar-toggle__label">
+                {sidebarCollapsed ? '展开' : '收起'}
+              </span>
+            </button>
+            <UserMenuButton compact={sidebarCollapsed} />
           </div>
         </aside>
 
@@ -524,8 +563,6 @@ function App() {
                 </span>
               ))}
             </nav>
-
-            <div className="topbar__spacer" />
 
             <div className="topbar-search">
               <Input
@@ -600,7 +637,8 @@ function App() {
             <div className="app-content__inner fade-in">
               <ErrorBoundary>
                 <Routes>
-                  <Route path="/" element={<ProjectBoard />} />
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/projects" element={<ProjectBoard />} />
                   <Route path="/files" element={<FileLibrary />} />
                   <Route path="/backup" element={<BackupPage />} />
                   <Route path="/projects/:id" element={<ProjectDetail />} />

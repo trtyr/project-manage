@@ -919,6 +919,24 @@ async fn test_asset_credentials_crud() {
     assert_eq!(list[0]["label"], "SSH root");
     assert_eq!(list[1]["label"], "监控 API Key");
 
+    // 3b. AK/SK credential: both halves stored as username + secret.
+    let resp = http
+        .post(&list_url)
+        .json(&json!({
+            "label": "云账号 AK/SK",
+            "cred_type": "aksk",
+            "username": "AKIDnw8u2fh9q",
+            "secret": "sk-9f2b7c41d0",
+        }))
+        .send()
+        .await
+        .expect("POST aksk credential");
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let aksk: Value = resp.json().await.expect("aksk JSON");
+    assert_eq!(aksk["cred_type"], "aksk");
+    assert_eq!(aksk["username"], "AKIDnw8u2fh9q");
+    assert_eq!(aksk["secret"], "sk-9f2b7c41d0");
+
     // 4. UPDATE — change label + secret; username round-trips unchanged.
     let resp = http
         .put(format!("{base_url}/api/asset-credentials/{cred_id}"))
@@ -969,16 +987,16 @@ async fn test_asset_credentials_crud() {
     assert_eq!(resp.status(), StatusCode::NO_CONTENT);
     let resp = http.get(&list_url).send().await.expect("GET credentials");
     let list: Vec<Value> = resp.json().await.expect("list JSON");
-    assert_eq!(list.len(), 1);
+    assert_eq!(list.len(), 2);
 
-    // The read-only asset credential_count tracks the remaining row.
+    // The read-only asset credential_count tracks the remaining rows.
     let resp = http
         .get(format!("{base_url}/api/assets/{asset_id}"))
         .send()
         .await
         .expect("GET asset for count");
     let asset_after: Value = resp.json().await.expect("asset JSON");
-    assert_eq!(asset_after["credential_count"], 1, "count tracks deletes");
+    assert_eq!(asset_after["credential_count"], 2, "count tracks deletes");
 
     let resp = http
         .delete(format!("{base_url}/api/assets/{asset_id}"))

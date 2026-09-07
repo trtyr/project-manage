@@ -306,18 +306,28 @@ Common column pattern: `id: Uuid`, `created_at: DateTime<Utc>`, optional `update
 
 Each page is a `default export` React component, rendered by `App.tsx` `<Routes>`. All pages use `@tanstack/react-query` for data and Ant Design (`antd`) for UI; pages that need routing use `useNavigate` / `useParams` from `react-router-dom`.
 
-### D.1 `ProjectBoard` — `frontend/src/pages/ProjectBoard.tsx`
+### D.1 `DashboardPage` — `frontend/src/pages/DashboardPage.tsx`
 
 | Field | Value |
 |---|---|
-| Route | `/` |
-| Responsibility | Landing page: project list with create/edit/delete + debounced search; "进行中 N 个项目" footer stats feed `App.tsx` sidebar. |
-| Public API (TS) | `export default function ProjectBoard(): JSX.Element` |
-| State | `clientMode: 'existing' | 'new'` toggle on the create modal; `searchText` + `debouncedSearch` (300 ms). |
-| Calls | `clientsApi.list`, `projectsApi.{list, create, update, delete}`, `communicationsApi.listRecent` (for global search hits). |
-| Internal deps | `clientsApi`, `projectsApi`, `communicationsApi` from `../api`; types `Project`, `ProjectStatus`, `CommunicationWithProject` from `../types`; `dayjs`. |
+| Route | `/` (sidebar 总览) |
+| Responsibility | 总览仪表盘，2026-09-07 从 ProjectBoard 拆出：全局统计四格（进行中/已完成/已暂停/资料）+ 进行中项目列表（复用 `components/ProjectRow`，按 `updated_at` 倒序）+ 右侧动态栏（最近沟通 / 最近上传）。零项目时整屏居中 onboarding 空状态。新建项目按钮深链 `/projects?create=1`（modal 归 ProjectBoard 所有）。 |
+| Public API (TS) | `export default function DashboardPage(): JSX.Element` |
+| Calls | `projectsApi.list`, `clientsApi.list`, `communicationsApi.listRecent(5)`, `filesApi.listAll`. |
+| Internal deps | `ProjectRow` from `../components`; `StatTile`, `EmptyState` from `../components/ui`; `dayjs`. |
 
-### D.2 `ProjectDetail` — `frontend/src/pages/ProjectDetail.tsx`
+### D.2 `ProjectBoard` — `frontend/src/pages/ProjectBoard.tsx`
+
+| Field | Value |
+|---|---|
+| Route | `/projects` (sidebar 项目) |
+| Responsibility | 纯项目列表页（"项目里就放项目"）：本地筛选工具栏（名称/客户/阶段/竞争对手关键字 + 全部/进行中/已暂停/已完成 Segmented），"全部"时按状态分组渲染，持有项目 create/edit/delete modal（含新建客户二选一、D5 CRM 字段）。顶栏 Ctrl+K 命令栏承担全局搜索，页面不再自带搜索模式。消费 `?create=1` 查询参数自动打开新建 modal（DashboardPage 深链入口）。 |
+| Public API (TS) | `export default function ProjectBoard(): JSX.Element` |
+| State | `clientMode: 'existing' | 'new'` toggle on the create modal; `filterText`; `statusFilter: 'all' | ProjectStatus`; `editTarget`; `useSearchParams` for `?create=1`. |
+| Calls | `clientsApi.{list, create}`, `projectsApi.{list, create, update, delete}`. |
+| Internal deps | `ProjectRow` from `../components`; `EmptyState` from `../components/ui`; `PROJECT_STATUS_META` from `../utils/status`. |
+
+### D.3 `ProjectDetail` — `frontend/src/pages/ProjectDetail.tsx`
 
 | Field | Value |
 |---|---|
@@ -328,7 +338,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Calls | Owns 9 mount-time queries (`project`, `client` chained, `communications`, `tasks`, `assets`, `files`, `issues`, `findings`, `deliverables`) + `clientsApi.list` for the edit modal; mutations through the same `*Api` objects. |
 | Internal deps | `OverviewTab`, `GroupedTab`, `PhasesTab`, `TasksTab`, `DeliverablesTab`, `CommunicationsTab`, `IssuesTab`, `FindingsTab`, `FilesTab`, `AssetsTab`, `MembersTab` from `../components`. |
 
-### D.3 `FileLibrary` — `frontend/src/pages/FileLibrary.tsx`
+### D.4 `FileLibrary` — `frontend/src/pages/FileLibrary.tsx`
 
 | Field | Value |
 |---|---|
@@ -339,7 +349,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Calls | `filesApi.listAll`, `filesApi.download`, `filesApi.delete`. |
 | Internal deps | `FilePreview` from `../components`; `formatSize` from `../utils/format`. |
 
-### D.4 `CommunicationDetail` — `frontend/src/pages/CommunicationDetail.tsx`
+### D.5 `CommunicationDetail` — `frontend/src/pages/CommunicationDetail.tsx`
 
 | Field | Value |
 |---|---|
@@ -350,7 +360,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Calls | `communicationsApi.{get, update}`, `filesApi.listByProject`, plus upload/link helpers. |
 | Internal deps | `Markdown`, `ParticipantsInput`, `FilePreview` from `../components`; `formatSize` from `../utils/format`. |
 
-### D.5 `LoginPage` — `frontend/src/pages/LoginPage.tsx`
+### D.6 `LoginPage` — `frontend/src/pages/LoginPage.tsx`
 
 | Field | Value |
 |---|---|
@@ -358,7 +368,7 @@ Each page is a `default export` React component, rendered by `App.tsx` `<Routes>
 | Responsibility | Username + password form → `authApi.login`. On success it **seeds the `['auth-me']` query cache** with the login response (nobody refetches it on SPA navigation), shows 登录成功, and navigates to `/`. 401 → "用户名或密码错误" toast; `429 rate_limited` → "尝试次数过多，登录已被临时锁定" toast. |
 | Internal deps | `authApi`; antd form components. |
 
-### D.6 `SetupPage` — `frontend/src/pages/SetupPage.tsx`
+### D.7 `SetupPage` — `frontend/src/pages/SetupPage.tsx`
 
 | Field | Value |
 |---|---|
@@ -461,7 +471,7 @@ states are `ui/EmptyState`, enum chips are `ui/Pill`.
 
 | Field | Value |
 |---|---|
-| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/vendor fields, keyword + type filters (drag-reorder disabled while filtering), plus per-asset credential management: the 凭据 column shows a read-only count and opens a `CredentialDrawer` (in-file component) that lists the asset's credentials — typed tags, per-field username/secret copy, eye-toggle reveal — with add/edit/delete via a nested form modal and a 拆分 assist that parses migrated multi-account blobs (blank-line chunks; 账号/密码 line recognition) into separate credential rows. Asset type suggestions cover the security-hardware domain (EDR/DLP/SOC/零信任/堡垒机/WAF/蜜罐/SIEM…); `asset_type` itself stays free TEXT. |
+| Responsibility | IT asset inventory CRUD with drag-and-drop reorder (`@dnd-kit`), type/value/vendor fields, keyword + type filters (drag-reorder disabled while filtering), plus per-asset credential management: the 凭据 column shows a read-only count and opens a `CredentialDrawer` (in-file component) that lists the asset's credentials — typed pills, per-field copy, eye-toggle reveal — with add/edit/delete via a nested form modal and a 拆分 assist that parses migrated multi-account blobs (blank-line chunks; 账号/密码/AK/SK line recognition) into separate credential rows. **凭据细分类 (2026-09-07)**: `cred_type` adds `aksk` (账号密码 / AK/SK / API Key / 证书/密钥 / 令牌 / 其他); the form's field labels, placeholders and type hint follow the selected type via `credTypeFields()` (`utils/status.tsx` — AK/SK maps username→Access Key ID, secret→Access Key Secret). Asset type suggestions render as **grouped** Select options across 5 domains (网络安全设备 / 终端与数据安全 / 安全运营与监测 / 基础设施 / 应用与数据); `asset_type` itself stays free TEXT. |
 | Public API (TS) | `export default function AssetsTab({ projectId }: Props)` |
 | Calls | `assetsApi.*` including `reorder`; `assetCredentialsApi.{listByAsset, create, update, delete}` (query key `['asset-credentials', assetId]`; mutations also invalidate `['assets', projectId]` to refresh `credential_count`). |
 
@@ -556,6 +566,14 @@ No data fetching, no antd dependencies.
 | `ui/StatTile.tsx` | Dashboard metric tile: label row (optional color dot) + large mono tabular value. |
 | `ui/Avatar.tsx` | Square avatar with the person's initial; black-on-light / white-on-dark like the brand mark. |
 
+### E.21 `ProjectRow` — `frontend/src/components/ProjectRow.tsx`
+
+| Field | Value |
+|---|---|
+| Responsibility | Shared project list row (DashboardPage 进行中列表 + ProjectBoard 全部分组列表). Layout fix (2026-09-07): the project name owns the full first line — never truncated by a status column — and the meta line below carries the status pill, client · phase (elliptic middle), and a right-aligned mono 更新日期. Optional AntD Dropdown `menuItems` (edit/delete) revealed on hover. |
+| Public API (TS) | `export default function ProjectRow({ project, clientName, onClick, menuItems }: Props)` |
+| Internal deps | `ui/Pill`, `PROJECT_STATUS_META` from `../utils/status`, `dayjs`. |
+
 ---
 
 ## F. Frontend shared (`frontend/src/`)
@@ -593,17 +611,17 @@ No data fetching, no antd dependencies.
 | Field | Value |
 |---|---|
 | `format.ts` | `export function formatSize(bytes: number): string` — produces `B` / `KB` / `MB`. |
-| `status.tsx` | Single source of enum-ish display metadata: `PROJECT_STATUS_META`, `TASK_STATUS_META`, `PRIORITY_META`, `ISSUE_STATUS_META`, `PHASE_STATUS_META`, `DELIVERABLE_STATUS_META`, `CRED_TYPE_META`, `TECH_APPROVAL_META`, `FEEDBACK_META`, `SOURCE_META`, `ASSET_TYPE_TONE` (each maps a domain value → `{ label, tone }` for `ui/Pill`), plus `toneColor(tone)` and `metaOptions(meta)` (dot-labelled AntD Select options). Tables, pills and cell selects all read these so labels/tone never drift. It is `.tsx` because `dotLabel`/`metaOptions` return JSX. |
+| `status.tsx` | Single source of enum-ish display metadata: `PROJECT_STATUS_META`, `TASK_STATUS_META`, `PRIORITY_META`, `ISSUE_STATUS_META`, `PHASE_STATUS_META`, `DELIVERABLE_STATUS_META`, `CRED_TYPE_META` (since 2026-09-07: `password` 账号密码 / `aksk` AK/SK / `api_key` / `certificate` / `token` / `other`), `TECH_APPROVAL_META`, `FEEDBACK_META`, `SOURCE_META`, `ASSET_TYPE_TONE` (each maps a domain value → `{ label, tone }` for `ui/Pill`), plus `toneColor(tone)`, `metaOptions(meta)` (dot-labelled AntD Select options) and `credTypeFields(credType)` (per-credential-type form wording: username/secret labels, placeholders, type hint — powers the CredentialDrawer's type-adaptive form). Tables, pills and cell selects all read these so labels/tone never drift. It is `.tsx` because `dotLabel`/`metaOptions` return JSX. |
 
 ### F.5 `App.tsx`
 
 | Field | Value |
 |---|---|
-| Responsibility | Top-level shell: auth bootstrap gate (`auth-status` → `/setup`, `/me` 401 → `/login`, spinner until resolved) + Geist chrome — 240px sidebar (brand mark, nav rail with raised active card, user card in the footer) and a sticky 56px topbar (breadcrumbs derived from the route + project name, Ctrl/⌘+K command search with grouped dropdown panel, compact avatar menu) — plus `<Routes>` wrapped in `ErrorBoundary`. |
+| Responsibility | Top-level shell: auth bootstrap gate (`auth-status` → `/setup`, `/me` 401 → `/login`, spinner until resolved) + Geist chrome — **collapsible** 240px sidebar (brand mark, nav rail with raised active card, collapse toggle + user card in the footer; collapsed state is a 64px icon rail with Tooltips, persisted in localStorage `sidebar-collapsed`, footer user card switches to avatar-only) and a sticky 56px topbar (breadcrumbs derived from the route + project name — current item takes all leftover width so project names never truncate; Ctrl/⌘+K command search with grouped dropdown panel anchored right, compact avatar menu) — plus `<Routes>` wrapped in `ErrorBoundary`. |
 | Public API (TS) | `export default function App(): JSX.Element` (plus internal `SidebarItem` and `ErrorBoundary` classes — not exported) |
-| State | `isDark` (localStorage-persisted, falls back to `prefers-color-scheme`; also applied pre-paint by an inline script in `index.html`); topbar global search (debounced 300 ms via `searchApi`, panel closes on blur/Esc/clear); `useQuery(['projects'], projectsApi.list)` for breadcrumbs + footer stats — **enabled only after login** (`!!me`) so it never fires a 401 on `/login`/`setup`. |
+| State | `isDark` (localStorage-persisted, falls back to `prefers-color-scheme`; also applied pre-paint by an inline script in `index.html`); `sidebarCollapsed` (localStorage `sidebar-collapsed`); topbar global search (debounced 300 ms via `searchApi`, panel closes on blur/Esc/clear); `useQuery(['projects'], projectsApi.list)` for breadcrumbs + footer stats — **enabled only after login** (`!!me`) so it never fires a 401 on `/login`/`setup`. |
 | User menu | AntD `Dropdown` on both the sidebar user card and the topbar avatar: profile header, 修改密码 (`ChangePasswordModal`), theme toggle, 登出. |
-| Routes | `/` → `ProjectBoard`; `/files` → `FileLibrary`; `/projects/:id` → `ProjectDetail`; `/projects/:id/communications/:commId` → `CommunicationDetail`; `/login` → `LoginPage`; `/setup` → `SetupPage` (last two render standalone, no app shell). |
+| Routes | `/` → `DashboardPage`; `/projects` → `ProjectBoard`; `/files` → `FileLibrary`; `/projects/:id` → `ProjectDetail`; `/projects/:id/communications/:commId` → `CommunicationDetail`; `/login` → `LoginPage`; `/setup` → `SetupPage` (last two render standalone, no app shell). |
 | ErrorBoundary | Class component; on failure shows a "页面出错了" + reload button; logs to `console.error`. |
 | Internal deps | `lightTheme`, `darkTheme` from `./theme`; `projectsApi` from `./api`; pages from `./pages/*`. |
 

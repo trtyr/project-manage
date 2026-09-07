@@ -173,7 +173,9 @@ export default function ProjectDetail() {
           icon={<FolderOpenOutlined />}
           title="项目不存在或已被删除"
           desc="它可能刚被删除，或者链接已过期。"
-          action={<Button onClick={() => navigate('/')}>返回项目列表</Button>}
+          action={
+            <Button onClick={() => navigate('/projects')}>返回项目列表</Button>
+          }
         />
       </div>
     )
@@ -199,7 +201,7 @@ export default function ProjectDetail() {
           <button
             type="button"
             className="back-link"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/projects')}
           >
             <ArrowLeftOutlined style={{ fontSize: 12 }} /> 项目
           </button>
@@ -279,7 +281,7 @@ export default function ProjectDetail() {
                     .delete(project.id)
                     .then(() => {
                       message.success('项目已删除')
-                      navigate('/')
+                      navigate('/projects')
                     })
                     .catch(() => message.error('删除失败，请重试'))
                 },

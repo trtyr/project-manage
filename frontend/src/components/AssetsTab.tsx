@@ -51,35 +51,54 @@ import type {
 } from '../types'
 import Pill from './ui/Pill'
 import EmptyState from './ui/EmptyState'
-import { CRED_TYPE_META, ASSET_TYPE_TONE, metaOptions } from '../utils/status'
+import {
+  CRED_TYPE_META,
+  ASSET_TYPE_TONE,
+  metaOptions,
+  credTypeFields,
+} from '../utils/status'
 
 const { Text, Paragraph } = Typography
 
-const ASSET_TYPE_SUGGESTIONS = [
-  '防火墙',
-  'WAF',
-  'IDS/IPS',
-  'NDR',
-  'EDR',
-  'DLP',
-  'SOC',
-  'SIEM',
-  'SOAR',
-  '威胁情报',
-  '暴露面检测',
-  '蜜罐',
-  '零信任',
-  '堡垒机',
-  'VPN',
-  '网关',
-  '监控系统',
-  '日志系统',
-  '数据库',
-  '服务器',
-  '应用',
-  '数据管理系统',
-  '域名',
-  '云平台',
+// Grouped asset-type suggestions: picking a domain first, then the exact
+// type, keeps free-form values consistent across projects.
+const ASSET_TYPE_GROUPS: { label: string; options: string[] }[] = [
+  {
+    label: '网络安全设备',
+    options: ['防火墙', 'WAF', 'IDS/IPS', 'NDR', '蜜罐', '暴露面检测', '网闸'],
+  },
+  {
+    label: '终端与数据安全',
+    options: ['EDR', 'DLP', '零信任', '堡垒机', 'VPN', '沙箱', '终端管控'],
+  },
+  {
+    label: '安全运营与监测',
+    options: [
+      'SOC',
+      'SIEM',
+      'SOAR',
+      '威胁情报',
+      '态势感知',
+      '日志系统',
+      '监控系统',
+    ],
+  },
+  {
+    label: '基础设施',
+    options: [
+      '服务器',
+      '数据库',
+      '云平台',
+      '虚拟化',
+      '容器',
+      '备份系统',
+      '域名',
+    ],
+  },
+  {
+    label: '应用与数据',
+    options: ['应用', '数据管理系统', '中间件', 'OA/邮箱', '业务系统'],
+  },
 ]
 
 const ACCESS_METHODS = ['VPN', '直连', '拨号', '内网', '远程桌面']
@@ -100,7 +119,10 @@ function AssetTypeSelect({ value, onChange }: SelectProps) {
       maxCount={1}
       value={value ? [value] : []}
       placeholder="选择或自由填写类型"
-      options={ASSET_TYPE_SUGGESTIONS.map((t) => ({ label: t, value: t }))}
+      options={ASSET_TYPE_GROUPS.map((g) => ({
+        label: g.label,
+        options: g.options.map((t) => ({ label: t, value: t })),
+      }))}
       onChange={(s) => onChange?.(s[s.length - 1] ?? '')}
     />
   )
@@ -142,6 +164,7 @@ function CredentialRows({
   onCopy: (text: string) => void
 }) {
   const [show, setShow] = useState(false)
+  const fields = credTypeFields(cred.cred_type)
   if (!cred.username && !cred.secret) {
     return <span className="info-dim">未填写账号或密钥</span>
   }
@@ -149,7 +172,7 @@ function CredentialRows({
     <div style={{ display: 'grid', gap: 6 }}>
       {cred.username && (
         <div className="cred-field">
-          <span className="cred-field__name">账号</span>
+          <span className="cred-field__name">{fields.usernameLabel}</span>
           <span className="cred-field__value" title={cred.username}>
             {cred.username}
           </span>
@@ -157,14 +180,14 @@ function CredentialRows({
             type="text"
             size="small"
             icon={<CopyOutlined />}
-            aria-label={`复制账号 ${cred.label}`}
+            aria-label={`复制${fields.usernameLabel} ${cred.label}`}
             onClick={() => onCopy(cred.username!)}
           />
         </div>
       )}
       {cred.secret && (
         <div className="cred-field">
-          <span className="cred-field__name">密钥</span>
+          <span className="cred-field__name">{fields.secretLabel}</span>
           {show ? (
             <span
               className="cred-field__value cred-field__value--wrap"
@@ -182,7 +205,9 @@ function CredentialRows({
             size="small"
             icon={show ? <EyeInvisibleOutlined /> : <EyeOutlined />}
             aria-label={
-              show ? `隐藏密钥 ${cred.label}` : `显示密钥 ${cred.label}`
+              show
+                ? `隐藏${fields.secretLabel} ${cred.label}`
+                : `显示${fields.secretLabel} ${cred.label}`
             }
             onClick={() => setShow((s) => !s)}
           />
@@ -190,7 +215,7 @@ function CredentialRows({
             type="text"
             size="small"
             icon={<CopyOutlined />}
-            aria-label={`复制密钥 ${cred.label}`}
+            aria-label={`复制${fields.secretLabel} ${cred.label}`}
             onClick={() => onCopy(cred.secret!)}
           />
         </div>
@@ -208,8 +233,9 @@ interface CredentialDrawerProps {
 }
 
 /** Parse a migrated multi-account blob (blank-line separated chunks) into
- * structured parts. Recognises 账号/用户名/user and 密码/password lines.
- * Returns [] when there is nothing to split (fewer than 2 chunks). */
+ * structured parts. Recognises 账号/用户名/user, AK/AccessKey, 密码/password
+ * and SK/SecretKey lines. Returns [] when there is nothing to split
+ * (fewer than 2 chunks). */
 function parseCredentialChunks(
   blob: string,
 ): { label: string; username?: string; secret?: string }[] {
@@ -218,8 +244,10 @@ function parseCredentialChunks(
     .map((s) => s.trim())
     .filter(Boolean)
   if (chunks.length < 2) return []
-  const USER = /^(?:账号|用户名|user(?:name)?)\s*[:：]\s*(.+)$/im
-  const PASS = /^(?:密码|password|pass)\s*[:：]\s*(.+)$/im
+  const USER =
+    /^(?:账号|用户名|user(?:name)?|ak|access\s*key(?:\s*id)?)\s*[:：]\s*(.+)$/im
+  const PASS =
+    /^(?:密码|password|pass|sk|secret(?:\s*access)?\s*key)\s*[:：]\s*(.+)$/im
   return chunks.map((chunk, i) => {
     const username = chunk.match(USER)?.[1]?.trim()
     const pass = chunk.match(PASS)?.[1]?.trim()
@@ -251,6 +279,12 @@ function CredentialDrawer({
   const [splitTarget, setSplitTarget] = useState<AssetCredential | null>(null)
   const [splitting, setSplitting] = useState(false)
   const assetId = asset?.id ?? ''
+
+  // Field wording follows the selected type (AK/SK → Access Key ID/Secret…).
+  const watchedType = Form.useWatch('cred_type', credForm) as string | undefined
+  const formFields = credTypeFields(
+    watchedType ?? editing?.cred_type ?? 'password',
+  )
 
   const { data: credentials, isLoading } = useQuery({
     queryKey: ['asset-credentials', assetId],
@@ -502,21 +536,26 @@ function CredentialDrawer({
             label="名称"
             rules={[{ required: true, message: '请输入名称，如 SSH root' }]}
           >
-            <Input placeholder="如：SSH root / 后台管理员" />
+            <Input placeholder="如：SSH root / 后台管理员 / 云账号 AK" />
           </Form.Item>
-          <Form.Item name="cred_type" label="类型" initialValue="password">
+          <Form.Item
+            name="cred_type"
+            label="类型"
+            initialValue="password"
+            extra={formFields.hint}
+          >
             <Select options={metaOptions(CRED_TYPE_META)} />
           </Form.Item>
-          <Form.Item name="username" label="账号">
+          <Form.Item name="username" label={formFields.usernameLabel}>
             <Input
-              placeholder="用户名 / 账号 ID（无则留空）"
+              placeholder={formFields.usernamePlaceholder}
               autoComplete="off"
             />
           </Form.Item>
-          <Form.Item name="secret" label="密钥">
+          <Form.Item name="secret" label={formFields.secretLabel}>
             <Input.TextArea
               rows={3}
-              placeholder="密码 / 密钥体 / 令牌（无则留空）"
+              placeholder={formFields.secretPlaceholder}
               autoComplete="off"
             />
           </Form.Item>

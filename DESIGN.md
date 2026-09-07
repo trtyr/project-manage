@@ -68,7 +68,16 @@ values, tabular). Body line-height 1.5–1.75; headings -0.02em tracking.
   column with a sticky 56px topbar (breadcrumbs · search · avatar menu).
 - Sidebar active item is a raised surface card (white / #1f1f1f) with its
   own hairline — the Vercel nav pattern.
-- Content: max-width 1120px centered, 32px side padding, generous bottom.
+- Sidebar is collapsible: a footer toggle folds it to the 64px icon rail
+  (Tooltips carry the labels); the state persists in localStorage.
+- Breadcrumbs take all leftover topbar width — the current item (project
+  name) never gets a fixed-width cap; the command search is a fixed 260px
+  with its dropdown panel anchored to the right edge.
+- Project list rows: the name owns the full first line; the meta line
+  below carries status pill · client · phase with a right-aligned mono
+  date — a status column must never squeeze the name.
+- Content: max-width 1120px centered, 24px top / 32px side / 64px bottom
+  padding; blocks sit 24px apart.
 - Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48px.
 - Responsive: ≤960px sidebar collapses to a 64px icon rail, topbar search
   hides; ≤640px slims further. `prefers-reduced-motion` disables animation.

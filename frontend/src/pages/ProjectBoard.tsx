@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Button,
   Modal,
@@ -8,32 +8,16 @@ import {
   Select,
   Radio,
   App,
-  Dropdown,
+  Segmented,
   Skeleton,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import {
-  PlusOutlined,
-  SearchOutlined,
-  MoreOutlined,
-  FolderOutlined,
-  MessageOutlined,
-  FileOutlined,
-} from '@ant-design/icons'
+import { PlusOutlined, SearchOutlined, FolderOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import dayjs from 'dayjs'
-import {
-  clientsApi,
-  projectsApi,
-  communicationsApi,
-  filesApi,
-  searchApi,
-} from '../api'
-import type { SearchHit } from '../api'
+import { clientsApi, projectsApi } from '../api'
 import type { Project } from '../types'
-import Pill from '../components/ui/Pill'
+import ProjectRow from '../components/ProjectRow'
 import EmptyState from '../components/ui/EmptyState'
-import StatTile from '../components/ui/StatTile'
 import { PROJECT_STATUS_META } from '../utils/status'
 
 /** D5: shared CRM options — same value set as ProjectDetail's edit modal. */
@@ -50,6 +34,8 @@ const statusOrder: Record<string, number> = {
   completed: 2,
 }
 
+/** 项目页：只放项目。按状态分组列出全部项目，支持按名称/客户/阶段/
+ * 竞争对手本地筛选；全局搜索由顶栏 Ctrl+K 命令栏承担。 */
 export default function ProjectBoard() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
@@ -57,17 +43,19 @@ export default function ProjectBoard() {
   const [createOpen, setCreateOpen] = useState(false)
   const [form] = Form.useForm()
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing')
-  const [searchText, setSearchText] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [filterText, setFilterText] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [editTarget, setEditTarget] = useState<Project | null>(null)
   const [editForm] = Form.useForm()
 
+  // Dashboard's 新建项目 deep-links here with ?create=1.
+  const [searchParams, setSearchParams] = useSearchParams()
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 300)
-    return () => clearTimeout(timer)
-  }, [searchText])
-
-  const isSearching = debouncedSearch.length > 0
+    if (searchParams.get('create') === '1') {
+      setCreateOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   // --- Queries ---
   const { data: projects, isLoading } = useQuery({
@@ -79,33 +67,6 @@ export default function ProjectBoard() {
     queryKey: ['clients'],
     queryFn: clientsApi.list,
   })
-
-  const { data: recentComms } = useQuery({
-    queryKey: ['communications-recent'],
-    queryFn: () => communicationsApi.listRecent(5),
-    enabled: !isSearching,
-  })
-
-  const { data: recentFiles } = useQuery({
-    queryKey: ['files-all'],
-    queryFn: filesApi.listAll,
-    enabled: !isSearching,
-  })
-
-  // L13: the board search used to hit communicationsApi.search only
-  // (tasks/issues/findings/people/assets were unfindable here while the
-  // sidebar global search could find them) — now both use /api/search.
-  const { data: searchHits } = useQuery({
-    queryKey: ['global-search', debouncedSearch],
-    queryFn: () => searchApi.search(debouncedSearch),
-    enabled: isSearching,
-  })
-  const commHits = (searchHits ?? []).filter(
-    (h) => h.resource === 'communication',
-  )
-  const otherHits = (searchHits ?? []).filter(
-    (h) => h.resource !== 'project' && h.resource !== 'communication',
-  )
 
   // --- Mutations ---
   const createProjectMut = useMutation({
@@ -146,14 +107,46 @@ export default function ProjectBoard() {
     },
   })
 
-  const clientMap = new Map(clients?.map((c) => [c.id, c.name]))
+  const clientMap = useMemo(
+    () => new Map(clients?.map((c) => [c.id, c.name])),
+    [clients],
+  )
 
-  // --- Stats ---
+  // --- Filter + sort ---
+  const filteredProjects = useMemo(() => {
+    const kw = filterText.trim().toLowerCase()
+    return [...(projects ?? [])]
+      .filter((p) => {
+        if (statusFilter !== 'all' && p.status !== statusFilter) return false
+        if (!kw) return true
+        return [
+          p.name,
+          p.phase,
+          p.competitors,
+          clientMap.get(p.client_id) ?? '',
+        ].some((f) => (f ?? '').toLowerCase().includes(kw))
+      })
+      .sort((a, b) => {
+        const so = statusOrder[a.status] - statusOrder[b.status]
+        if (so !== 0) return so
+        return (
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        )
+      })
+  }, [projects, filterText, statusFilter, clientMap])
+
+  const grouped = useMemo(
+    () =>
+      Object.entries(PROJECT_STATUS_META).map(([status, meta]) => ({
+        status,
+        label: meta.label,
+        projects: filteredProjects.filter((p) => p.status === status),
+      })),
+    [filteredProjects],
+  )
+
   const inProgress =
     projects?.filter((p) => p.status === 'in_progress').length ?? 0
-  const completed =
-    projects?.filter((p) => p.status === 'completed').length ?? 0
-  const paused = projects?.filter((p) => p.status === 'paused').length ?? 0
 
   const getMenuItems = (p: Project): MenuProps['items'] => [
     {
@@ -222,33 +215,18 @@ export default function ProjectBoard() {
     })
   }
 
-  // --- Sorted projects ---
-  const sortedProjects = [...(projects ?? [])].sort((a, b) => {
-    const so = statusOrder[a.status] - statusOrder[b.status]
-    if (so !== 0) return so
-    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-  })
-
-  const filteredProjects = isSearching
-    ? sortedProjects.filter(
-        (p) =>
-          p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          p.competitors.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          (clientMap.get(p.client_id) ?? '')
-            .toLowerCase()
-            .includes(debouncedSearch.toLowerCase()),
-      )
-    : sortedProjects
-
-  const recentFilesSorted = [...(recentFiles ?? [])]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    .slice(0, 5)
-
   const statusOptions = Object.entries(PROJECT_STATUS_META).map(
     ([value, m]) => ({ label: m.label, value }),
+  )
+
+  const rowFor = (p: Project) => (
+    <ProjectRow
+      key={p.id}
+      project={p}
+      clientName={clientMap.get(p.client_id) ?? '未知客户'}
+      onClick={() => navigate(`/projects/${p.id}`)}
+      menuItems={getMenuItems(p)}
+    />
   )
 
   return (
@@ -256,7 +234,7 @@ export default function ProjectBoard() {
       {/* Page header */}
       <div className="page-header">
         <div>
-          <h1 className="page-header__title">概览</h1>
+          <h1 className="page-header__title">项目</h1>
           <div className="page-header__sub">
             {projects?.length ?? 0} 个项目 · {inProgress} 个进行中
           </div>
@@ -270,241 +248,74 @@ export default function ProjectBoard() {
         </Button>
       </div>
 
-      {/* Search */}
-      <Input
-        placeholder="搜索项目、沟通、任务、关切…"
-        prefix={<SearchOutlined style={{ color: 'var(--ink-3)' }} />}
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        allowClear
-        style={{ marginBottom: 'var(--space-6)', maxWidth: 420 }}
-      />
+      {/* Filter toolbar: local text filter + status segmented */}
+      <div className="table-toolbar">
+        <Input
+          placeholder="按项目名、客户、阶段筛选…"
+          prefix={<SearchOutlined style={{ color: 'var(--ink-3)' }} />}
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          allowClear
+          style={{ maxWidth: 320 }}
+        />
+        <Segmented
+          className="grouped-segment"
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as string)}
+          options={[
+            { label: '全部', value: 'all' },
+            ...Object.entries(PROJECT_STATUS_META).map(([value, m]) => ({
+              label: m.label,
+              value,
+            })),
+          ]}
+        />
+      </div>
 
-      {/* === Search mode === */}
-      {isSearching ? (
-        <div>
-          {/* Matched projects */}
-          <div className="search-results__group">
-            <div className="section-label">
-              项目
-              <span className="section-label__count">
-                {filteredProjects.length}
-              </span>
-            </div>
-            {filteredProjects.length ? (
-              <div className="card row-list">
-                {filteredProjects.map((p) => (
-                  <ProjectRow
-                    key={p.id}
-                    project={p}
-                    clientName={clientMap.get(p.client_id) ?? '未知客户'}
-                    onClick={() => navigate(`/projects/${p.id}`)}
-                    menuItems={getMenuItems(p)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="section-label__count">没有匹配的项目</div>
-            )}
-          </div>
-
-          {/* Matched communications */}
-          <div className="search-results__group">
-            <div className="section-label">
-              沟通记录
-              <span className="section-label__count">{commHits.length}</span>
-            </div>
-            {commHits.length ? (
-              <div>
-                {commHits.map((c) => (
-                  <SearchHitRow key={c.id} hit={c} />
-                ))}
-              </div>
-            ) : (
-              <div className="section-label__count">没有匹配的沟通记录</div>
-            )}
-          </div>
-
-          {/* L13: other resources (task/issue/finding/person/asset) */}
-          {otherHits.length > 0 && (
-            <div className="search-results__group">
-              <div className="section-label">
-                其他资源
-                <span className="section-label__count">{otherHits.length}</span>
-              </div>
-              <div>
-                {otherHits.map((h) => (
-                  <SearchHitRow key={h.resource + h.id} hit={h} />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* List */}
+      {isLoading ? (
+        <div className="card" style={{ padding: 'var(--space-4)' }}>
+          <Skeleton active paragraph={{ rows: 6 }} />
         </div>
-      ) : (
-        <>
-          {/* === Dashboard stats === */}
-          <div className="stat-grid">
-            <StatTile label="进行中" value={inProgress} dot="var(--blue)" />
-            <StatTile label="已完成" value={completed} dot="var(--green)" />
-            <StatTile label="已暂停" value={paused} dot="var(--amber)" />
-            <StatTile
-              label="资料"
-              value={recentFiles?.length ?? 0}
-              dot="var(--teal)"
-            />
-          </div>
-
-          {/* === Two-column: projects + activity === */}
-          {/* flexWrap + minWidth floor: on narrow windows the fixed 320px
-              activity sidebar must wrap below instead of crushing the
-              project list into a sliver. */}
-          {/* No projects at all → the whole two-column area (whose sidebar
-              would be empty anyway) gives way to one centered empty state
-              in the middle of the content area. */}
-          {isLoading || projects?.length ? (
-            <div
-              style={{
-                display: 'flex',
-                gap: 'var(--space-6)',
-                alignItems: 'flex-start',
-                flexWrap: 'wrap',
-              }}
-            >
-              {/* Projects */}
-              <div style={{ flex: '1 1 60%', minWidth: 320 }}>
-                <div className="card">
-                  <div className="card__header">
-                    项目列表
-                    <span className="card__header__count">
-                      {projects?.length ?? 0}
-                    </span>
-                  </div>
-                  {isLoading ? (
-                    <div style={{ padding: 'var(--space-4)' }}>
-                      <Skeleton active paragraph={{ rows: 4 }} />
-                    </div>
-                  ) : (
-                    <div className="row-list">
-                      {filteredProjects.map((p) => (
-                        <ProjectRow
-                          key={p.id}
-                          project={p}
-                          clientName={clientMap.get(p.client_id) ?? '未知客户'}
-                          onClick={() => navigate(`/projects/${p.id}`)}
-                          menuItems={getMenuItems(p)}
-                        />
-                      ))}
-                    </div>
-                  )}
+      ) : projects?.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={<FolderOutlined />}
+            title="开始你的第一个项目"
+            desc="创建项目后，客户、沟通记录、任务和文件都会集中在这里。"
+            action={
+              <Button type="primary" onClick={() => setCreateOpen(true)}>
+                创建第一个项目
+              </Button>
+            }
+          />
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={<SearchOutlined />}
+            title="没有匹配的项目"
+            desc="换个关键词，或清除状态筛选再试。"
+          />
+        </div>
+      ) : statusFilter === 'all' ? (
+        // Grouped by status: 进行中 → 已暂停 → 已完成
+        grouped.map(
+          (g) =>
+            g.projects.length > 0 && (
+              <div key={g.status} className="section">
+                <div className="section-label">
+                  {g.label}
+                  <span className="section-label__count">
+                    {g.projects.length}
+                  </span>
                 </div>
+                <div className="card row-list">{g.projects.map(rowFor)}</div>
               </div>
-
-              {/* Activity sidebar */}
-              <div style={{ flex: '0 0 320px' }}>
-                {/* Recent communications */}
-                {recentComms?.length ? (
-                  <div
-                    className="card"
-                    style={{ marginBottom: 'var(--space-4)' }}
-                  >
-                    <div className="card__header">
-                      <MessageOutlined style={{ color: 'var(--ink-3)' }} />
-                      最近沟通
-                    </div>
-                    <div className="row-list">
-                      {recentComms.map((c) => (
-                        <div
-                          key={c.id}
-                          className="recent-item"
-                          role="button"
-                          tabIndex={0}
-                          onClick={() =>
-                            navigate(
-                              `/projects/${c.project_id}/communications/${c.id}`,
-                            )
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter')
-                              navigate(
-                                `/projects/${c.project_id}/communications/${c.id}`,
-                              )
-                          }}
-                        >
-                          <span className="recent-item__date">
-                            {dayjs(c.occurred_at).format('MM-DD')}
-                          </span>
-                          <span className="recent-item__project">
-                            {c.project_name}
-                          </span>
-                          <span className="recent-item__preview">
-                            {c.content
-                              .replace(/[#*`>\-]/g, '')
-                              .substring(0, 60)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Recent files */}
-                {recentFilesSorted.length ? (
-                  <div className="card">
-                    <div className="card__header">
-                      <FileOutlined style={{ color: 'var(--ink-3)' }} />
-                      最近上传
-                    </div>
-                    <div className="row-list">
-                      {recentFilesSorted.map((f) => (
-                        <div
-                          key={f.id}
-                          className="recent-item"
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => navigate(`/projects/${f.project_id}`)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter')
-                              navigate(`/projects/${f.project_id}`)
-                          }}
-                        >
-                          <span className="recent-item__date">
-                            {dayjs(f.created_at).format('MM-DD')}
-                          </span>
-                          <span className="recent-item__preview">
-                            {f.original_name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            // Zero projects: center the empty state in the content area
-            // instead of pinning it to the top-left of a column.
-            <div
-              style={{
-                minHeight: '58vh',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <EmptyState
-                icon={<FolderOutlined />}
-                title="开始你的第一个项目"
-                desc="创建项目后，客户、沟通记录、任务和文件都会集中在这里。"
-                action={
-                  <Button type="primary" onClick={() => setCreateOpen(true)}>
-                    创建第一个项目
-                  </Button>
-                }
-              />
-            </div>
-          )}
-        </>
+            ),
+        )
+      ) : (
+        <div className="card row-list">{filteredProjects.map(rowFor)}</div>
       )}
 
       {/* Create project modal */}
@@ -664,103 +475,6 @@ export default function ProjectBoard() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
-  )
-}
-
-// --- Project row ---
-
-function ProjectRow({
-  project,
-  clientName,
-  onClick,
-  menuItems,
-}: {
-  project: Project
-  clientName: string
-  onClick: () => void
-  menuItems?: MenuProps['items']
-}) {
-  const status = PROJECT_STATUS_META[project.status] ?? {
-    label: project.status,
-    tone: 'neutral' as const,
-  }
-  return (
-    <div
-      className="project-row"
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') onClick()
-      }}
-    >
-      <Pill tone={status.tone} dot>
-        {status.label}
-      </Pill>
-      <div className="project-row__body">
-        <div className="project-row__name">{project.name}</div>
-        <div className="project-row__meta">
-          {clientName}
-          {project.phase && (
-            <>
-              <span className="project-row__meta-sep">·</span>
-              {project.phase}
-            </>
-          )}
-          <span className="project-row__meta-sep">·</span>
-          <span className="mono">
-            更新于 {dayjs(project.updated_at).format('MM-DD')}
-          </span>
-        </div>
-      </div>
-      {menuItems && (
-        <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-          <button
-            type="button"
-            className="project-row__more"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-            aria-label="更多操作"
-          >
-            <MoreOutlined />
-          </button>
-        </Dropdown>
-      )}
-    </div>
-  )
-}
-
-// --- Generic search-hit row (L13: board search now covers all resources) ---
-
-const HIT_RESOURCE_LABEL: Record<string, string> = {
-  project: '项目',
-  client: '客户',
-  communication: '沟通',
-  task: '任务',
-  issue: '关切',
-  finding: '发现',
-  person: '人员',
-  asset: '资产',
-  deliverable: '交付物',
-  file: '文件',
-}
-
-function SearchHitRow({ hit }: { hit: SearchHit }) {
-  const navigate = useNavigate()
-  return (
-    <div
-      className="search-hit-row"
-      role="button"
-      tabIndex={0}
-      onClick={() => navigate(`/projects/${hit.project_id ?? hit.id}`)}
-      onKeyDown={(e) =>
-        e.key === 'Enter' && navigate(`/projects/${hit.project_id ?? hit.id}`)
-      }
-    >
-      <Pill small>{HIT_RESOURCE_LABEL[hit.resource] ?? hit.resource}</Pill>
-      <span className="search-hit-row__title">{hit.title}</span>
-      <span className="search-hit-row__subtitle">{hit.subtitle}</span>
     </div>
   )
 }
