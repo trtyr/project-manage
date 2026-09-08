@@ -50,17 +50,31 @@ Reserved for floating layers only — never on static cards.
 
 ## Typography
 
-Two families, both self-hosted via `@fontsource`:
+Script-split stacks (2026-09-08): Latin and CJK each get their own face,
+routed by CSS fallback order — every stack leads with the Latin face, and
+the first CJK-capable face downstream picks up Chinese glyphs.
 
-- **Geist Sans** 400/500/600 — UI text. Fallbacks: system stack + CJK
-  (`PingFang SC`, `Microsoft YaHei`).
-- **Geist Mono** 400/500 — dates, sizes, identifiers, counts, code, form
-  values in credential rows. Mono is a signal: "this is data, not prose".
+- **JetBrains Mono** 400/500/600 (`@fontsource/jetbrains-mono`) — all Latin
+  text, UI and data alike; the dev-tool voice of the product. Fallbacks:
+  `ui-sans-serif`, `-apple-system`, CJK system faces.
+- **霞鹭文楷 LXGW WenKai** regular + bold (`lxgw-wenkai-webfont`, ~97
+  unicode-range subsets per weight, so browsers fetch only rendered
+  slices) — all Chinese text. The mono stack uses the **LXGW WenKai Mono**
+  sibling so Chinese inside code/dates/values keeps the same voice.
+
+Stacks: `--font-sans = 'JetBrains Mono', 'LXGW WenKai', …`,
+`--font-mono = 'JetBrains Mono', 'LXGW WenKai Mono', …` (mirrored in
+`theme.ts` `FONT_SANS`/`FONT_MONO` for AntD). Mono is a signal: "this is
+data, not prose" — dates, sizes, identifiers, counts, credential values.
 
 Scale (px): 11 (section labels, uppercase + tracking) · 12 (meta, timestamps,
 table headers) · 13 (secondary body, table cells, nav) · 14 (body, controls)
 · 15/16 (modal titles, large controls) · 20 (page titles) · 24 (stat tile
 values, tabular). Body line-height 1.5–1.75; headings -0.02em tracking.
+Because JetBrains Mono is wider than the former Geist Sans (12px advance
+7.2px vs ~6.2px), fixed text columns were re-measured headlessly after the
+swap — e.g. the credential key column is 128px against the 122px
+"Access Key Secret", and the credential drawer is 600px wide.
 
 ## Layout
 

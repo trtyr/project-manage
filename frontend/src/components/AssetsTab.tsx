@@ -409,7 +409,7 @@ function CredentialDrawer({
       }
       open={open}
       onClose={onClose}
-      width="min(560px, 100vw)"
+      width="min(600px, 100vw)"
       extra={
         <Button
           type="primary"

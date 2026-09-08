@@ -12,10 +12,12 @@ import { theme as antdTheme } from 'antd'
  * no token for them.
  */
 
+// Script-split stacks (must mirror index.css): Latin → JetBrains Mono,
+// CJK → LXGW WenKai (Mono variant inside code contexts).
 export const FONT_SANS =
-  "'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif"
+  "'JetBrains Mono', 'LXGW WenKai', ui-sans-serif, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif"
 export const FONT_MONO =
-  "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+  "'JetBrains Mono', 'LXGW WenKai Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 
 const sharedToken = {
   colorPrimary: '#0070f3',
