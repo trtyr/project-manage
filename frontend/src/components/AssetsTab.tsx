@@ -57,6 +57,7 @@ import {
   metaOptions,
   credTypeFields,
 } from '../utils/status'
+import { copyText } from '../utils/clipboard'
 
 const { Text, Paragraph } = Typography
 
@@ -668,9 +669,8 @@ export default function AssetsTab({ projectId }: Props) {
 
   const copy = useCallback(
     (text: string) => {
-      navigator.clipboard.writeText(text).then(
-        () => message.success('已复制'),
-        () => message.error('复制失败'),
+      void copyText(text).then((ok) =>
+        ok ? message.success('已复制') : message.error('复制失败'),
       )
     },
     [message],
